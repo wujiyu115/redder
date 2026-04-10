@@ -1,0 +1,293 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Reeder",
+
+  "loading": "Loading...",
+  "error": "Error",
+  "errorWithMessage": "Error: {message}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+
+  "settings": "Settings",
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "compactMode": "Compact Mode",
+  "compactModeDesc": "Show articles without thumbnails",
+  "showThumbnails": "Show Thumbnails",
+  "showFeedIcons": "Show Feed Icons",
+  "reading": "Reading",
+  "fontSizeAndLineHeight": "Font Size & Line Height",
+  "fontSizeAndLineHeightDesc": "Customize reading experience",
+  "bionicReading": "Bionic Reading",
+  "bionicReadingDesc": "Bold the beginning of words for faster reading",
+  "markAsReadOnScroll": "Mark as Read on Scroll",
+  "markAsReadOnScrollDesc": "Automatically mark articles as read when scrolled past",
+  "sortOrder": "Sort Order",
+  "newestFirst": "Newest First",
+  "oldestFirst": "Oldest First",
+  "timeline": "Timeline",
+  "timelineDesc": "Sort order, grouping, content expiry",
+  "data": "Data",
+  "dataAndStorage": "Data & Storage",
+  "dataAndStorageDesc": "Cache, refresh, import/export",
+  "about": "About",
+  "aboutReeder": "About Reeder",
+  "resetAllSettings": "Reset All Settings",
+  "reset": "Reset",
+
+  "themeLight": "Light",
+  "themeLightDesc": "Clean white background",
+  "themeDark": "Dark",
+  "themeDarkDesc": "Easy on the eyes",
+  "themeOled": "OLED Black",
+  "themeOledDesc": "True black for OLED displays",
+  "themeDarkLight": "Dark Light",
+  "themeDarkLightDesc": "Dark list, light reading view",
+  "themeSystem": "System",
+  "themeSystemDesc": "Follow system appearance",
+  "automatic": "Automatic",
+
+  "fontSize": "Font Size",
+  "lineHeight": "Line Height",
+  "preview": "Preview",
+  "previewText": "The quick brown fox jumps over the lazy dog. This is a preview of how your articles will look with the current font size and line height settings. Adjust the sliders above to find your preferred reading experience.",
+
+  "refresh": "Refresh",
+  "autoRefresh": "Auto-Refresh",
+  "autoRefreshInterval": "Auto-Refresh Interval",
+  "content": "Content",
+  "contentExpiry": "Content Expiry",
+  "contentExpiryDesc": "Automatically hide old articles",
+  "cacheImages": "Cache Images",
+  "cacheImagesDesc": "Save images for offline reading",
+  "importExport": "Import / Export",
+  "importOpml": "Import OPML",
+  "importOpmlDesc": "Import subscriptions from an OPML file",
+  "exportOpml": "Export OPML",
+  "exportOpmlDesc": "Export all subscriptions as OPML 2.0",
+  "dangerZone": "Danger Zone",
+  "clearAllData": "Clear All Data",
+  "clearAllDataDesc": "Remove all feeds, articles, and settings",
+  "clear": "Clear",
+  "clearAllDataConfirmTitle": "Clear All Data",
+  "clearAllDataConfirmMessage": "This will permanently delete all feeds, articles, tags, and settings. This action cannot be undone.",
+  "cancel": "Cancel",
+  "clearAll": "Clear All",
+  "manual": "Manual",
+  "refreshIntervalMin": "{minutes}min",
+  "@refreshIntervalMin": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "refreshIntervalHour": "{hours}h",
+  "@refreshIntervalHour": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "never": "Never",
+  "dayCount": "{count, plural, =1{1 day} other{{count} days}}",
+  "@dayCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "monthCount": "{count, plural, =1{1 month} other{{count} months}}",
+  "@monthCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "yearCount": "{count, plural, =1{1 year} other{{count} years}}",
+  "@yearCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "appDescription": "A beautiful RSS reader built with Flutter",
+  "links": "Links",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+  "sourceCode": "Source Code",
+  "viewOnGithub": "View on GitHub",
+  "acknowledgments": "Acknowledgments",
+  "flutter": "Flutter",
+  "flutterDesc": "UI framework by Google",
+  "riverpod": "Riverpod",
+  "riverpodDesc": "State management",
+  "isar": "Isar",
+  "isarDesc": "Local database",
+  "openSourceLicenses": "Open Source Licenses",
+  "madeWithFlutter": "Made with ❤ using Flutter",
+
+  "home": "Home",
+  "all": "All",
+  "articles": "Articles",
+  "podcasts": "Podcasts",
+  "videos": "Videos",
+  "feeds": "Feeds",
+  "tags": "Tags",
+  "newFolder": "New Folder",
+  "newTag": "New Tag",
+  "newFilter": "New Filter",
+  "filters": "Filters",
+
+  "addFeed": "Add Feed",
+  "enterFeedUrl": "Enter feed or website URL",
+  "searching": "Searching...",
+  "foundFeeds": "Found {count} feed(s):",
+  "@foundFeeds": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "pleaseEnterUrl": "Please enter a URL",
+  "noFeedsFound": "No feeds found at this URL",
+  "errorDiscoveringFeeds": "Error discovering feeds: {error}",
+  "@errorDiscoveringFeeds": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "discoverFeeds": "Discover Feeds",
+  "feedItemsInfo": "{count} items · {type}",
+  "@feedItemsInfo": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "type": { "type": "String" }
+    }
+  },
+
+  "later": "Later",
+  "bookmark": "Bookmark",
+  "favorite": "Favorite",
+  "share": "Share",
+  "browser": "Browser",
+
+  "search": "Search",
+  "searchArticles": "Search articles...",
+  "searchYourArticles": "Search your articles",
+  "searchByTitleContentAuthor": "Search by title, content, or author.",
+  "noResultsFound": "No results found",
+  "tryDifferentKeywords": "Try different keywords.",
+  "searchError": "Search error: {error}",
+  "@searchError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "unknownEpisode": "Unknown Episode",
+  "nowPlaying": "Now Playing",
+  "noEpisodePlaying": "No episode playing",
+  "chapters": "CHAPTERS",
+
+  "video": "Video",
+  "failedToPlayVideo": "Failed to play video",
+  "unableToPlayVideo": "Unable to play video",
+  "loadingVideo": "Loading video...",
+
+  "editFilter": "Edit Filter",
+  "newFilterTitle": "New Filter",
+  "save": "Save",
+  "name": "Name",
+  "filterName": "Filter name",
+  "includeKeywords": "Include Keywords",
+  "includeKeywordsDesc": "Items must contain at least one of these keywords.",
+  "excludeKeywords": "Exclude Keywords",
+  "excludeKeywordsDesc": "Items containing any of these keywords will be filtered out.",
+  "contentTypes": "Content Types",
+  "contentTypesDesc": "Leave empty to include all content types.",
+  "feedTypes": "Feed Types",
+  "feedTypesDesc": "Leave empty to include all feed types.",
+  "options": "Options",
+  "matchWholeWords": "Match Whole Words",
+  "matchWholeWordsDesc": "Only match complete words, not partial matches.",
+  "addKeyword": "Add keyword...",
+  "article": "Article",
+  "audio": "Audio",
+  "image": "Image",
+  "blog": "Blog",
+  "podcast": "Podcast",
+  "mixed": "Mixed",
+  "deleteFilter": "Delete Filter",
+  "deleteFilterConfirm": "Are you sure you want to delete \"{name}\"?",
+  "@deleteFilterConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "delete": "Delete",
+  "pleaseEnterFilterName": "Please enter a filter name.",
+  "failedToSaveFilter": "Failed to save filter: {error}",
+  "@failedToSaveFilter": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "ok": "OK",
+
+  "somethingWentWrong": "Something went wrong",
+  "tryAgain": "Try Again",
+  "noInternetConnection": "No internet connection",
+  "checkYourConnection": "Check your connection and try again",
+  "failedToLoadFeed": "Failed to load feed",
+  "failedToParseContent": "Failed to parse content",
+  "feedFormatNotSupported": "The feed format may not be supported",
+  "retry": "Retry",
+
+  "noArticlesYet": "No articles yet",
+  "pullDownToRefresh": "Pull down to refresh or add a new feed",
+  "noFeedsYet": "No feeds yet",
+  "addFeedToGetStarted": "Add your first RSS feed to get started",
+  "noTaggedItems": "No tagged items",
+  "tagArticlesToFindHere": "Tag articles to find them here",
+
+  "feedSettings": "Feed Settings",
+  "defaultViewer": "DEFAULT VIEWER",
+  "articleViewer": "Article",
+  "readerView": "Reader View",
+  "autoReaderView": "Auto Reader View",
+  "moveTo": "Move to Folder",
+  "noFolder": "No Folder",
+  "unsubscribe": "Unsubscribe",
+  "unsubscribeConfirm": "Are you sure you want to unsubscribe from \"{name}\"? All articles from this feed will be deleted.",
+  "@unsubscribeConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "rename": "Rename",
+  "create": "Create",
+  "folderName": "Folder name",
+  "tagName": "Tag name",
+  "renameFolder": "Rename Folder",
+  "deleteFolder": "Delete Folder",
+  "deleteFolderConfirm": "Delete \"{name}\"? Feeds in this folder will be moved to the root level.",
+  "@deleteFolderConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "renameTag": "Rename Tag",
+  "deleteTag": "Delete Tag",
+  "deleteTagConfirm": "Delete \"{name}\"? All tag associations will be removed.",
+  "@deleteTagConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "refreshFeed": "Refresh"
+}
