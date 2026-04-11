@@ -48,7 +48,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<String> iconUrl = GeneratedColumn<String>(
       'icon_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumnWithTypeConverter<FeedType, int> type =
       GeneratedColumn<int>('type', aliasedName, false,
@@ -82,8 +81,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<int> fetchDurationMs = GeneratedColumn<int>(
       'fetch_duration_ms', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _defaultViewerMeta =
-      const VerificationMeta('defaultViewer');
   @override
   late final GeneratedColumnWithTypeConverter<ViewerType, int> defaultViewer =
       GeneratedColumn<int>('default_viewer', aliasedName, false,
@@ -199,7 +196,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
       context.handle(_iconUrlMeta,
           iconUrl.isAcceptableOrUnknown(data['icon_url']!, _iconUrlMeta));
     }
-    context.handle(_typeMeta, const VerificationResult.success());
     if (data.containsKey('folder_id')) {
       context.handle(_folderIdMeta,
           folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta));
@@ -220,7 +216,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
           fetchDurationMs.isAcceptableOrUnknown(
               data['fetch_duration_ms']!, _fetchDurationMsMeta));
     }
-    context.handle(_defaultViewerMeta, const VerificationResult.success());
     if (data.containsKey('auto_reader_view')) {
       context.handle(
           _autoReaderViewMeta,
@@ -953,8 +948,6 @@ class $FeedItemsTable extends FeedItems
   late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
       'fetched_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _contentTypeMeta =
-      const VerificationMeta('contentType');
   @override
   late final GeneratedColumnWithTypeConverter<ContentType, int> contentType =
       GeneratedColumn<int>('content_type', aliasedName, false,
@@ -1101,7 +1094,6 @@ class $FeedItemsTable extends FeedItems
     } else if (isInserting) {
       context.missing(_fetchedAtMeta);
     }
-    context.handle(_contentTypeMeta, const VerificationResult.success());
     if (data.containsKey('is_read')) {
       context.handle(_isReadMeta,
           isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta));
@@ -4821,6 +4813,1101 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
   }
 }
 
+class $SyncAccountsTable extends SyncAccounts
+    with TableInfo<$SyncAccountsTable, SyncAccount> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncAccountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _serviceTypeMeta =
+      const VerificationMeta('serviceType');
+  @override
+  late final GeneratedColumn<int> serviceType = GeneratedColumn<int>(
+      'service_type', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _serverUrlMeta =
+      const VerificationMeta('serverUrl');
+  @override
+  late final GeneratedColumn<String> serverUrl = GeneratedColumn<String>(
+      'server_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _usernameMeta =
+      const VerificationMeta('username');
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+      'username', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _lastSyncAtMeta =
+      const VerificationMeta('lastSyncAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+      'last_sync_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        serviceType,
+        serverUrl,
+        username,
+        isActive,
+        lastSyncAt,
+        syncState,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_accounts';
+  @override
+  VerificationContext validateIntegrity(Insertable<SyncAccount> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('service_type')) {
+      context.handle(
+          _serviceTypeMeta,
+          serviceType.isAcceptableOrUnknown(
+              data['service_type']!, _serviceTypeMeta));
+    } else if (isInserting) {
+      context.missing(_serviceTypeMeta);
+    }
+    if (data.containsKey('server_url')) {
+      context.handle(_serverUrlMeta,
+          serverUrl.isAcceptableOrUnknown(data['server_url']!, _serverUrlMeta));
+    }
+    if (data.containsKey('username')) {
+      context.handle(_usernameMeta,
+          username.isAcceptableOrUnknown(data['username']!, _usernameMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+          _lastSyncAtMeta,
+          lastSyncAt.isAcceptableOrUnknown(
+              data['last_sync_at']!, _lastSyncAtMeta));
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncAccount map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncAccount(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      serviceType: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}service_type'])!,
+      serverUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}server_url']),
+      username: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}username']),
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      lastSyncAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_sync_at']),
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SyncAccountsTable createAlias(String alias) {
+    return $SyncAccountsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncAccount extends DataClass implements Insertable<SyncAccount> {
+  final int id;
+
+  /// Index into SyncServiceType enum.
+  final int serviceType;
+
+  /// Server URL for self-hosted services (FreshRSS, Reader).
+  final String? serverUrl;
+
+  /// Username or email for display.
+  final String? username;
+
+  /// Whether this is the currently active sync account.
+  final bool isActive;
+
+  /// Last successful sync timestamp.
+  final DateTime? lastSyncAt;
+
+  /// JSON-encoded sync state metadata.
+  final String? syncState;
+  final DateTime createdAt;
+  const SyncAccount(
+      {required this.id,
+      required this.serviceType,
+      this.serverUrl,
+      this.username,
+      required this.isActive,
+      this.lastSyncAt,
+      this.syncState,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['service_type'] = Variable<int>(serviceType);
+    if (!nullToAbsent || serverUrl != null) {
+      map['server_url'] = Variable<String>(serverUrl);
+    }
+    if (!nullToAbsent || username != null) {
+      map['username'] = Variable<String>(username);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    if (!nullToAbsent || syncState != null) {
+      map['sync_state'] = Variable<String>(syncState);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SyncAccountsCompanion toCompanion(bool nullToAbsent) {
+    return SyncAccountsCompanion(
+      id: Value(id),
+      serviceType: Value(serviceType),
+      serverUrl: serverUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUrl),
+      username: username == null && nullToAbsent
+          ? const Value.absent()
+          : Value(username),
+      isActive: Value(isActive),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
+      syncState: syncState == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncState),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SyncAccount.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncAccount(
+      id: serializer.fromJson<int>(json['id']),
+      serviceType: serializer.fromJson<int>(json['serviceType']),
+      serverUrl: serializer.fromJson<String?>(json['serverUrl']),
+      username: serializer.fromJson<String?>(json['username']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+      syncState: serializer.fromJson<String?>(json['syncState']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'serviceType': serializer.toJson<int>(serviceType),
+      'serverUrl': serializer.toJson<String?>(serverUrl),
+      'username': serializer.toJson<String?>(username),
+      'isActive': serializer.toJson<bool>(isActive),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+      'syncState': serializer.toJson<String?>(syncState),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SyncAccount copyWith(
+          {int? id,
+          int? serviceType,
+          Value<String?> serverUrl = const Value.absent(),
+          Value<String?> username = const Value.absent(),
+          bool? isActive,
+          Value<DateTime?> lastSyncAt = const Value.absent(),
+          Value<String?> syncState = const Value.absent(),
+          DateTime? createdAt}) =>
+      SyncAccount(
+        id: id ?? this.id,
+        serviceType: serviceType ?? this.serviceType,
+        serverUrl: serverUrl.present ? serverUrl.value : this.serverUrl,
+        username: username.present ? username.value : this.username,
+        isActive: isActive ?? this.isActive,
+        lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+        syncState: syncState.present ? syncState.value : this.syncState,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SyncAccount copyWithCompanion(SyncAccountsCompanion data) {
+    return SyncAccount(
+      id: data.id.present ? data.id.value : this.id,
+      serviceType:
+          data.serviceType.present ? data.serviceType.value : this.serviceType,
+      serverUrl: data.serverUrl.present ? data.serverUrl.value : this.serverUrl,
+      username: data.username.present ? data.username.value : this.username,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      lastSyncAt:
+          data.lastSyncAt.present ? data.lastSyncAt.value : this.lastSyncAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncAccount(')
+          ..write('id: $id, ')
+          ..write('serviceType: $serviceType, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('username: $username, ')
+          ..write('isActive: $isActive, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, serviceType, serverUrl, username,
+      isActive, lastSyncAt, syncState, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncAccount &&
+          other.id == this.id &&
+          other.serviceType == this.serviceType &&
+          other.serverUrl == this.serverUrl &&
+          other.username == this.username &&
+          other.isActive == this.isActive &&
+          other.lastSyncAt == this.lastSyncAt &&
+          other.syncState == this.syncState &&
+          other.createdAt == this.createdAt);
+}
+
+class SyncAccountsCompanion extends UpdateCompanion<SyncAccount> {
+  final Value<int> id;
+  final Value<int> serviceType;
+  final Value<String?> serverUrl;
+  final Value<String?> username;
+  final Value<bool> isActive;
+  final Value<DateTime?> lastSyncAt;
+  final Value<String?> syncState;
+  final Value<DateTime> createdAt;
+  const SyncAccountsCompanion({
+    this.id = const Value.absent(),
+    this.serviceType = const Value.absent(),
+    this.serverUrl = const Value.absent(),
+    this.username = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SyncAccountsCompanion.insert({
+    this.id = const Value.absent(),
+    required int serviceType,
+    this.serverUrl = const Value.absent(),
+    this.username = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    required DateTime createdAt,
+  })  : serviceType = Value(serviceType),
+        createdAt = Value(createdAt);
+  static Insertable<SyncAccount> custom({
+    Expression<int>? id,
+    Expression<int>? serviceType,
+    Expression<String>? serverUrl,
+    Expression<String>? username,
+    Expression<bool>? isActive,
+    Expression<DateTime>? lastSyncAt,
+    Expression<String>? syncState,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serviceType != null) 'service_type': serviceType,
+      if (serverUrl != null) 'server_url': serverUrl,
+      if (username != null) 'username': username,
+      if (isActive != null) 'is_active': isActive,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SyncAccountsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? serviceType,
+      Value<String?>? serverUrl,
+      Value<String?>? username,
+      Value<bool>? isActive,
+      Value<DateTime?>? lastSyncAt,
+      Value<String?>? syncState,
+      Value<DateTime>? createdAt}) {
+    return SyncAccountsCompanion(
+      id: id ?? this.id,
+      serviceType: serviceType ?? this.serviceType,
+      serverUrl: serverUrl ?? this.serverUrl,
+      username: username ?? this.username,
+      isActive: isActive ?? this.isActive,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      syncState: syncState ?? this.syncState,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (serviceType.present) {
+      map['service_type'] = Variable<int>(serviceType.value);
+    }
+    if (serverUrl.present) {
+      map['server_url'] = Variable<String>(serverUrl.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncAccountsCompanion(')
+          ..write('id: $id, ')
+          ..write('serviceType: $serviceType, ')
+          ..write('serverUrl: $serverUrl, ')
+          ..write('username: $username, ')
+          ..write('isActive: $isActive, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncQueueItemsTable extends SyncQueueItems
+    with TableInfo<$SyncQueueItemsTable, SyncQueueItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncQueueItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+      'action', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _itemIdsMeta =
+      const VerificationMeta('itemIds');
+  @override
+  late final GeneratedColumn<String> itemIds = GeneratedColumn<String>(
+      'item_ids', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _retryCountMeta =
+      const VerificationMeta('retryCount');
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+      'retry_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, accountId, action, itemIds, createdAt, retryCount];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_queue_items';
+  @override
+  VerificationContext validateIntegrity(Insertable<SyncQueueItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(_actionMeta,
+          action.isAcceptableOrUnknown(data['action']!, _actionMeta));
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('item_ids')) {
+      context.handle(_itemIdsMeta,
+          itemIds.isAcceptableOrUnknown(data['item_ids']!, _itemIdsMeta));
+    } else if (isInserting) {
+      context.missing(_itemIdsMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+          _retryCountMeta,
+          retryCount.isAcceptableOrUnknown(
+              data['retry_count']!, _retryCountMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncQueueItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncQueueItem(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id'])!,
+      action: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}action'])!,
+      itemIds: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}item_ids'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      retryCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}retry_count'])!,
+    );
+  }
+
+  @override
+  $SyncQueueItemsTable createAlias(String alias) {
+    return $SyncQueueItemsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncQueueItem extends DataClass implements Insertable<SyncQueueItem> {
+  final int id;
+
+  /// Reference to the sync account.
+  final int accountId;
+
+  /// Action type: markRead, markUnread, star, unstar, addFeed, removeFeed.
+  final String action;
+
+  /// JSON-encoded list of item IDs affected by this action.
+  final String itemIds;
+  final DateTime createdAt;
+
+  /// Number of retry attempts.
+  final int retryCount;
+  const SyncQueueItem(
+      {required this.id,
+      required this.accountId,
+      required this.action,
+      required this.itemIds,
+      required this.createdAt,
+      required this.retryCount});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['account_id'] = Variable<int>(accountId);
+    map['action'] = Variable<String>(action);
+    map['item_ids'] = Variable<String>(itemIds);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['retry_count'] = Variable<int>(retryCount);
+    return map;
+  }
+
+  SyncQueueItemsCompanion toCompanion(bool nullToAbsent) {
+    return SyncQueueItemsCompanion(
+      id: Value(id),
+      accountId: Value(accountId),
+      action: Value(action),
+      itemIds: Value(itemIds),
+      createdAt: Value(createdAt),
+      retryCount: Value(retryCount),
+    );
+  }
+
+  factory SyncQueueItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncQueueItem(
+      id: serializer.fromJson<int>(json['id']),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      action: serializer.fromJson<String>(json['action']),
+      itemIds: serializer.fromJson<String>(json['itemIds']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'accountId': serializer.toJson<int>(accountId),
+      'action': serializer.toJson<String>(action),
+      'itemIds': serializer.toJson<String>(itemIds),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'retryCount': serializer.toJson<int>(retryCount),
+    };
+  }
+
+  SyncQueueItem copyWith(
+          {int? id,
+          int? accountId,
+          String? action,
+          String? itemIds,
+          DateTime? createdAt,
+          int? retryCount}) =>
+      SyncQueueItem(
+        id: id ?? this.id,
+        accountId: accountId ?? this.accountId,
+        action: action ?? this.action,
+        itemIds: itemIds ?? this.itemIds,
+        createdAt: createdAt ?? this.createdAt,
+        retryCount: retryCount ?? this.retryCount,
+      );
+  SyncQueueItem copyWithCompanion(SyncQueueItemsCompanion data) {
+    return SyncQueueItem(
+      id: data.id.present ? data.id.value : this.id,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      action: data.action.present ? data.action.value : this.action,
+      itemIds: data.itemIds.present ? data.itemIds.value : this.itemIds,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      retryCount:
+          data.retryCount.present ? data.retryCount.value : this.retryCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncQueueItem(')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('action: $action, ')
+          ..write('itemIds: $itemIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('retryCount: $retryCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, accountId, action, itemIds, createdAt, retryCount);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncQueueItem &&
+          other.id == this.id &&
+          other.accountId == this.accountId &&
+          other.action == this.action &&
+          other.itemIds == this.itemIds &&
+          other.createdAt == this.createdAt &&
+          other.retryCount == this.retryCount);
+}
+
+class SyncQueueItemsCompanion extends UpdateCompanion<SyncQueueItem> {
+  final Value<int> id;
+  final Value<int> accountId;
+  final Value<String> action;
+  final Value<String> itemIds;
+  final Value<DateTime> createdAt;
+  final Value<int> retryCount;
+  const SyncQueueItemsCompanion({
+    this.id = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.action = const Value.absent(),
+    this.itemIds = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.retryCount = const Value.absent(),
+  });
+  SyncQueueItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required int accountId,
+    required String action,
+    required String itemIds,
+    required DateTime createdAt,
+    this.retryCount = const Value.absent(),
+  })  : accountId = Value(accountId),
+        action = Value(action),
+        itemIds = Value(itemIds),
+        createdAt = Value(createdAt);
+  static Insertable<SyncQueueItem> custom({
+    Expression<int>? id,
+    Expression<int>? accountId,
+    Expression<String>? action,
+    Expression<String>? itemIds,
+    Expression<DateTime>? createdAt,
+    Expression<int>? retryCount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (accountId != null) 'account_id': accountId,
+      if (action != null) 'action': action,
+      if (itemIds != null) 'item_ids': itemIds,
+      if (createdAt != null) 'created_at': createdAt,
+      if (retryCount != null) 'retry_count': retryCount,
+    });
+  }
+
+  SyncQueueItemsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? accountId,
+      Value<String>? action,
+      Value<String>? itemIds,
+      Value<DateTime>? createdAt,
+      Value<int>? retryCount}) {
+    return SyncQueueItemsCompanion(
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      action: action ?? this.action,
+      itemIds: itemIds ?? this.itemIds,
+      createdAt: createdAt ?? this.createdAt,
+      retryCount: retryCount ?? this.retryCount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (itemIds.present) {
+      map['item_ids'] = Variable<String>(itemIds.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncQueueItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('action: $action, ')
+          ..write('itemIds: $itemIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('retryCount: $retryCount')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RemoteIdMappingsTable extends RemoteIdMappings
+    with TableInfo<$RemoteIdMappingsTable, RemoteIdMapping> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RemoteIdMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _localTypeMeta =
+      const VerificationMeta('localType');
+  @override
+  late final GeneratedColumn<String> localType = GeneratedColumn<String>(
+      'local_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _localIdMeta =
+      const VerificationMeta('localId');
+  @override
+  late final GeneratedColumn<int> localId = GeneratedColumn<int>(
+      'local_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _remoteIdMeta =
+      const VerificationMeta('remoteId');
+  @override
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+      'remote_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, accountId, localType, localId, remoteId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'remote_id_mappings';
+  @override
+  VerificationContext validateIntegrity(Insertable<RemoteIdMapping> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    } else if (isInserting) {
+      context.missing(_accountIdMeta);
+    }
+    if (data.containsKey('local_type')) {
+      context.handle(_localTypeMeta,
+          localType.isAcceptableOrUnknown(data['local_type']!, _localTypeMeta));
+    } else if (isInserting) {
+      context.missing(_localTypeMeta);
+    }
+    if (data.containsKey('local_id')) {
+      context.handle(_localIdMeta,
+          localId.isAcceptableOrUnknown(data['local_id']!, _localIdMeta));
+    } else if (isInserting) {
+      context.missing(_localIdMeta);
+    }
+    if (data.containsKey('remote_id')) {
+      context.handle(_remoteIdMeta,
+          remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta));
+    } else if (isInserting) {
+      context.missing(_remoteIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RemoteIdMapping map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RemoteIdMapping(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id'])!,
+      localType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}local_type'])!,
+      localId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}local_id'])!,
+      remoteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}remote_id'])!,
+    );
+  }
+
+  @override
+  $RemoteIdMappingsTable createAlias(String alias) {
+    return $RemoteIdMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class RemoteIdMapping extends DataClass implements Insertable<RemoteIdMapping> {
+  final int id;
+
+  /// Reference to the sync account.
+  final int accountId;
+
+  /// Type of entity: feed, article, folder.
+  final String localType;
+
+  /// Local database ID.
+  final int localId;
+
+  /// Remote service-specific ID.
+  final String remoteId;
+  const RemoteIdMapping(
+      {required this.id,
+      required this.accountId,
+      required this.localType,
+      required this.localId,
+      required this.remoteId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['account_id'] = Variable<int>(accountId);
+    map['local_type'] = Variable<String>(localType);
+    map['local_id'] = Variable<int>(localId);
+    map['remote_id'] = Variable<String>(remoteId);
+    return map;
+  }
+
+  RemoteIdMappingsCompanion toCompanion(bool nullToAbsent) {
+    return RemoteIdMappingsCompanion(
+      id: Value(id),
+      accountId: Value(accountId),
+      localType: Value(localType),
+      localId: Value(localId),
+      remoteId: Value(remoteId),
+    );
+  }
+
+  factory RemoteIdMapping.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RemoteIdMapping(
+      id: serializer.fromJson<int>(json['id']),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      localType: serializer.fromJson<String>(json['localType']),
+      localId: serializer.fromJson<int>(json['localId']),
+      remoteId: serializer.fromJson<String>(json['remoteId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'accountId': serializer.toJson<int>(accountId),
+      'localType': serializer.toJson<String>(localType),
+      'localId': serializer.toJson<int>(localId),
+      'remoteId': serializer.toJson<String>(remoteId),
+    };
+  }
+
+  RemoteIdMapping copyWith(
+          {int? id,
+          int? accountId,
+          String? localType,
+          int? localId,
+          String? remoteId}) =>
+      RemoteIdMapping(
+        id: id ?? this.id,
+        accountId: accountId ?? this.accountId,
+        localType: localType ?? this.localType,
+        localId: localId ?? this.localId,
+        remoteId: remoteId ?? this.remoteId,
+      );
+  RemoteIdMapping copyWithCompanion(RemoteIdMappingsCompanion data) {
+    return RemoteIdMapping(
+      id: data.id.present ? data.id.value : this.id,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      localType: data.localType.present ? data.localType.value : this.localType,
+      localId: data.localId.present ? data.localId.value : this.localId,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteIdMapping(')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('localType: $localType, ')
+          ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, accountId, localType, localId, remoteId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RemoteIdMapping &&
+          other.id == this.id &&
+          other.accountId == this.accountId &&
+          other.localType == this.localType &&
+          other.localId == this.localId &&
+          other.remoteId == this.remoteId);
+}
+
+class RemoteIdMappingsCompanion extends UpdateCompanion<RemoteIdMapping> {
+  final Value<int> id;
+  final Value<int> accountId;
+  final Value<String> localType;
+  final Value<int> localId;
+  final Value<String> remoteId;
+  const RemoteIdMappingsCompanion({
+    this.id = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.localType = const Value.absent(),
+    this.localId = const Value.absent(),
+    this.remoteId = const Value.absent(),
+  });
+  RemoteIdMappingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int accountId,
+    required String localType,
+    required int localId,
+    required String remoteId,
+  })  : accountId = Value(accountId),
+        localType = Value(localType),
+        localId = Value(localId),
+        remoteId = Value(remoteId);
+  static Insertable<RemoteIdMapping> custom({
+    Expression<int>? id,
+    Expression<int>? accountId,
+    Expression<String>? localType,
+    Expression<int>? localId,
+    Expression<String>? remoteId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (accountId != null) 'account_id': accountId,
+      if (localType != null) 'local_type': localType,
+      if (localId != null) 'local_id': localId,
+      if (remoteId != null) 'remote_id': remoteId,
+    });
+  }
+
+  RemoteIdMappingsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? accountId,
+      Value<String>? localType,
+      Value<int>? localId,
+      Value<String>? remoteId}) {
+    return RemoteIdMappingsCompanion(
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      localType: localType ?? this.localType,
+      localId: localId ?? this.localId,
+      remoteId: remoteId ?? this.remoteId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (localType.present) {
+      map['local_type'] = Variable<String>(localType.value);
+    }
+    if (localId.present) {
+      map['local_id'] = Variable<int>(localId.value);
+    }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RemoteIdMappingsCompanion(')
+          ..write('id: $id, ')
+          ..write('accountId: $accountId, ')
+          ..write('localType: $localType, ')
+          ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4834,6 +5921,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ScrollPositionsTable(this);
   late final $AppSettingsTableTable appSettingsTable =
       $AppSettingsTableTable(this);
+  late final $SyncAccountsTable syncAccounts = $SyncAccountsTable(this);
+  late final $SyncQueueItemsTable syncQueueItems = $SyncQueueItemsTable(this);
+  late final $RemoteIdMappingsTable remoteIdMappings =
+      $RemoteIdMappingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4846,7 +5937,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         folders,
         filters,
         scrollPositions,
-        appSettingsTable
+        appSettingsTable,
+        syncAccounts,
+        syncQueueItems,
+        remoteIdMappings
       ];
 }
 
@@ -7034,6 +8128,569 @@ typedef $$AppSettingsTableTableProcessedTableManager = ProcessedTableManager<
     ),
     AppSettingsTableData,
     PrefetchHooks Function()>;
+typedef $$SyncAccountsTableCreateCompanionBuilder = SyncAccountsCompanion
+    Function({
+  Value<int> id,
+  required int serviceType,
+  Value<String?> serverUrl,
+  Value<String?> username,
+  Value<bool> isActive,
+  Value<DateTime?> lastSyncAt,
+  Value<String?> syncState,
+  required DateTime createdAt,
+});
+typedef $$SyncAccountsTableUpdateCompanionBuilder = SyncAccountsCompanion
+    Function({
+  Value<int> id,
+  Value<int> serviceType,
+  Value<String?> serverUrl,
+  Value<String?> username,
+  Value<bool> isActive,
+  Value<DateTime?> lastSyncAt,
+  Value<String?> syncState,
+  Value<DateTime> createdAt,
+});
+
+class $$SyncAccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncAccountsTable> {
+  $$SyncAccountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get serviceType => $composableBuilder(
+      column: $table.serviceType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serverUrl => $composableBuilder(
+      column: $table.serverUrl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+      column: $table.lastSyncAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SyncAccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncAccountsTable> {
+  $$SyncAccountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get serviceType => $composableBuilder(
+      column: $table.serviceType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serverUrl => $composableBuilder(
+      column: $table.serverUrl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get username => $composableBuilder(
+      column: $table.username, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+      column: $table.lastSyncAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SyncAccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncAccountsTable> {
+  $$SyncAccountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get serviceType => $composableBuilder(
+      column: $table.serviceType, builder: (column) => column);
+
+  GeneratedColumn<String> get serverUrl =>
+      $composableBuilder(column: $table.serverUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+      column: $table.lastSyncAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SyncAccountsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SyncAccountsTable,
+    SyncAccount,
+    $$SyncAccountsTableFilterComposer,
+    $$SyncAccountsTableOrderingComposer,
+    $$SyncAccountsTableAnnotationComposer,
+    $$SyncAccountsTableCreateCompanionBuilder,
+    $$SyncAccountsTableUpdateCompanionBuilder,
+    (
+      SyncAccount,
+      BaseReferences<_$AppDatabase, $SyncAccountsTable, SyncAccount>
+    ),
+    SyncAccount,
+    PrefetchHooks Function()> {
+  $$SyncAccountsTableTableManager(_$AppDatabase db, $SyncAccountsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncAccountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncAccountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncAccountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> serviceType = const Value.absent(),
+            Value<String?> serverUrl = const Value.absent(),
+            Value<String?> username = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> lastSyncAt = const Value.absent(),
+            Value<String?> syncState = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              SyncAccountsCompanion(
+            id: id,
+            serviceType: serviceType,
+            serverUrl: serverUrl,
+            username: username,
+            isActive: isActive,
+            lastSyncAt: lastSyncAt,
+            syncState: syncState,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int serviceType,
+            Value<String?> serverUrl = const Value.absent(),
+            Value<String?> username = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime?> lastSyncAt = const Value.absent(),
+            Value<String?> syncState = const Value.absent(),
+            required DateTime createdAt,
+          }) =>
+              SyncAccountsCompanion.insert(
+            id: id,
+            serviceType: serviceType,
+            serverUrl: serverUrl,
+            username: username,
+            isActive: isActive,
+            lastSyncAt: lastSyncAt,
+            syncState: syncState,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SyncAccountsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SyncAccountsTable,
+    SyncAccount,
+    $$SyncAccountsTableFilterComposer,
+    $$SyncAccountsTableOrderingComposer,
+    $$SyncAccountsTableAnnotationComposer,
+    $$SyncAccountsTableCreateCompanionBuilder,
+    $$SyncAccountsTableUpdateCompanionBuilder,
+    (
+      SyncAccount,
+      BaseReferences<_$AppDatabase, $SyncAccountsTable, SyncAccount>
+    ),
+    SyncAccount,
+    PrefetchHooks Function()>;
+typedef $$SyncQueueItemsTableCreateCompanionBuilder = SyncQueueItemsCompanion
+    Function({
+  Value<int> id,
+  required int accountId,
+  required String action,
+  required String itemIds,
+  required DateTime createdAt,
+  Value<int> retryCount,
+});
+typedef $$SyncQueueItemsTableUpdateCompanionBuilder = SyncQueueItemsCompanion
+    Function({
+  Value<int> id,
+  Value<int> accountId,
+  Value<String> action,
+  Value<String> itemIds,
+  Value<DateTime> createdAt,
+  Value<int> retryCount,
+});
+
+class $$SyncQueueItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncQueueItemsTable> {
+  $$SyncQueueItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get action => $composableBuilder(
+      column: $table.action, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemIds => $composableBuilder(
+      column: $table.itemIds, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => ColumnFilters(column));
+}
+
+class $$SyncQueueItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncQueueItemsTable> {
+  $$SyncQueueItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get action => $composableBuilder(
+      column: $table.action, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemIds => $composableBuilder(
+      column: $table.itemIds, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SyncQueueItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncQueueItemsTable> {
+  $$SyncQueueItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get itemIds =>
+      $composableBuilder(column: $table.itemIds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+      column: $table.retryCount, builder: (column) => column);
+}
+
+class $$SyncQueueItemsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SyncQueueItemsTable,
+    SyncQueueItem,
+    $$SyncQueueItemsTableFilterComposer,
+    $$SyncQueueItemsTableOrderingComposer,
+    $$SyncQueueItemsTableAnnotationComposer,
+    $$SyncQueueItemsTableCreateCompanionBuilder,
+    $$SyncQueueItemsTableUpdateCompanionBuilder,
+    (
+      SyncQueueItem,
+      BaseReferences<_$AppDatabase, $SyncQueueItemsTable, SyncQueueItem>
+    ),
+    SyncQueueItem,
+    PrefetchHooks Function()> {
+  $$SyncQueueItemsTableTableManager(
+      _$AppDatabase db, $SyncQueueItemsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncQueueItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncQueueItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncQueueItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> accountId = const Value.absent(),
+            Value<String> action = const Value.absent(),
+            Value<String> itemIds = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> retryCount = const Value.absent(),
+          }) =>
+              SyncQueueItemsCompanion(
+            id: id,
+            accountId: accountId,
+            action: action,
+            itemIds: itemIds,
+            createdAt: createdAt,
+            retryCount: retryCount,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int accountId,
+            required String action,
+            required String itemIds,
+            required DateTime createdAt,
+            Value<int> retryCount = const Value.absent(),
+          }) =>
+              SyncQueueItemsCompanion.insert(
+            id: id,
+            accountId: accountId,
+            action: action,
+            itemIds: itemIds,
+            createdAt: createdAt,
+            retryCount: retryCount,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SyncQueueItemsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SyncQueueItemsTable,
+    SyncQueueItem,
+    $$SyncQueueItemsTableFilterComposer,
+    $$SyncQueueItemsTableOrderingComposer,
+    $$SyncQueueItemsTableAnnotationComposer,
+    $$SyncQueueItemsTableCreateCompanionBuilder,
+    $$SyncQueueItemsTableUpdateCompanionBuilder,
+    (
+      SyncQueueItem,
+      BaseReferences<_$AppDatabase, $SyncQueueItemsTable, SyncQueueItem>
+    ),
+    SyncQueueItem,
+    PrefetchHooks Function()>;
+typedef $$RemoteIdMappingsTableCreateCompanionBuilder
+    = RemoteIdMappingsCompanion Function({
+  Value<int> id,
+  required int accountId,
+  required String localType,
+  required int localId,
+  required String remoteId,
+});
+typedef $$RemoteIdMappingsTableUpdateCompanionBuilder
+    = RemoteIdMappingsCompanion Function({
+  Value<int> id,
+  Value<int> accountId,
+  Value<String> localType,
+  Value<int> localId,
+  Value<String> remoteId,
+});
+
+class $$RemoteIdMappingsTableFilterComposer
+    extends Composer<_$AppDatabase, $RemoteIdMappingsTable> {
+  $$RemoteIdMappingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get localType => $composableBuilder(
+      column: $table.localType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get localId => $composableBuilder(
+      column: $table.localId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnFilters(column));
+}
+
+class $$RemoteIdMappingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RemoteIdMappingsTable> {
+  $$RemoteIdMappingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get localType => $composableBuilder(
+      column: $table.localType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get localId => $composableBuilder(
+      column: $table.localId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+      column: $table.remoteId, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RemoteIdMappingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RemoteIdMappingsTable> {
+  $$RemoteIdMappingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get localType =>
+      $composableBuilder(column: $table.localType, builder: (column) => column);
+
+  GeneratedColumn<int> get localId =>
+      $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
+}
+
+class $$RemoteIdMappingsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RemoteIdMappingsTable,
+    RemoteIdMapping,
+    $$RemoteIdMappingsTableFilterComposer,
+    $$RemoteIdMappingsTableOrderingComposer,
+    $$RemoteIdMappingsTableAnnotationComposer,
+    $$RemoteIdMappingsTableCreateCompanionBuilder,
+    $$RemoteIdMappingsTableUpdateCompanionBuilder,
+    (
+      RemoteIdMapping,
+      BaseReferences<_$AppDatabase, $RemoteIdMappingsTable, RemoteIdMapping>
+    ),
+    RemoteIdMapping,
+    PrefetchHooks Function()> {
+  $$RemoteIdMappingsTableTableManager(
+      _$AppDatabase db, $RemoteIdMappingsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RemoteIdMappingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RemoteIdMappingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RemoteIdMappingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> accountId = const Value.absent(),
+            Value<String> localType = const Value.absent(),
+            Value<int> localId = const Value.absent(),
+            Value<String> remoteId = const Value.absent(),
+          }) =>
+              RemoteIdMappingsCompanion(
+            id: id,
+            accountId: accountId,
+            localType: localType,
+            localId: localId,
+            remoteId: remoteId,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int accountId,
+            required String localType,
+            required int localId,
+            required String remoteId,
+          }) =>
+              RemoteIdMappingsCompanion.insert(
+            id: id,
+            accountId: accountId,
+            localType: localType,
+            localId: localId,
+            remoteId: remoteId,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$RemoteIdMappingsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RemoteIdMappingsTable,
+    RemoteIdMapping,
+    $$RemoteIdMappingsTableFilterComposer,
+    $$RemoteIdMappingsTableOrderingComposer,
+    $$RemoteIdMappingsTableAnnotationComposer,
+    $$RemoteIdMappingsTableCreateCompanionBuilder,
+    $$RemoteIdMappingsTableUpdateCompanionBuilder,
+    (
+      RemoteIdMapping,
+      BaseReferences<_$AppDatabase, $RemoteIdMappingsTable, RemoteIdMapping>
+    ),
+    RemoteIdMapping,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7053,4 +8710,10 @@ class $AppDatabaseManager {
       $$ScrollPositionsTableTableManager(_db, _db.scrollPositions);
   $$AppSettingsTableTableTableManager get appSettingsTable =>
       $$AppSettingsTableTableTableManager(_db, _db.appSettingsTable);
+  $$SyncAccountsTableTableManager get syncAccounts =>
+      $$SyncAccountsTableTableManager(_db, _db.syncAccounts);
+  $$SyncQueueItemsTableTableManager get syncQueueItems =>
+      $$SyncQueueItemsTableTableManager(_db, _db.syncQueueItems);
+  $$RemoteIdMappingsTableTableManager get remoteIdMappings =>
+      $$RemoteIdMappingsTableTableManager(_db, _db.remoteIdMappings);
 }

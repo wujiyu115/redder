@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
+import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
@@ -25,21 +27,20 @@ class TimelineSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ReederTheme.of(context);
     final settingsAsync = ref.watch(settingsProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return ReederScaffold(
       navBar: ReederNavBar(
-        title: 'Timeline',
+        title: l10n.timelineSettingsTitle,
         showBackButton: true,
         onBack: () => context.pop(),
       ),
       body: settingsAsync.when(
-        data: (settings) => _buildContent(context, ref, settings, theme),
-        loading: () => const Center(
-          child: Text('⏳', style: TextStyle(fontSize: 32)),
-        ),
+        data: (settings) => _buildContent(context, ref, settings, theme, l10n),
+        loading: () => Center(child: Text(l10n.loading)),
         error: (e, _) => Center(
           child: Text(
-            'Failed to load settings',
+            l10n.failedToLoadSettings,
             style: theme.typography.body.copyWith(
               color: theme.secondaryTextColor,
             ),
@@ -52,8 +53,9 @@ class TimelineSettingsPage extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    dynamic settings,
+    AppSettingsTableData settings,
     ReederThemeData theme,
+    AppLocalizations l10n,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
@@ -63,11 +65,11 @@ class TimelineSettingsPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─── Sort Order ─────────────────────────────────
-          const ReederSectionHeader(title: 'SORT ORDER'),
+          ReederSectionHeader(title: l10n.sortOrderSection),
           const SizedBox(height: AppDimensions.spacingS),
 
           ReederListTile(
-            title: 'Newest First',
+            title: l10n.newestFirst,
             trailing: settings.sortOrder == 'newest'
                 ? Text(
                     '✓',
@@ -82,7 +84,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             },
           ),
           ReederListTile(
-            title: 'Oldest First',
+            title: l10n.oldestFirst,
             trailing: settings.sortOrder == 'oldest'
                 ? Text(
                     '✓',
@@ -100,12 +102,12 @@ class TimelineSettingsPage extends ConsumerWidget {
           const SizedBox(height: AppDimensions.spacingXL),
 
           // ─── Behavior ───────────────────────────────────
-          const ReederSectionHeader(title: 'BEHAVIOR'),
+          ReederSectionHeader(title: l10n.behaviorSection),
           const SizedBox(height: AppDimensions.spacingS),
 
           ReederListTile(
-            title: 'Group by Feed',
-            subtitle: 'Group articles by their source feed',
+            title: l10n.groupByFeed,
+            subtitle: l10n.groupByFeedDesc,
             trailing: ReederSwitch(
               value: settings.groupByFeed,
               onChanged: (_) {
@@ -114,8 +116,8 @@ class TimelineSettingsPage extends ConsumerWidget {
             ),
           ),
           ReederListTile(
-            title: 'Mark Read on Scroll',
-            subtitle: 'Automatically mark articles as read when scrolled past',
+            title: l10n.markAsReadOnScroll,
+            subtitle: l10n.markAsReadOnScrollDesc,
             trailing: ReederSwitch(
               value: settings.markReadOnScroll,
               onChanged: (_) {
@@ -127,11 +129,11 @@ class TimelineSettingsPage extends ConsumerWidget {
           const SizedBox(height: AppDimensions.spacingXL),
 
           // ─── Content Expiry ─────────────────────────────
-          const ReederSectionHeader(title: 'CONTENT EXPIRY'),
+          ReederSectionHeader(title: l10n.contentExpirySection),
           const SizedBox(height: AppDimensions.spacingS),
 
           _ExpiryOption(
-            title: 'Never',
+            title: l10n.never,
             isSelected: settings.contentExpiryDays == 0,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(0);
@@ -139,7 +141,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             theme: theme,
           ),
           _ExpiryOption(
-            title: '1 Week',
+            title: l10n.oneWeek,
             isSelected: settings.contentExpiryDays == 7,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(7);
@@ -147,7 +149,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             theme: theme,
           ),
           _ExpiryOption(
-            title: '2 Weeks',
+            title: l10n.twoWeeks,
             isSelected: settings.contentExpiryDays == 14,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(14);
@@ -155,7 +157,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             theme: theme,
           ),
           _ExpiryOption(
-            title: '1 Month',
+            title: l10n.oneMonth,
             isSelected: settings.contentExpiryDays == 30,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(30);
@@ -163,7 +165,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             theme: theme,
           ),
           _ExpiryOption(
-            title: '3 Months',
+            title: l10n.threeMonths,
             isSelected: settings.contentExpiryDays == 90,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(90);
@@ -171,7 +173,7 @@ class TimelineSettingsPage extends ConsumerWidget {
             theme: theme,
           ),
           _ExpiryOption(
-            title: '6 Months',
+            title: l10n.sixMonths,
             isSelected: settings.contentExpiryDays == 180,
             onTap: () {
               ref.read(settingsProvider.notifier).setContentExpiryDays(180);
@@ -185,8 +187,7 @@ class TimelineSettingsPage extends ConsumerWidget {
               horizontal: AppDimensions.pagePaddingH,
             ),
             child: Text(
-              'Articles older than the selected period will be hidden from timelines. '
-              'They can still be found via search.',
+              l10n.contentExpiryHint,
               style: theme.typography.caption.copyWith(
                 color: theme.tertiaryTextColor,
               ),

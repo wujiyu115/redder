@@ -7,6 +7,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/feed.dart';
+import '../../data/models/tag.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_button.dart';
@@ -177,7 +178,7 @@ class SourceListPage extends ConsumerWidget {
               _tagIcon(tag.iconName),
               style: const TextStyle(fontSize: 18),
             ),
-            title: tag.name,
+            title: _localizedTagName(tag, l10n),
             count: tag.itemCount,
             onTap: () => context.push('/timeline/tag_${tag.id}'),
             onLongPress: tag.isBuiltIn
@@ -257,6 +258,23 @@ class SourceListPage extends ConsumerWidget {
         const SizedBox(height: AppDimensions.spacingXXL),
       ],
     );
+  }
+
+  /// Returns the localized display name for a tag.
+  /// Built-in tags (Later, Bookmarks, Favorites) are mapped to l10n strings;
+  /// custom tags use their stored name as-is.
+  String _localizedTagName(Tag tag, AppLocalizations l10n) {
+    if (!tag.isBuiltIn) return tag.name;
+    switch (tag.name) {
+      case TagNames.laterName:
+        return l10n.later;
+      case TagNames.bookmarksName:
+        return l10n.bookmark;
+      case TagNames.favoritesName:
+        return l10n.favorite;
+      default:
+        return tag.name;
+    }
   }
 
   String _tagIcon(String? iconName) {

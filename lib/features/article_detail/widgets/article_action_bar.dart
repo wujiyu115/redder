@@ -161,30 +161,35 @@ class _ActionButtonState extends State<_ActionButton>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
 
+  bool get _isEnabled => widget.onTap != null;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapDown: _isEnabled ? (_) => setState(() => _isPressed = true) : null,
+      onTapUp: _isEnabled ? (_) => setState(() => _isPressed = false) : null,
+      onTapCancel: _isEnabled ? () => setState(() => _isPressed = false) : null,
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _isPressed ? 0.85 : 1.0,
         duration: AppDurations.micro,
-        child: SizedBox(
-          width: 56,
-          height: AppDimensions.bottomBarHeight,
-          child: Center(
-            child: AnimatedDefaultTextStyle(
-              duration: AppDurations.micro,
-              style: TextStyle(
-                fontSize: 22,
-                color: widget.isActive
-                    ? widget.activeColor
-                    : widget.inactiveColor,
+        child: Opacity(
+          opacity: _isEnabled ? 1.0 : 0.3,
+          child: SizedBox(
+            width: 56,
+            height: AppDimensions.bottomBarHeight,
+            child: Center(
+              child: AnimatedDefaultTextStyle(
+                duration: AppDurations.micro,
+                style: TextStyle(
+                  fontSize: 22,
+                  color: widget.isActive
+                      ? widget.activeColor
+                      : widget.inactiveColor,
+                ),
+                child: Text(widget.icon),
               ),
-              child: Text(widget.icon),
             ),
           ),
         ),

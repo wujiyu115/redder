@@ -151,6 +151,16 @@ class SettingsPage extends ConsumerWidget {
           onTap: () => context.push('/settings/timeline'),
         ),
 
+        // ─── ACCOUNTS ──────────────────────────────────────
+        ReederSectionHeader(title: l10n.accounts),
+
+        ReederListTile(
+          title: l10n.syncAccounts,
+          subtitle: l10n.syncAccountsDesc,
+          showDisclosure: true,
+          onTap: () => context.push('/settings/accounts'),
+        ),
+
         // ─── DATA ───────────────────────────────────────────
         ReederSectionHeader(title: l10n.data),
 
@@ -200,8 +210,6 @@ class SettingsPage extends ConsumerWidget {
       case ReederThemeMode.darkLight:
         return l10n.themeDarkLight;
       case ReederThemeMode.system:
-        return l10n.themeSystem;
-      default:
         return l10n.themeSystem;
     }
   }

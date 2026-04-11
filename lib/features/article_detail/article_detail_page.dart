@@ -57,6 +57,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
 
     // Mark article as read when opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref
           .read(articleDetailControllerProvider(widget.articleId).notifier)
           .markAsRead();

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';
@@ -152,6 +153,8 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     ReederThemeData theme,
     bool isCompact,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (state.items.isEmpty) {
       return const EmptyState.articles();
     }
@@ -200,7 +203,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
           leftSwipeActions: [
             SwipeAction(
               id: 'share',
-              label: 'Share',
+              label: l10n.share,
               icon: '↗',
               color: theme.accentColor,
               onTriggered: () {
@@ -213,7 +216,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
           rightSwipeActions: [
             SwipeAction(
               id: 'later',
-              label: 'Later',
+              label: l10n.later,
               icon: '🕐',
               color: const Color(0xFFFF9500),
               onTriggered: () => _toggleLater(item.id),

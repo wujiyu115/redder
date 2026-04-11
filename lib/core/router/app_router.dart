@@ -11,11 +11,16 @@ import '../../features/settings/reading_settings_page.dart';
 import '../../features/settings/data_settings_page.dart';
 import '../../features/settings/about_page.dart';
 import '../../features/settings/timeline_settings_page.dart';
+import '../../features/settings/accounts_page.dart';
+import '../../features/settings/add_account_page.dart';
+import '../../features/settings/service_login_page.dart';
+import '../../features/settings/edit_account_page.dart';
 import '../../features/search/search_page.dart';
 import '../../features/filter/filter_editor_page.dart';
 import '../../features/image_viewer/image_viewer_page.dart';
 import '../../features/podcast_player/full_player_page.dart';
 import '../../features/video_player/video_player_page.dart';
+import '../../features/browser/in_app_browser_page.dart';
 
 /// Provider for the app router configuration.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -102,6 +107,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   child: const TimelineSettingsPage(),
                 ),
               ),
+              GoRoute(
+                path: 'accounts',
+                name: 'accounts',
+                pageBuilder: (context, state) => ReederPage(
+                  key: state.pageKey,
+                  child: const AccountsPage(),
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'add',
+                    name: 'addAccount',
+                    pageBuilder: (context, state) => ReederPage(
+                      key: state.pageKey,
+                      child: const AddAccountPage(),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'login/:serviceType',
+                    name: 'serviceLogin',
+                    pageBuilder: (context, state) => ReederPage(
+                      key: state.pageKey,
+                      child: ServiceLoginPage(
+                        serviceType: state.pathParameters['serviceType'] ?? 'feedbin',
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'edit/:accountId',
+                    name: 'editAccount',
+                    pageBuilder: (context, state) {
+                      final accountId = int.tryParse(
+                            state.pathParameters['accountId'] ?? '',
+                          ) ??
+                          0;
+                      return ReederPage(
+                        key: state.pageKey,
+                        child: EditAccountPage(accountId: accountId),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
           GoRoute(
@@ -165,6 +212,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   embedUrl: extra['embedUrl'] as String?,
                   title: extra['title'] as String?,
                 ),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'browser',
+            name: 'browser',
+            pageBuilder: (context, state) {
+              final url = state.extra as String? ?? '';
+              return ReederPage(
+                key: state.pageKey,
+                child: InAppBrowserPage(url: url),
               );
             },
           ),

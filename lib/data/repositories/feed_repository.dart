@@ -4,6 +4,8 @@ import '../../core/database/app_database.dart';
 import '../datasources/local/feed_local_ds.dart';
 import '../datasources/remote/rss_remote_ds.dart';
 import '../models/feed.dart';
+import '../services/sync/sync_engine.dart';
+import '../services/sync/sync_models.dart';
 
 /// Repository for Feed operations.
 ///
@@ -15,12 +17,15 @@ import '../models/feed.dart';
 class FeedRepository {
   final FeedLocalDataSource _localDs;
   final RssRemoteDataSource _remoteDs;
+  SyncEngine? _syncEngine;
 
   FeedRepository({
     FeedLocalDataSource? localDs,
     RssRemoteDataSource? remoteDs,
+    SyncEngine? syncEngine,
   })  : _localDs = localDs ?? FeedLocalDataSource(),
-        _remoteDs = remoteDs ?? RssRemoteDataSource();
+        _remoteDs = remoteDs ?? RssRemoteDataSource(),
+        _syncEngine = syncEngine;
 
   /// Adds a new feed subscription by URL.
   ///
@@ -178,5 +183,34 @@ class FeedRepository {
       grouped.putIfAbsent(feed.type, () => []).add(feed);
     }
     return grouped;
+  }
+
+  /// Sets the sync engine for this repository.
+  ///
+  /// Allows the feed repository to delegate sync operations to the sync engine.
+  void setSyncEngine(SyncEngine engine) {
+    _syncEngine = engine;
+  }
+
+  /// Syncs all feeds using the sync engine.
+  ///
+  /// If a sync engine is configured, initiates a full sync operation.
+  /// Returns the sync result, or null if no sync engine is available.
+  Future<SyncResult?> syncFeeds() async {
+    if (_syncEngine == null) {
+      return null;
+    }
+    return await _syncEngine!.sync();
+  }
+
+  /// Syncs a single feed using the sync engine.
+  ///
+  /// If a sync engine is configured, initiates a sync operation for the specified feed.
+  /// Returns the sync result, or null if no sync engine is available.
+  Future<SyncResult?> syncSingleFeed(int feedId) async {
+    if (_syncEngine == null) {
+      return null;
+    }
+    return await _syncEngine!.syncFeed(feedId);
   }
 }

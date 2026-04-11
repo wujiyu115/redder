@@ -13,6 +13,9 @@ import '../../data/models/tag.dart';
 import '../../data/models/filter.dart';
 import '../../data/models/scroll_position.dart';
 import '../../data/models/app_settings.dart';
+import '../../data/models/sync_account.dart';
+import '../../data/models/sync_queue_item.dart';
+import '../../data/models/remote_id_mapping.dart';
 
 part 'app_database.g.dart';
 
@@ -33,6 +36,9 @@ part 'app_database.g.dart';
   Filters,
   ScrollPositions,
   AppSettingsTable,
+  SyncAccounts,
+  SyncQueueItems,
+  RemoteIdMappings,
 ])
 class AppDatabase extends _$AppDatabase {
   static AppDatabase? _instance;
@@ -51,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,7 +65,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // Future migrations go here
+          if (from < 2) {
+            await m.createTable(syncAccounts);
+            await m.createTable(syncQueueItems);
+            await m.createTable(remoteIdMappings);
+          }
         },
       );
 
@@ -103,6 +113,9 @@ class AppDatabase extends _$AppDatabase {
       await delete(filters).go();
       await delete(scrollPositions).go();
       await delete(appSettingsTable).go();
+      await delete(syncAccounts).go();
+      await delete(syncQueueItems).go();
+      await delete(remoteIdMappings).go();
     });
   }
 

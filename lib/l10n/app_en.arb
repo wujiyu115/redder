@@ -289,5 +289,86 @@
       "name": { "type": "String" }
     }
   },
-  "refreshFeed": "Refresh"
+  "refreshFeed": "Refresh",
+
+  "accounts": "Accounts",
+  "syncAccounts": "Sync Accounts",
+  "syncAccountsDesc": "Manage sync service accounts",
+  "addAccount": "Add Account",
+  "noSyncAccounts": "No sync accounts configured",
+
+  "timelineSettingsTitle": "Timeline",
+  "sortOrderSection": "SORT ORDER",
+  "behaviorSection": "BEHAVIOR",
+  "contentExpirySection": "CONTENT EXPIRY",
+  "groupByFeed": "Group by Feed",
+  "groupByFeedDesc": "Group articles by their source feed",
+  "contentExpiryHint": "Articles older than the selected period will be hidden from timelines. They can still be found via search.",
+  "oneWeek": "1 Week",
+  "twoWeeks": "2 Weeks",
+  "oneMonth": "1 Month",
+  "threeMonths": "3 Months",
+  "sixMonths": "6 Months",
+  "failedToLoadSettings": "Failed to load settings",
+
+  "deleteAccount": "Delete Account",
+  "deleteAccountConfirm": "Are you sure you want to delete the {serviceName} account ({detail})? This action cannot be undone.",
+  "@deleteAccountConfirm": {
+    "placeholders": {
+      "serviceName": { "type": "String" },
+      "detail": { "type": "String" }
+    }
+  },
+  "active": "Active",
+  "lastSynced": "Last synced: {time}",
+  "@lastSynced": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "neverSynced": "Never synced",
+
+  "thirdPartyServices": "Third-Party Services",
+  "selfHostedServices": "Self-Hosted Services",
+  "feedbinDesc": "Email & password",
+  "feedlyDesc": "Sign in with your account",
+  "inoreaderDesc": "Sign in with your account",
+  "freshRssDesc": "Server URL, username & password",
+  "readerDesc": "Server URL, username & password",
+  "signInWith": "Sign in with {service}",
+  "@signInWith": {
+    "placeholders": {
+      "service": { "type": "String" }
+    }
+  },
+  "signInDesc": "Sign in to your {service} account to sync your subscriptions and reading progress.",
+  "@signInDesc": {
+    "placeholders": {
+      "service": { "type": "String" }
+    }
+  },
+  "serverUrl": "Server URL",
+  "serverUrlHint": "https://reader.example.com",
+  "username": "Username",
+  "email": "Email",
+  "password": "Password",
+  "signIn": "Sign In",
+  "fieldRequired": "This field is required",
+  "invalidServerUrl": "Please enter a valid URL starting with http:// or https://",
+  "loginFailed": "Login failed: {error}",
+  "@loginFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "oauthNotConfigured": "OAuth sign-in for {service} is not yet configured. Please use a service that supports username & password login.",
+  "@oauthNotConfigured": {
+    "placeholders": {
+      "service": { "type": "String" }
+    }
+  },
+  "comingSoon": "Coming soon",
+  "editAccount": "Edit Account",
+  "saveChanges": "Save Changes",
+  "accountUpdated": "Account updated successfully"
 }

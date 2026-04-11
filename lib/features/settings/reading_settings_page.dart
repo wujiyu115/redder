@@ -10,6 +10,8 @@ import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_slider.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/providers/settings_provider.dart';
+import '../../core/database/app_database.dart';
+import '../../data/models/app_settings_helpers.dart';
 
 /// Reading settings page.
 ///
@@ -44,7 +46,7 @@ class ReadingSettingsPage extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    dynamic settings,
+    AppSettingsTableData settings,
     ReederThemeData theme,
     AppLocalizations l10n,
   ) {
