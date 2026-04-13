@@ -13,8 +13,9 @@ class GoogleReaderApi {
   final String baseUrl;
   String? _authToken;
 
-  GoogleReaderApi({required this.baseUrl, Dio? dio})
-      : _dio = dio ?? DioClient.instance.dio;
+  GoogleReaderApi({required String baseUrl, Dio? dio})
+      : baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
+        _dio = dio ?? DioClient.instance.dio;
 
   // ─── Authentication ─────────────────────────────────────────────────
 
@@ -33,13 +34,46 @@ class GoogleReaderApi {
   /// Returns the Auth token string.
   Future<String> clientLogin(String email, String password) async {
     try {
-      final response = await _dio.post(
-        _apiUrl('/accounts/ClientLogin'),
-        data: 'Email=$email&Passwd=$password',
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-        ),
-      );
+      final loginData = 'Email=$email&Passwd=$password';
+      var url = _apiUrl('/accounts/ClientLogin');
+
+      // Manually follow redirects for POST requests because Dio's
+      // followRedirects does not re-POST on 301/302 (HTTP spec converts
+      // POST to GET). We retry up to 3 redirects.
+      Response<dynamic> response;
+      var redirectsRemaining = 3;
+
+      while (true) {
+        response = await _dio.post(
+          url,
+          data: loginData,
+          options: Options(
+            contentType: Headers.formUrlEncodedContentType,
+            followRedirects: false,
+            validateStatus: (status) =>
+                status != null && (status < 400 || status == 301 || status == 302 || status == 307 || status == 308),
+          ),
+        );
+
+        final statusCode = response.statusCode ?? 0;
+        if (statusCode == 301 || statusCode == 302 || statusCode == 307 || statusCode == 308) {
+          final location = response.headers.value('location');
+          if (location == null || redirectsRemaining <= 0) {
+            throw DioException(
+              requestOptions: response.requestOptions,
+              type: DioExceptionType.badResponse,
+              response: response,
+              error: 'Server error ($statusCode). Please try again later.',
+            );
+          }
+          // Resolve relative redirect URLs
+          url = Uri.parse(url).resolve(location).toString();
+          redirectsRemaining--;
+          continue;
+        }
+
+        break;
+      }
 
       final responseText = response.data as String;
       

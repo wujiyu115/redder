@@ -370,5 +370,8 @@
   "comingSoon": "Coming soon",
   "editAccount": "Edit Account",
   "saveChanges": "Save Changes",
-  "accountUpdated": "Account updated successfully"
+  "accountUpdated": "Account updated successfully",
+  "verifyingCredentials": "Verifying credentials…",
+  "loginSuccess": "Login successful! Refreshing subscriptions…",
+  "authenticationFailed": "Authentication failed. Please check your credentials."
 }

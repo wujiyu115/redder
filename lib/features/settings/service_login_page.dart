@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../../shared/widgets/reeder_text_field.dart';
 import '../../shared/widgets/reeder_button.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../data/services/sync/sync_models.dart';
+import '../source_list/source_list_controller.dart';
 
 /// Login page for a specific sync service.
 class ServiceLoginPage extends ConsumerStatefulWidget {
@@ -32,6 +34,7 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
   late final TextEditingController _passwordController;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _successMessage;
   String? _serverUrlError;
   String? _usernameError;
   String? _passwordError;
@@ -101,6 +104,7 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     try {
@@ -122,13 +126,36 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
         username: _usernameController.text.trim(),
       );
 
+      // Authentication succeeded — show success and refresh subscriptions
       if (mounted) {
-        context.pop();
+        setState(() {
+          _isLoading = false;
+          _successMessage = l10n.loginSuccess;
+        });
+
+        // Defer provider invalidation and navigation to after the current
+        // frame to avoid calling setState/markNeedsBuild during build.
+        SchedulerBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted) return;
+
+          // Trigger RSS subscription list refresh
+          ref.invalidate(sourceListControllerProvider);
+
+          // Delay so the user can clearly see the success message
+          await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+          if (mounted) {
+            context.pop();
+          }
+        });
       }
+      return; // Skip the finally block's _isLoading reset
     } catch (e) {
-      setState(() {
-        _errorMessage = l10n.loginFailed(e.toString());
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = l10n.loginFailed(e.toString());
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -210,12 +237,16 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
               _buildFieldError(_passwordError!, theme),
             const SizedBox(height: AppDimensions.spacingXL),
 
+            if (_successMessage != null) ...[
+              _buildSuccessMessage(_successMessage!, theme),
+              const SizedBox(height: AppDimensions.spacingM),
+            ],
             if (_errorMessage != null) ...[
               _buildFieldError(_errorMessage!, theme),
               const SizedBox(height: AppDimensions.spacingM),
             ],
             ReederButton.filled(
-              label: l10n.signIn,
+              label: _isLoading ? l10n.verifyingCredentials : l10n.signIn,
               onPressed: _isLoading ? null : () => _handleLogin(l10n),
               disabled: _isLoading,
             ),
@@ -242,12 +273,16 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
               _buildFieldError(_passwordError!, theme),
             const SizedBox(height: AppDimensions.spacingXL),
 
+            if (_successMessage != null) ...[
+              _buildSuccessMessage(_successMessage!, theme),
+              const SizedBox(height: AppDimensions.spacingM),
+            ],
             if (_errorMessage != null) ...[
               _buildFieldError(_errorMessage!, theme),
               const SizedBox(height: AppDimensions.spacingM),
             ],
             ReederButton.filled(
-              label: l10n.signIn,
+              label: _isLoading ? l10n.verifyingCredentials : l10n.signIn,
               onPressed: _isLoading ? null : () => _handleLogin(l10n),
               disabled: _isLoading,
             ),
@@ -279,6 +314,19 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
         error,
         style: theme.typography.caption.copyWith(
           color: theme.destructiveColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessMessage(String message, ReederThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppDimensions.spacingXS),
+      child: Text(
+        message,
+        style: theme.typography.caption.copyWith(
+          color: theme.accentColor,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

@@ -258,5 +258,8 @@
   "comingSoon": "即将推出",
   "editAccount": "编辑账户",
   "saveChanges": "保存更改",
-  "accountUpdated": "账户更新成功"
+  "accountUpdated": "账户更新成功",
+  "verifyingCredentials": "正在验证凭证…",
+  "loginSuccess": "登录成功！正在刷新订阅列表…",
+  "authenticationFailed": "验证失败，请检查您的凭证。"
 }
