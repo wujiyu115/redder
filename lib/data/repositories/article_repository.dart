@@ -6,6 +6,7 @@ import '../models/feed_item.dart';
 ///
 /// Provides a clean API for the presentation layer to interact with
 /// article data. Handles pagination, filtering, and read state management.
+/// All methods support optional [accountId] for multi-account data isolation.
 ///
 /// Uses Drift-generated [FeedItem] (immutable) for reads and
 /// [FeedItemsCompanion] for writes.
@@ -18,13 +19,13 @@ class ArticleRepository {
   // ─── Read Operations ──────────────────────────────────────
 
   /// Gets a single article by ID.
-  Future<FeedItem?> getArticleById(int id) {
-    return _localDs.getById(id);
+  Future<FeedItem?> getArticleById(int id, {int? accountId}) {
+    return _localDs.getById(id, accountId: accountId);
   }
 
   /// Gets a single article by URL.
-  Future<FeedItem?> getArticleByUrl(String url) {
-    return _localDs.getByUrl(url);
+  Future<FeedItem?> getArticleByUrl(String url, {int? accountId}) {
+    return _localDs.getByUrl(url, accountId: accountId);
   }
 
   /// Gets all articles (unified timeline) with pagination.
@@ -32,11 +33,13 @@ class ArticleRepository {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    int? accountId,
   }) {
     return _localDs.getAll(
       limit: limit,
       offset: offset,
       unreadOnly: unreadOnly,
+      accountId: accountId,
     );
   }
 
@@ -45,8 +48,9 @@ class ArticleRepository {
     int feedId, {
     int? limit,
     int? offset,
+    int? accountId,
   }) {
-    return _localDs.getByFeedId(feedId, limit: limit, offset: offset);
+    return _localDs.getByFeedId(feedId, limit: limit, offset: offset, accountId: accountId);
   }
 
   /// Gets articles by content type (for category timelines).
@@ -54,8 +58,9 @@ class ArticleRepository {
     ContentType type, {
     int? limit,
     int? offset,
+    int? accountId,
   }) {
-    return _localDs.getByContentType(type, limit: limit, offset: offset);
+    return _localDs.getByContentType(type, limit: limit, offset: offset, accountId: accountId);
   }
 
   /// Gets articles for multiple feeds (for folder timelines).
@@ -63,35 +68,51 @@ class ArticleRepository {
     List<int> feedIds, {
     int? limit,
     int? offset,
+    int? accountId,
   }) {
-    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset);
+    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset, accountId: accountId);
   }
 
-  /// Searches articles by title.
-  Future<List<FeedItem>> searchArticles(String query, {int limit = 50}) {
-    return _localDs.search(query, limit: limit);
+  /// Searches articles by title, optionally filtered by [accountId].
+  Future<List<FeedItem>> searchArticles(String query, {int limit = 50, int? accountId}) {
+    return _localDs.search(query, limit: limit, accountId: accountId);
   }
 
-  /// Gets the total article count.
-  Future<int> getArticleCount() {
-    return _localDs.count();
+  /// Gets the total article count, optionally filtered by [accountId].
+  Future<int> getArticleCount({int? accountId}) {
+    return _localDs.count(accountId: accountId);
   }
 
   /// Gets the unread count for a specific feed.
-  Future<int> getUnreadCount(int feedId) {
-    return _localDs.unreadCountForFeed(feedId);
+  Future<int> getUnreadCount(int feedId, {int? accountId}) {
+    return _localDs.unreadCountForFeed(feedId, accountId: accountId);
+  }
+
+  /// Gets all starred articles, optionally filtered by [accountId].
+  Future<List<FeedItem>> getStarredArticles({int? limit, int? offset, int? accountId}) {
+    return _localDs.getStarred(limit: limit, offset: offset, accountId: accountId);
+  }
+
+  /// Gets all unread article IDs, optionally filtered by [accountId].
+  Future<List<int>> getUnreadArticleIds({int? accountId}) {
+    return _localDs.getUnreadIds(accountId: accountId);
+  }
+
+  /// Gets all starred article IDs, optionally filtered by [accountId].
+  Future<List<int>> getStarredArticleIds({int? accountId}) {
+    return _localDs.getStarredIds(accountId: accountId);
   }
 
   // ─── Write Operations ─────────────────────────────────────
 
   /// Saves a single article.
-  Future<int> saveArticle(FeedItemsCompanion item) {
-    return _localDs.upsert(item);
+  Future<int> saveArticle(FeedItemsCompanion item, {int? accountId}) {
+    return _localDs.upsert(item, accountId: accountId);
   }
 
   /// Saves multiple articles (used during feed refresh).
-  Future<void> saveArticles(List<FeedItemsCompanion> items) {
-    return _localDs.upsertAll(items);
+  Future<void> saveArticles(List<FeedItemsCompanion> items, {int? accountId}) {
+    return _localDs.upsertAll(items, accountId: accountId);
   }
 
   /// Marks an article as read.
@@ -99,14 +120,39 @@ class ArticleRepository {
     return _localDs.markAsRead(id);
   }
 
-  /// Marks all articles for a feed as read.
-  Future<void> markAllAsReadForFeed(int feedId) {
-    return _localDs.markAllAsReadForFeed(feedId);
+  /// Marks an article as unread.
+  Future<void> markAsUnread(int id) {
+    return _localDs.markAsUnread(id);
   }
 
-  /// Marks all articles as read.
-  Future<void> markAllAsRead() {
-    return _localDs.markAllAsRead();
+  /// Marks multiple articles as read.
+  Future<void> markMultipleAsRead(List<int> ids) {
+    return _localDs.markMultipleAsRead(ids);
+  }
+
+  /// Marks multiple articles as unread.
+  Future<void> markMultipleAsUnread(List<int> ids) {
+    return _localDs.markMultipleAsUnread(ids);
+  }
+
+  /// Marks an article as starred.
+  Future<void> markAsStarred(int id) {
+    return _localDs.markAsStarred(id);
+  }
+
+  /// Marks an article as unstarred.
+  Future<void> markAsUnstarred(int id) {
+    return _localDs.markAsUnstarred(id);
+  }
+
+  /// Marks all articles for a feed as read, optionally scoped to [accountId].
+  Future<void> markAllAsReadForFeed(int feedId, {int? accountId}) {
+    return _localDs.markAllAsReadForFeed(feedId, accountId: accountId);
+  }
+
+  /// Marks all articles as read, optionally scoped to [accountId].
+  Future<void> markAllAsRead({int? accountId}) {
+    return _localDs.markAllAsRead(accountId: accountId);
   }
 
   /// Toggles the starred state of an article.
@@ -134,9 +180,9 @@ class ArticleRepository {
 
   // ─── Streams ──────────────────────────────────────────────
 
-  /// Watches all articles for changes.
-  Stream<List<FeedItem>> watchAllArticles() {
-    return _localDs.watchAll();
+  /// Watches all articles for changes, optionally filtered by [accountId].
+  Stream<List<FeedItem>> watchAllArticles({int? accountId}) {
+    return _localDs.watchAll(accountId: accountId);
   }
 
   /// Watches articles for a specific feed.
@@ -146,8 +192,8 @@ class ArticleRepository {
 
   // ─── Helpers ──────────────────────────────────────────────
 
-  /// Checks if an article URL already exists.
-  Future<bool> articleExists(String url) {
-    return _localDs.exists(url);
+  /// Checks if an article URL already exists, optionally scoped to [accountId].
+  Future<bool> articleExists(String url, {int? accountId}) {
+    return _localDs.exists(url, accountId: accountId);
   }
 }

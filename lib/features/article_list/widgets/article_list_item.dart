@@ -270,10 +270,10 @@ class _ArticleListItemState extends State<ArticleListItem>
         // Content type indicator
         if (widget.item.contentType == ContentType.audio) ...[
           const SizedBox(width: AppDimensions.spacingXS),
-          Text('🎙', style: const TextStyle(fontSize: 10)),
+          const Text('🎙', style: TextStyle(fontSize: 10)),
         ] else if (widget.item.contentType == ContentType.video) ...[
           const SizedBox(width: AppDimensions.spacingXS),
-          Text('🎬', style: const TextStyle(fontSize: 10)),
+          const Text('🎬', style: TextStyle(fontSize: 10)),
         ],
       ],
     );

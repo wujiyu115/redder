@@ -7,7 +7,11 @@ import '../../../core/database/app_database.dart';
 /// Manages a singleton settings record (id = 0).
 /// Provides read/write access to all application settings.
 class SettingsLocalDataSource {
-  AppDatabase get _db => AppDatabase.instance;
+  final AppDatabase? _dbOverride;
+
+  SettingsLocalDataSource({AppDatabase? db}) : _dbOverride = db;
+
+  AppDatabase get _db => _dbOverride ?? AppDatabase.instance;
 
   /// Gets the current settings, creating defaults if none exist.
   Future<AppSettingsTableData> getSettings() async {

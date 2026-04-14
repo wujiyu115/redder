@@ -92,8 +92,8 @@ class SyncLocalDataSource {
   Future<void> incrementRetryCount(int queueItemId) async {
     await (_db.update(_db.syncQueueItems)
           ..where((t) => t.id.equals(queueItemId)))
-        .write(SyncQueueItemsCompanion(
-      retryCount: const Value.absent(),
+        .write(const SyncQueueItemsCompanion(
+      retryCount: Value.absent(),
     ));
   }
 
@@ -147,5 +147,53 @@ class SyncLocalDataSource {
           ..where((t) => t.id.equals(mappingId)))
         .go();
     return rows > 0;
+  }
+
+  // ==================== Account Data Cleanup ====================
+
+  /// Clears all data associated with a specific account.
+  ///
+  /// Deletes feeds, feedItems, folders, tags, taggedItems,
+  /// scrollPositions, filters, syncQueueItems, and remoteIdMappings
+  /// for the given [accountId].
+  Future<void> clearAccountData(int accountId) async {
+    await _db.transaction(() async {
+      // Delete feed items first (depends on feeds)
+      await (_db.delete(_db.feedItems)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete tagged items (depends on tags)
+      await (_db.delete(_db.taggedItems)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete feeds
+      await (_db.delete(_db.feeds)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete folders
+      await (_db.delete(_db.folders)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete tags
+      await (_db.delete(_db.tags)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete filters
+      await (_db.delete(_db.filters)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete scroll positions
+      await (_db.delete(_db.scrollPositions)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete sync queue items
+      await (_db.delete(_db.syncQueueItems)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+      // Delete remote ID mappings
+      await (_db.delete(_db.remoteIdMappings)
+            ..where((t) => t.accountId.equals(accountId)))
+          .go();
+    });
   }
 }

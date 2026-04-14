@@ -8,15 +8,27 @@ import '../models/tag.dart';
 /// Manages built-in tags (Later, Bookmarks, Favorites) and
 /// user-created custom tags. Handles tag-item associations.
 class TagRepository {
-  AppDatabase get _db => AppDatabase.instance;
+  final AppDatabase? _dbOverride;
+
+  TagRepository({AppDatabase? db}) : _dbOverride = db;
+
+  AppDatabase get _db => _dbOverride ?? AppDatabase.instance;
 
   // ─── Tag CRUD ─────────────────────────────────────────────
 
   /// Initializes built-in tags if they don't exist.
   ///
-  /// Should be called once at app startup.
-  Future<void> initializeBuiltInTags() async {
-    final existing = await _db.select(_db.tags).get();
+  /// When [accountId] is provided, initializes built-in tags for that account.
+  /// Should be called once at app startup and when a new account is added.
+  Future<void> initializeBuiltInTags({int? accountId}) async {
+    final query = _db.select(_db.tags)
+      ..where((t) => t.isBuiltIn.equals(true));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    } else {
+      query.where((t) => t.accountId.isNull());
+    }
+    final existing = await query.get();
     final existingNames = existing.map((t) => t.name).toSet();
 
     final builtInTags = [
@@ -37,54 +49,70 @@ class TagRepository {
               isBuiltIn: const Value(true),
               sortOrder: Value(order),
               createdAt: now,
-            ),
+            ).copyWith(accountId: Value(accountId)),
           );
         }
       }
     });
   }
 
-  /// Gets all tags.
-  Future<List<Tag>> getAllTags() {
-    return (_db.select(_db.tags)
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .get();
+  /// Gets all tags, optionally filtered by [accountId].
+  Future<List<Tag>> getAllTags({int? accountId}) {
+    final query = _db.select(_db.tags)
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.get();
   }
 
-  /// Gets only built-in tags.
-  Future<List<Tag>> getBuiltInTags() {
-    return (_db.select(_db.tags)
-          ..where((t) => t.isBuiltIn.equals(true))
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .get();
+  /// Gets only built-in tags, optionally filtered by [accountId].
+  Future<List<Tag>> getBuiltInTags({int? accountId}) {
+    final query = _db.select(_db.tags)
+      ..where((t) => t.isBuiltIn.equals(true))
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.get();
   }
 
-  /// Gets only custom (user-created) tags.
-  Future<List<Tag>> getCustomTags() {
-    return (_db.select(_db.tags)
-          ..where((t) => t.isBuiltIn.equals(false))
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .get();
+  /// Gets only custom (user-created) tags, optionally filtered by [accountId].
+  Future<List<Tag>> getCustomTags({int? accountId}) {
+    final query = _db.select(_db.tags)
+      ..where((t) => t.isBuiltIn.equals(false))
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.get();
   }
 
   /// Gets a tag by its ID.
-  Future<Tag?> getTagById(int id) {
-    return (_db.select(_db.tags)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+  Future<Tag?> getTagById(int id, {int? accountId}) {
+    final query = _db.select(_db.tags)..where((t) => t.id.equals(id));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.getSingleOrNull();
   }
 
-  /// Gets a tag by its name.
-  Future<Tag?> getTagByName(String name) {
-    return (_db.select(_db.tags)..where((t) => t.name.equals(name)))
-        .getSingleOrNull();
+  /// Gets a tag by its name, optionally scoped to [accountId].
+  Future<Tag?> getTagByName(String name, {int? accountId}) {
+    final query = _db.select(_db.tags)..where((t) => t.name.equals(name));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.getSingleOrNull();
   }
 
-  /// Creates a new custom tag.
+  /// Creates a new custom tag, optionally associated with [accountId].
   Future<Tag> createTag({
     required String name,
     String? iconName,
+    int? accountId,
   }) async {
-    final allTags = await getAllTags();
+    final allTags = await getAllTags(accountId: accountId);
     final sortOrder = allTags.isEmpty ? 0 : allTags.last.sortOrder + 1;
 
     final id = await _db.into(_db.tags).insert(
@@ -94,7 +122,7 @@ class TagRepository {
         isBuiltIn: const Value(false),
         sortOrder: Value(sortOrder),
         createdAt: DateTime.now(),
-      ),
+      ).copyWith(accountId: Value(accountId)),
     );
 
     return (_db.select(_db.tags)..where((t) => t.id.equals(id))).getSingle();
@@ -135,8 +163,8 @@ class TagRepository {
 
   // ─── Tag-Item Associations ────────────────────────────────
 
-  /// Tags an item with a specific tag.
-  Future<void> tagItem(int tagId, int itemId) async {
+  /// Tags an item with a specific tag, optionally associated with [accountId].
+  Future<void> tagItem(int tagId, int itemId, {int? accountId}) async {
     // Check if already tagged
     final existing = await (_db.select(_db.taggedItems)
           ..where((t) => t.tagId.equals(tagId) & t.itemId.equals(itemId)))
@@ -150,7 +178,7 @@ class TagRepository {
           tagId: tagId,
           itemId: itemId,
           taggedAt: DateTime.now(),
-        ),
+        ).copyWith(accountId: Value(accountId)),
       );
 
       // Update tag item count
@@ -178,15 +206,13 @@ class TagRepository {
       // Update tag item count
       final tag = await getTagById(tagId);
       if (tag != null) {
-        await (_db.update(_db.tags)..where((t) => t.id.equals(tagId))).write(
-          TagsCompanion(
-            itemCount: Value((tag.itemCount - 1).clamp(0, tag.itemCount)),
-          ),
-        );
+        await (_db.update(_db.tags)..where((t) => t.id.equals(tagId)))
+            .write(TagsCompanion(
+          itemCount: Value((tag.itemCount - 1).clamp(0, tag.itemCount)),
+        ));
       }
     });
   }
-
   /// Toggles a tag on an item (add if not tagged, remove if tagged).
   Future<bool> toggleTag(int tagId, int itemId) async {
     final isTagged = await isItemTagged(tagId, itemId);
@@ -207,28 +233,37 @@ class TagRepository {
     return existing != null;
   }
 
-  /// Gets all item IDs with a specific tag.
-  Future<List<int>> getItemIdsByTag(int tagId) async {
-    final taggedItems = await (_db.select(_db.taggedItems)
-          ..where((t) => t.tagId.equals(tagId)))
-        .get();
-    return taggedItems.map((ti) => ti.itemId).toList();
+  /// Gets all item IDs with a specific tag, optionally filtered by [accountId].
+  Future<List<int>> getItemIdsByTag(int tagId, {int? accountId}) async {
+    final query = _db.select(_db.taggedItems)
+      ..where((t) => t.tagId.equals(tagId));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    final items = await query.get();
+    return items.map((ti) => ti.itemId).toList();
   }
 
-  /// Gets all tag IDs for a specific item.
-  Future<List<int>> getTagIdsForItem(int itemId) async {
-    final taggedItems = await (_db.select(_db.taggedItems)
-          ..where((t) => t.itemId.equals(itemId)))
-        .get();
-    return taggedItems.map((ti) => ti.tagId).toList();
+  /// Gets all tag IDs for a specific item, optionally filtered by [accountId].
+  Future<List<int>> getTagIdsForItem(int itemId, {int? accountId}) async {
+    final query = _db.select(_db.taggedItems)
+      ..where((t) => t.itemId.equals(itemId));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    final items = await query.get();
+    return items.map((ti) => ti.tagId).toList();
   }
 
-  /// Gets the item count for a tag.
-  Future<int> getTagItemCount(int tagId) async {
+  /// Gets the item count for a tag, optionally filtered by [accountId].
+  Future<int> getTagItemCount(int tagId, {int? accountId}) async {
     final countExp = _db.taggedItems.id.count();
     final query = _db.selectOnly(_db.taggedItems)
       ..addColumns([countExp])
       ..where(_db.taggedItems.tagId.equals(tagId));
+    if (accountId != null) {
+      query.where(_db.taggedItems.accountId.equals(accountId));
+    }
     final result = await query.getSingle();
     return result.read(countExp)!;
   }
@@ -257,21 +292,24 @@ class TagRepository {
     });
   }
 
-  /// Watches all tags for changes.
-  Stream<List<Tag>> watchAllTags() {
-    return (_db.select(_db.tags)
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .watch();
+  /// Watches all tags for changes, optionally filtered by [accountId].
+  Stream<List<Tag>> watchAllTags({int? accountId}) {
+    final query = _db.select(_db.tags)
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.watch();
   }
 
   // ─── Built-in Tag Helpers ─────────────────────────────────
 
-  /// Gets the "Later" built-in tag.
-  Future<Tag?> getLaterTag() => getTagByName(TagNames.laterName);
+  /// Gets the "Later" built-in tag, optionally scoped to [accountId].
+  Future<Tag?> getLaterTag({int? accountId}) => getTagByName(TagNames.laterName, accountId: accountId);
 
-  /// Gets the "Bookmarks" built-in tag.
-  Future<Tag?> getBookmarksTag() => getTagByName(TagNames.bookmarksName);
+  /// Gets the "Bookmarks" built-in tag, optionally scoped to [accountId].
+  Future<Tag?> getBookmarksTag({int? accountId}) => getTagByName(TagNames.bookmarksName, accountId: accountId);
 
-  /// Gets the "Favorites" built-in tag.
-  Future<Tag?> getFavoritesTag() => getTagByName(TagNames.favoritesName);
+  /// Gets the "Favorites" built-in tag, optionally scoped to [accountId].
+  Future<Tag?> getFavoritesTag({int? accountId}) => getTagByName(TagNames.favoritesName, accountId: accountId);
 }

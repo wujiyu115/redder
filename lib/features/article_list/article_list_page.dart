@@ -13,6 +13,7 @@ import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/providers/settings_provider.dart';
+import '../../shared/providers/sync_provider.dart';
 import '../../data/services/scroll_position_service.dart';
 import '../source_list/source_list_controller.dart';
 import 'article_list_controller.dart';
@@ -47,19 +48,22 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   bool _isRefreshing = false;
   bool _hasRestoredPosition = false;
 
+  /// Cached reference to avoid using ref after dispose.
+  late final ScrollPositionService _scrollService;
+
   @override
   void initState() {
     super.initState();
+    _scrollService = ref.read(scrollPositionServiceProvider);
     _scrollController.addListener(_onScroll);
     _restoreScrollPosition();
   }
 
   @override
   void dispose() {
-    // Save position immediately on dispose
-    final scrollService = ref.read(scrollPositionServiceProvider);
+    // Save position immediately on dispose (using cached reference)
     if (_scrollController.hasClients) {
-      scrollService.savePositionImmediate(
+      _scrollService.savePositionImmediate(
         timelineId: widget.timelineId,
         scrollOffset: _scrollController.offset,
       );
@@ -212,6 +216,13 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
                 }
               },
             ),
+            SwipeAction(
+              id: 'toggle_star',
+              label: item.isStarred ? l10n.unstar : l10n.star,
+              icon: item.isStarred ? '★' : '☆',
+              color: const Color(0xFFFFCC00),
+              onTriggered: () => _toggleStarred(item.id, item.isStarred),
+            ),
           ],
           rightSwipeActions: [
             SwipeAction(
@@ -220,6 +231,13 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               icon: '🕐',
               color: const Color(0xFFFF9500),
               onTriggered: () => _toggleLater(item.id),
+            ),
+            SwipeAction(
+              id: 'toggle_read',
+              label: item.isRead ? l10n.markUnread : l10n.markRead,
+              icon: item.isRead ? '●' : '○',
+              color: const Color(0xFF007AFF),
+              onTriggered: () => _toggleReadState(item.id, item.isRead),
             ),
           ],
           child: listItemWidget,
@@ -235,6 +253,30 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     if (laterTag != null) {
       await tagRepo.toggleTag(laterTag.id, itemId);
     }
+  }
+
+  /// Toggles the read/unread state of an article (with remote sync).
+  Future<void> _toggleReadState(int itemId, bool isCurrentlyRead) async {
+    final syncBridge = ref.read(syncBridgeProvider);
+    if (isCurrentlyRead) {
+      await syncBridge.markAsUnreadWithSync([itemId]);
+    } else {
+      await syncBridge.markAsReadWithSync([itemId]);
+    }
+    // Reload list to reflect changes
+    ref.read(articleListControllerProvider(widget.timelineId).notifier).refresh();
+  }
+
+  /// Toggles the starred state of an article (with remote sync).
+  Future<void> _toggleStarred(int itemId, bool isCurrentlyStarred) async {
+    final syncBridge = ref.read(syncBridgeProvider);
+    if (isCurrentlyStarred) {
+      await syncBridge.markAsUnstarredWithSync([itemId]);
+    } else {
+      await syncBridge.markAsStarredWithSync([itemId]);
+    }
+    // Reload list to reflect changes
+    ref.read(articleListControllerProvider(widget.timelineId).notifier).refresh();
   }
 
   String _resolveTitle(String timelineId) {

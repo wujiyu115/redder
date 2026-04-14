@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/app_logger.dart';
 
 /// Google Reader API client implementation.
 ///
@@ -12,6 +13,7 @@ class GoogleReaderApi {
   final Dio _dio;
   final String baseUrl;
   String? _authToken;
+  static const _log = AppLogger('GReaderAPI');
 
   GoogleReaderApi({required String baseUrl, Dio? dio})
       : baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
@@ -34,6 +36,7 @@ class GoogleReaderApi {
   /// Returns the Auth token string.
   Future<String> clientLogin(String email, String password) async {
     try {
+      _log.info('clientLogin: email=$email');
       final loginData = 'Email=$email&Passwd=$password';
       var url = _apiUrl('/accounts/ClientLogin');
 
@@ -83,6 +86,7 @@ class GoogleReaderApi {
         if (line.startsWith('Auth=')) {
           final token = line.substring(5).trim();
           _authToken = token;
+          _log.info('clientLogin: success');
           return token;
         }
       }
@@ -93,6 +97,7 @@ class GoogleReaderApi {
         error: 'Auth token not found in response',
       );
     } on DioException catch (e) {
+      _log.error('clientLogin: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -107,6 +112,7 @@ class GoogleReaderApi {
   /// GET /reader/api/0/subscription/list?output=json
   Future<List<GReaderSubscription>> getSubscriptionList() async {
     try {
+      _log.info('getSubscriptionList: start');
       final response = await _dio.get(
         _apiUrl('/reader/api/0/subscription/list'),
         queryParameters: {'output': 'json'},
@@ -115,11 +121,16 @@ class GoogleReaderApi {
 
       final json = response.data as Map<String, dynamic>;
       final subscriptions = json['subscriptions'] as List<dynamic>? ?? [];
+      _log.info('getSubscriptionList: found ${subscriptions.length} subscriptions');
       
-      return subscriptions.map((sub) {
-        return GReaderSubscription.fromJson(sub as Map<String, dynamic>);
+      final result = subscriptions.map((sub) {
+        final parsed = GReaderSubscription.fromJson(sub as Map<String, dynamic>);
+        _log.info('getSubscriptionList: [${parsed.title}] id=${parsed.id}, url=${parsed.url}, htmlUrl=${parsed.htmlUrl}');
+        return parsed;
       }).toList();
+      return result;
     } on DioException catch (e) {
+      _log.error('getSubscriptionList: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -137,6 +148,7 @@ class GoogleReaderApi {
     String? label,
   }) async {
     try {
+      _log.info('addSubscription: feedUrl=$feedUrl');
       final formData = <String, dynamic>{
         's': feedUrl.startsWith('feed/') ? feedUrl : 'feed/$feedUrl',
         'ac': 'subscribe',
@@ -156,6 +168,7 @@ class GoogleReaderApi {
         options: _authOptions(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (e) {
+      _log.error('addSubscription: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -169,6 +182,7 @@ class GoogleReaderApi {
   /// action=unsubscribe
   Future<void> removeSubscription(String streamId) async {
     try {
+      _log.info('removeSubscription: streamId=$streamId');
       await _dio.post(
         _apiUrl('/reader/api/0/subscription/edit'),
         data: {
@@ -178,6 +192,7 @@ class GoogleReaderApi {
         options: _authOptions(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (e) {
+      _log.error('removeSubscription: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -191,6 +206,7 @@ class GoogleReaderApi {
   /// action=edit, title
   Future<void> renameSubscription(String streamId, String newTitle) async {
     try {
+      _log.info('renameSubscription: streamId=$streamId, newTitle=$newTitle');
       await _dio.post(
         _apiUrl('/reader/api/0/subscription/edit'),
         data: {
@@ -201,6 +217,7 @@ class GoogleReaderApi {
         options: _authOptions(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (e) {
+      _log.error('renameSubscription: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -215,6 +232,7 @@ class GoogleReaderApi {
   /// GET /reader/api/0/tag/list?output=json
   Future<List<GReaderTag>> getTagList() async {
     try {
+      _log.info('getTagList: start');
       final response = await _dio.get(
         _apiUrl('/reader/api/0/tag/list'),
         queryParameters: {'output': 'json'},
@@ -223,11 +241,13 @@ class GoogleReaderApi {
 
       final json = response.data as Map<String, dynamic>;
       final tags = json['tags'] as List<dynamic>? ?? [];
+      _log.info('getTagList: found ${tags.length} tags');
       
       return tags.map((tag) {
         return GReaderTag.fromJson(tag as Map<String, dynamic>);
       }).toList();
     } on DioException catch (e) {
+      _log.error('getTagList: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -289,6 +309,7 @@ class GoogleReaderApi {
     String? excludeTarget,
   }) async {
     try {
+      _log.info('getStreamContents: streamId=$streamId, count=$count, continuation=$continuation, sinceTimestamp=$sinceTimestamp');
       final queryParameters = <String, dynamic>{
         'output': 'json',
       };
@@ -319,6 +340,7 @@ class GoogleReaderApi {
         response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
+      _log.error('getStreamContents: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -335,6 +357,7 @@ class GoogleReaderApi {
     String? continuation,
   }) async {
     try {
+      _log.info('getStreamItemIds: streamId=$streamId');
       final queryParameters = <String, dynamic>{
         'output': 'json',
       };
@@ -363,6 +386,7 @@ class GoogleReaderApi {
         return ref['id'] as String;
       }).toList();
     } on DioException catch (e) {
+      _log.error('getStreamItemIds: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -375,6 +399,7 @@ class GoogleReaderApi {
   /// GET /reader/api/0/unread-count?output=json
   Future<Map<String, int>> getUnreadCounts() async {
     try {
+      _log.info('getUnreadCounts: start');
       final response = await _dio.get(
         _apiUrl('/reader/api/0/unread-count'),
         queryParameters: {'output': 'json'},
@@ -391,9 +416,11 @@ class GoogleReaderApi {
         final countValue = countMap['count'] as int;
         unreadCounts[id] = countValue;
       }
+      _log.info('getUnreadCounts: found ${unreadCounts.length} counts');
 
       return unreadCounts;
     } on DioException catch (e) {
+      _log.error('getUnreadCounts: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -410,6 +437,7 @@ class GoogleReaderApi {
   /// Excludes: user/-/state/com.google/read
   Future<List<String>> getUnreadItemIds({int? count}) async {
     try {
+      _log.info('getUnreadItemIds: start');
       final queryParameters = <String, dynamic>{
         'output': 'json',
         's': 'user/-/state/com.google/reading-list',
@@ -433,6 +461,7 @@ class GoogleReaderApi {
         return ref['id'] as String;
       }).toList();
     } on DioException catch (e) {
+      _log.error('getUnreadItemIds: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -446,6 +475,7 @@ class GoogleReaderApi {
   /// Uses stream: user/-/state/com.google/starred
   Future<List<String>> getStarredItemIds({int? count}) async {
     try {
+      _log.info('getStarredItemIds: start');
       final queryParameters = <String, dynamic>{
         'output': 'json',
         's': 'user/-/state/com.google/starred',
@@ -468,6 +498,7 @@ class GoogleReaderApi {
         return ref['id'] as String;
       }).toList();
     } on DioException catch (e) {
+      _log.error('getStarredItemIds: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -487,6 +518,7 @@ class GoogleReaderApi {
     String? removeTag,
   }) async {
     try {
+      _log.info('editTag: itemIds=${itemIds.length}, addTag=$addTag, removeTag=$removeTag');
       final data = <String, dynamic>{
         'i': itemIds.join(','),
       };
@@ -505,6 +537,7 @@ class GoogleReaderApi {
         options: _authOptions(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (e) {
+      _log.error('editTag: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -537,6 +570,7 @@ class GoogleReaderApi {
   /// POST /reader/api/0/mark-all-as-read
   Future<void> markAllAsRead(String streamId, {int? timestampUsec}) async {
     try {
+      _log.info('markAllAsRead: streamId=$streamId');
       final data = <String, dynamic>{
         's': streamId,
         'ts': timestampUsec?.toString() ?? '0',
@@ -548,6 +582,7 @@ class GoogleReaderApi {
         options: _authOptions(contentType: Headers.formUrlEncodedContentType),
       );
     } on DioException catch (e) {
+      _log.error('markAllAsRead: failed', error: e);
       throw DioException(
         requestOptions: e.requestOptions,
         type: e.type,
@@ -581,8 +616,9 @@ class GoogleReaderApi {
 
 /// Google Reader API subscription model.
 class GReaderSubscription {
-  final String id; // stream ID like 'feed/https://...'
+  final String id; // stream ID, e.g. 'feed/https://...' or 'feed/48'
   final String title;
+  final String? url; // actual feed URL from API response
   final String? htmlUrl;
   final String? iconUrl;
   final String? firstItemMsec;
@@ -591,6 +627,7 @@ class GReaderSubscription {
   GReaderSubscription({
     required this.id,
     required this.title,
+    this.url,
     this.htmlUrl,
     this.iconUrl,
     this.firstItemMsec,
@@ -609,6 +646,7 @@ class GReaderSubscription {
     return GReaderSubscription(
       id: json['id'] as String,
       title: json['title'] as String,
+      url: json['url'] as String?,
       htmlUrl: json['htmlUrl'] as String?,
       iconUrl: json['iconUrl'] as String?,
       firstItemMsec: json['firstitemmsec'] as String?,

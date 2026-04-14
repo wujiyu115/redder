@@ -144,7 +144,7 @@ class OAuthHandler {
   OAuthTokenResult _parseTokenResponse(Map<String, dynamic> data) {
     final accessToken = data['access_token'] as String?;
     if (accessToken == null) {
-      throw OAuthException('No access_token in response');
+      throw const OAuthException('No access_token in response');
     }
 
     final expiresIn = data['expires_in'] as int?;

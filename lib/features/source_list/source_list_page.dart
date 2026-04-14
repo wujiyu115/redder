@@ -8,6 +8,9 @@ import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/feed.dart';
 import '../../data/models/tag.dart';
+import '../../data/services/sync/sync_models.dart';
+import '../../shared/providers/account_provider.dart';
+import '../../shared/providers/sync_provider.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_button.dart';
@@ -39,11 +42,35 @@ class SourceListPage extends ConsumerWidget {
     final sourceListState = ref.watch(sourceListControllerProvider);
     final l10n = AppLocalizations.of(context)!;
 
+    // Watch active account info for display
+    final activeAccountAsync = ref.watch(activeAccountInfoProvider);
+    final syncStatus = ref.watch(syncStatusProvider);
+
     return ReederScaffold(
       navBar: ReederNavBar(
-        title: l10n.appTitle,
+        title: activeAccountAsync.when(
+          data: (account) => account != null
+              ? '${account.serviceType.displayName} · ${account.username ?? l10n.appTitle}'
+              : l10n.appTitle,
+          loading: () => l10n.appTitle,
+          error: (_, __) => l10n.appTitle,
+        ),
         leading: const SizedBox.shrink(),
         actions: [
+          // Sync button
+          ReederButton.icon(
+            icon: syncStatus.when(
+              data: (status) => Text(
+                status == SyncStatus.syncing ? '⟳' : '↻',
+                style: const TextStyle(fontSize: 20),
+              ),
+              loading: () => const Text('↻', style: TextStyle(fontSize: 20)),
+              error: (_, __) => const Text('↻', style: TextStyle(fontSize: 20)),
+            ),
+            onPressed: () {
+              ref.read(sourceListControllerProvider.notifier).triggerSync();
+            },
+          ),
           ReederButton.icon(
             icon: const Text('+', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w300)),
             onPressed: () => _showAddFeedDialog(context),
@@ -386,6 +413,10 @@ class SourceListPage extends ConsumerWidget {
           label: l10n.feedSettings,
         ),
         ReederPopupMenuItem(
+          id: 'rename',
+          label: l10n.rename,
+        ),
+        ReederPopupMenuItem(
           id: 'move',
           label: l10n.moveTo,
           showSeparatorAfter: true,
@@ -407,6 +438,9 @@ class SourceListPage extends ConsumerWidget {
     switch (selected) {
       case 'settings':
         _showFeedSettingsDialog(context, ref, feed, theme);
+        break;
+      case 'rename':
+        _showRenameFeedDialog(context, ref, feed, theme);
         break;
       case 'move':
         _showMoveFeedDialog(context, ref, feed, folders, theme);
@@ -495,6 +529,53 @@ class SourceListPage extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ─── Rename Feed Dialog ───────────────────────────────────
+
+  void _showRenameFeedDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Feed feed,
+    ReederThemeData theme,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: feed.title);
+
+    ReederDialog.show(
+      context: context,
+      builder: (ctx) => ReederDialog(
+        title: l10n.rename,
+        content: ReederTextField(
+          controller: controller,
+          placeholder: l10n.rename,
+          autofocus: true,
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              ref
+                  .read(sourceListControllerProvider.notifier)
+                  .renameFeed(feed.id, value.trim());
+              Navigator.of(ctx).pop();
+            }
+          },
+        ),
+        actions: [
+          ReederDialogAction(label: l10n.cancel),
+          ReederDialogAction(
+            label: l10n.save,
+            isDefault: true,
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref
+                    .read(sourceListControllerProvider.notifier)
+                    .renameFeed(feed.id, name);
+              }
+            },
+          ),
+        ],
       ),
     );
   }

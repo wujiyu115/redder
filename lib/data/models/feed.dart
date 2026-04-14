@@ -46,6 +46,7 @@ class Feeds extends Table {
   IntColumn get defaultViewer => intEnum<ViewerType>().withDefault(const Constant(0))();
   BoolColumn get autoReaderView => boolean().withDefault(const Constant(false))();
   BoolColumn get notificationsEnabled => boolean().withDefault(const Constant(false))();
+  IntColumn get accountId => integer().nullable()();
   IntColumn get unreadCount => integer().withDefault(const Constant(0))();
   IntColumn get totalCount => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();

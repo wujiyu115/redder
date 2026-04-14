@@ -11,7 +11,8 @@ import 'package:drift/drift.dart';
 /// with `app_database.dart`.
 class Filters extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().unique()();
+  TextColumn get name => text()();
+  IntColumn get accountId => integer().nullable()();
   /// JSON-encoded List<String> of include keywords.
   TextColumn get includeKeywords => text().withDefault(const Constant('[]'))();
   /// JSON-encoded List<String> of exclude keywords.

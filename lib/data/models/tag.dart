@@ -6,8 +6,9 @@ import 'package:drift/drift.dart';
 /// user-created custom tags.
 class Tags extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().unique()();
+  TextColumn get name => text()();
   TextColumn get iconName => text().nullable()();
+  IntColumn get accountId => integer().nullable()();
   BoolColumn get isBuiltIn => boolean().withDefault(const Constant(false))();
   BoolColumn get isShared => boolean().withDefault(const Constant(false))();
   TextColumn get sharedFeedUrl => text().nullable()();
@@ -28,5 +29,6 @@ class TaggedItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get tagId => integer()();
   IntColumn get itemId => integer()();
+  IntColumn get accountId => integer().nullable()();
   DateTimeColumn get taggedAt => dateTime()();
 }

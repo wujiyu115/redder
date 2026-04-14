@@ -2,12 +2,17 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/opml_parser.dart';
 import '../../data/models/feed.dart';
 import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/services/feed_refresh_service.dart';
+import '../../data/services/sync/sync_bridge.dart';
+import '../../data/services/sync/sync_models.dart';
+import '../../shared/providers/account_provider.dart';
+import '../../shared/providers/sync_provider.dart';
 
 /// Provider for the source list controller.
 final sourceListControllerProvider =
@@ -40,49 +45,64 @@ final feedRefreshServiceProvider = Provider<FeedRefreshService>((ref) {
 /// Manages the state of feeds, folders, tags, and their counts.
 /// Handles feed refresh, subscription management, folder operations,
 /// OPML import/export, and auto-grouping.
+/// All operations go through [SyncBridge] for local+remote dual sync.
 class SourceListController
     extends StateNotifier<AsyncValue<SourceListState>> {
+  static const _log = AppLogger('SourceList');
+
   final Ref _ref;
   late final FeedRepository _feedRepo;
   late final ArticleRepository _articleRepo;
   late final TagRepository _tagRepo;
   late final FeedRefreshService _refreshService;
+  late final SyncBridge _syncBridge;
 
   SourceListController(this._ref) : super(const AsyncValue.loading()) {
     _feedRepo = _ref.read(feedRepositoryProvider);
     _articleRepo = _ref.read(articleRepositoryProvider);
     _tagRepo = _ref.read(tagRepositoryProvider);
     _refreshService = _ref.read(feedRefreshServiceProvider);
+    _syncBridge = _ref.read(syncBridgeProvider);
     _init();
   }
 
   AppDatabase get _db => AppDatabase.instance;
 
+  /// Gets the current active account ID.
+  int? get _activeAccountId => _ref.read(accountSwitchProvider);
+
   Future<void> _init() async {
     try {
-      // Initialize built-in tags
-      await _tagRepo.initializeBuiltInTags();
+      // Initialize built-in tags for the current account
+      await _tagRepo.initializeBuiltInTags(accountId: _activeAccountId);
       await _loadData();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
-  /// Loads all data for the source list.
+  /// Loads all data for the source list, filtered by the active account.
   Future<void> _loadData() async {
     try {
-      final feeds = await _feedRepo.getAllFeeds();
-      final tags = await _tagRepo.getAllTags();
+      final accountId = _activeAccountId;
+      final feeds = await _feedRepo.getAllFeeds(accountId: accountId);
+      final tags = await _tagRepo.getAllTags(accountId: accountId);
 
-      // Load folders from Drift
-      final folders = await (_db.select(_db.folders)
-            ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-          .get();
+      // Load folders from Drift, filtered by accountId
+      final folderQuery = _db.select(_db.folders)
+        ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+      if (accountId != null) {
+        folderQuery.where((t) => t.accountId.equals(accountId));
+      }
+      final folders = await folderQuery.get();
 
-      // Load filters from Drift
-      final filters = await (_db.select(_db.filters)
-            ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-          .get();
+      // Load filters from Drift, filtered by accountId
+      final filterQuery = _db.select(_db.filters)
+        ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+      if (accountId != null) {
+        filterQuery.where((t) => t.accountId.equals(accountId));
+      }
+      final filters = await filterQuery.get();
 
       // Group feeds by folder
       final feedsByFolder = <int, List<Feed>>{};
@@ -120,10 +140,17 @@ class SourceListController
     }
   }
 
+  /// Reloads all data from the local database.
+  ///
+  /// Called when external changes (e.g. sync account login) modify the
+  /// database and the UI needs to reflect the new state.
+  Future<void> reloadData() => _loadData();
+
   // ─── Feed Operations ──────────────────────────────────────
 
   /// Refreshes all feeds.
   Future<RefreshResult> refreshAll() async {
+    _log.info('refreshAll: starting');
     final result = await _refreshService.refreshAll();
     await _loadData();
     return result;
@@ -131,30 +158,39 @@ class SourceListController
 
   /// Refreshes a single feed.
   Future<RefreshResult> refreshFeed(int feedId) async {
+    _log.info('refreshFeed: feedId=$feedId');
     final result = await _refreshService.refreshFeed(feedId);
     await _loadData();
     return result;
   }
 
-  /// Adds a new feed subscription.
+  /// Adds a new feed subscription (with remote sync).
   Future<Feed> addFeed(String feedUrl) async {
-    final feed = await _feedRepo.addFeed(feedUrl);
+    _log.info('addFeed: feedUrl=$feedUrl');
+    final feed = await _syncBridge.addFeedWithSync(feedUrl, accountId: _activeAccountId);
     await _loadData();
     return feed;
   }
 
-  /// Deletes a feed subscription and all its articles.
+  /// Deletes a feed subscription and all its articles (with remote sync).
   Future<void> deleteFeed(int feedId) async {
+    _log.info('deleteFeed: feedId=$feedId');
     // Delete all articles for this feed first
     await _articleRepo.deleteArticlesByFeed(feedId);
-    // Remove all tag associations for articles of this feed
-    await _feedRepo.deleteFeed(feedId);
+    // Remove feed (with remote sync)
+    await _syncBridge.removeFeedWithSync(feedId, accountId: _activeAccountId);
     await _loadData();
   }
 
-  /// Moves a feed to a folder (or root if folderId is null).
+  /// Renames a feed (with remote sync).
+  Future<void> renameFeed(int feedId, String newTitle) async {
+    await _syncBridge.renameFeedWithSync(feedId, newTitle, accountId: _activeAccountId);
+    await _loadData();
+  }
+
+  /// Moves a feed to a folder (or root if folderId is null) (with remote sync).
   Future<void> moveFeedToFolder(int feedId, int? folderId) async {
-    await _feedRepo.moveFeedToFolder(feedId, folderId);
+    await _syncBridge.moveFeedWithSync(feedId, folderId, accountId: _activeAccountId);
     await _loadData();
   }
 
@@ -172,52 +208,29 @@ class SourceListController
 
   // ─── Folder Operations ────────────────────────────────────
 
-  /// Creates a new folder.
+  /// Creates a new folder (with remote sync).
   Future<Folder> createFolder(String name, {String? iconName}) async {
-    final allFolders = await _db.select(_db.folders).get();
-    final maxOrder = allFolders.isEmpty
-        ? 0
-        : allFolders.map((f) => f.sortOrder).reduce((a, b) => a > b ? a : b);
-
-    final now = DateTime.now();
-    final id = await _db.into(_db.folders).insert(
-      FoldersCompanion.insert(
-        name: name,
-        iconName: Value(iconName),
-        sortOrder: Value(maxOrder + 1),
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
-
-    final folder = await (_db.select(_db.folders)
-          ..where((t) => t.id.equals(id)))
-        .getSingle();
+    final folder = await _syncBridge.createFolderWithSync(name, accountId: _activeAccountId);
     await _loadData();
     return folder;
   }
 
-  /// Renames a folder.
+  /// Renames a folder (with remote sync).
   Future<void> renameFolder(int folderId, String newName) async {
-    await (_db.update(_db.folders)..where((t) => t.id.equals(folderId))).write(
-      FoldersCompanion(
-        name: Value(newName),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
+    await _syncBridge.renameFolderWithSync(folderId, newName, accountId: _activeAccountId);
     await _loadData();
   }
 
-  /// Deletes a folder and moves its feeds to root.
+  /// Deletes a folder and moves its feeds to root (with remote sync).
   Future<void> deleteFolder(int folderId) async {
     // Move all feeds in this folder to root
-    final feedsInFolder = await _feedRepo.getFeedsByFolder(folderId);
+    final feedsInFolder = await _feedRepo.getFeedsByFolder(folderId, accountId: _activeAccountId);
     for (final feed in feedsInFolder) {
-      await _feedRepo.moveFeedToFolder(feed.id, null);
+      await _syncBridge.moveFeedWithSync(feed.id, null, accountId: _activeAccountId);
     }
 
-    // Delete the folder
-    await (_db.delete(_db.folders)..where((t) => t.id.equals(folderId))).go();
+    // Delete the folder (with remote sync)
+    await _syncBridge.deleteFolderWithSync(folderId, accountId: _activeAccountId);
     await _loadData();
   }
 
@@ -446,6 +459,18 @@ class SourceListController
   Future<void> deleteTag(int tagId) async {
     await _tagRepo.deleteTag(tagId);
     await _loadData();
+  }
+
+  /// Triggers a manual sync with the remote service.
+  ///
+  /// Performs an incremental sync if the account has synced before,
+  /// otherwise performs a full sync. Reloads data after sync completes.
+  Future<SyncResult> triggerSync() async {
+    _log.info('triggerSync: starting full sync');
+    final result = await _syncBridge.triggerFullSync();
+    _log.info('triggerSync: completed — newFeeds=${result.newFeeds}, newArticles=${result.newArticles}');
+    await _loadData();
+    return result;
   }
 
   /// Reloads the source list data.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/utils/app_logger.dart';
 import '../../datasources/local/sync_local_ds.dart';
 import 'sync_models.dart';
 import 'sync_queue.dart';
@@ -11,6 +12,8 @@ import 'sync_service_registry.dart';
 /// 同步引擎
 /// 协调本地数据库和远程服务之间的数据同步
 class SyncEngine {
+  static const _log = AppLogger('SyncEngine');
+
   final SyncServiceRegistry _registry;
   final SyncLocalDataSource _localDataSource;
   final SyncQueue _syncQueue;
@@ -19,6 +22,10 @@ class SyncEngine {
   final StreamController<SyncStatus> _statusController =
       StreamController<SyncStatus>.broadcast();
   SyncStatus _currentStatus = SyncStatus.idle;
+
+  /// Callback invoked after a successful sync to notify the UI to refresh.
+  /// Set by the Provider layer to trigger data reload.
+  void Function()? onSyncCompleted;
 
   SyncEngine({
     required SyncServiceRegistry registry,
@@ -51,21 +58,25 @@ class SyncEngine {
   Future<SyncResult> sync() async {
     final activeService = _registry.activeService;
     if (activeService == null) {
+      _log.warning('sync: no active service, skipping');
       return SyncResult.empty();
     }
 
     // 获取活跃账户
     final account = await _localDataSource.getActiveAccount();
     if (account == null) {
+      _log.warning('sync: no active account, skipping');
       return SyncResult.empty();
     }
 
     final accountId = account.id;
+    _log.info('sync: starting for account $accountId (${activeService.serviceName})');
 
     _updateStatus(SyncStatus.syncing);
 
     try {
       // 处理离线队列
+      _log.info('sync: processing offline queue for account $accountId');
       await _syncQueue.processQueue(accountId, activeService);
 
       final lastSyncAt = account.lastSyncAt;
@@ -73,9 +84,11 @@ class SyncEngine {
 
       if (lastSyncAt == null) {
         // 首次同步，执行全量同步
+        _log.info('sync: performing full sync (first time) for account $accountId');
         result = await activeService.fullSync();
       } else {
         // 增量同步
+        _log.info('sync: performing incremental sync since $lastSyncAt for account $accountId');
         result = await activeService.incrementalSync(since: lastSyncAt);
       }
 
@@ -87,9 +100,17 @@ class SyncEngine {
         ),
       );
 
+      _log.info('sync: completed for account $accountId — $result');
       _updateStatus(SyncStatus.idle);
+
+      // Notify UI to refresh after successful sync
+      if (result.hasChanges) {
+        onSyncCompleted?.call();
+      }
+
       return result;
     } catch (e) {
+      _log.error('sync: failed for account $accountId', error: e);
       _updateStatus(SyncStatus.error);
       rethrow;
     }
@@ -100,15 +121,18 @@ class SyncEngine {
   Future<SyncResult> syncFeed(int feedId) async {
     final activeService = _registry.activeService;
     if (activeService == null) {
+      _log.warning('syncFeed: no active service, skipping feed $feedId');
       return SyncResult.empty();
     }
 
     // 获取活跃账户
     final account = await _localDataSource.getActiveAccount();
     if (account == null) {
+      _log.warning('syncFeed: no active account, skipping feed $feedId');
       return SyncResult.empty();
     }
 
+    _log.info('syncFeed: starting incremental sync for feed $feedId (account ${account.id})');
     _updateStatus(SyncStatus.syncing);
 
     try {
@@ -123,9 +147,17 @@ class SyncEngine {
         ),
       );
 
+      _log.info('syncFeed: completed for feed $feedId — $result');
       _updateStatus(SyncStatus.idle);
+
+      // Notify UI to refresh after successful sync
+      if (result.hasChanges) {
+        onSyncCompleted?.call();
+      }
+
       return result;
     } catch (e) {
+      _log.error('syncFeed: failed for feed $feedId', error: e);
       _updateStatus(SyncStatus.error);
       rethrow;
     }
@@ -140,12 +172,14 @@ class SyncEngine {
   ) async {
     final activeService = _registry.activeService;
     if (activeService == null) {
+      _log.warning('pushStateChange: no active service, ignoring $action');
       return;
     }
 
     // 获取活跃账户
     final account = await _localDataSource.getActiveAccount();
     if (account == null) {
+      _log.warning('pushStateChange: no active account, ignoring $action');
       return;
     }
 
@@ -157,9 +191,12 @@ class SyncEngine {
 
     if (isOnline) {
       // 在线，直接调用远程服务
+      _log.info('pushStateChange: executing $action for ${itemIds.length} items (online)');
       await _executeRemoteAction(activeService, action, itemIds);
+      _log.info('pushStateChange: $action completed');
     } else {
       // 离线，加入队列
+      _log.info('pushStateChange: offline, enqueuing $action for ${itemIds.length} items (account $accountId)');
       await _syncQueue.enqueue(accountId, action, itemIds);
       _updateStatus(SyncStatus.waitingForNetwork);
     }

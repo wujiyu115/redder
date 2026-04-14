@@ -229,7 +229,7 @@ class FeedlySyncService implements SyncService {
 
     for (final subscription in subscriptions) {
       final streamId = subscription.id;
-      final newerThan = since != null ? since.millisecondsSinceEpoch : null;
+      final newerThan = since?.millisecondsSinceEpoch;
 
       try {
         final contents = await _dataSource.getStreamContents(

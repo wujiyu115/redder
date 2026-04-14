@@ -95,6 +95,19 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
             onBack: () => context.pop(),
             opacity: _navBarController.opacity,
             actions: [
+              // Mark as Unread button
+              ReederButton.icon(
+                icon: const Text(
+                  '●',
+                  style: TextStyle(fontSize: 16),
+                ),
+                onPressed: () {
+                  ref
+                      .read(articleDetailControllerProvider(widget.articleId).notifier)
+                      .markAsUnread();
+                  if (context.mounted) context.pop();
+                },
+              ),
               ReederButton.icon(
                 icon: Text(
                   '⊙',
@@ -202,6 +215,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
         ArticleActionBar(
           articleId: widget.articleId,
           isStarred: state.article.isStarred,
+          isRead: state.article.isRead,
           tagStates: state.tagStates,
           onToggleStar: () => ref
               .read(
@@ -211,6 +225,12 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
               .read(
                   articleDetailControllerProvider(widget.articleId).notifier)
               .toggleTag(tagId),
+          onMarkAsUnread: () {
+            ref
+                .read(
+                    articleDetailControllerProvider(widget.articleId).notifier)
+                .markAsUnread();
+          },
           onShare: () => ref
               .read(
                   articleDetailControllerProvider(widget.articleId).notifier)

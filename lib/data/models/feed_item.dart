@@ -38,6 +38,7 @@ class FeedItems extends Table {
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
   BoolColumn get isStarred => boolean().withDefault(const Constant(false))();
   IntColumn get readingTimeMinutes => integer().nullable()();
+  IntColumn get accountId => integer().nullable()();
   IntColumn get wordCount => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 }

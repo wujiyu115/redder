@@ -27,11 +27,17 @@ class ArticleActionBar extends StatelessWidget {
   /// Expected keys: Later tag ID, Bookmarks tag ID, Favorites tag ID.
   final Map<int, bool> tagStates;
 
+  /// Whether the article is read.
+  final bool isRead;
+
   /// Callback to toggle star.
   final VoidCallback? onToggleStar;
 
   /// Callback to toggle a tag (receives tag ID).
   final void Function(int tagId)? onToggleTag;
+
+  /// Callback to mark as unread.
+  final VoidCallback? onMarkAsUnread;
 
   /// Callback to share the article.
   final VoidCallback? onShare;
@@ -43,9 +49,11 @@ class ArticleActionBar extends StatelessWidget {
     super.key,
     required this.articleId,
     this.isStarred = false,
+    this.isRead = true,
     this.tagStates = const {},
     this.onToggleStar,
     this.onToggleTag,
+    this.onMarkAsUnread,
     this.onShare,
     this.onOpenInBrowser,
   });
@@ -108,6 +116,16 @@ class ArticleActionBar extends StatelessWidget {
             activeColor: const Color(0xFFFF3B30),
             inactiveColor: theme.iconColor,
             onTap: onToggleStar,
+          ),
+
+          // Mark as Unread
+          _ActionButton(
+            icon: '●',
+            label: l10n.markUnread,
+            isActive: !isRead,
+            activeColor: const Color(0xFF007AFF),
+            inactiveColor: theme.iconColor,
+            onTap: onMarkAsUnread,
           ),
 
           // Share

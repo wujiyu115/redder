@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_durations.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/providers/sync_provider.dart';
 import '../../../shared/widgets/reeder_popup_menu.dart';
 import '../article_list_controller.dart';
 
@@ -63,6 +64,10 @@ class TimelineControlButton extends ConsumerWidget {
       position: position,
       items: [
         const ReederPopupMenuItem(
+          id: 'sync',
+          label: 'Sync',
+        ),
+        const ReederPopupMenuItem(
           id: 'refresh',
           label: 'Refresh',
         ),
@@ -93,9 +98,16 @@ class TimelineControlButton extends ConsumerWidget {
         );
         break;
       case 'mark_all_read':
+        // markAllAsRead now goes through SyncBridge for remote sync
         ref
             .read(articleListControllerProvider(timelineId).notifier)
             .markAllAsRead();
+        break;
+      case 'sync':
+        // Trigger incremental sync via SyncBridge
+        final syncBridge = ref.read(syncBridgeProvider);
+        await syncBridge.triggerIncrementalSync();
+        onRefresh?.call();
         break;
     }
   }

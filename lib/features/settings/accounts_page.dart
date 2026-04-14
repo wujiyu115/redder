@@ -11,6 +11,7 @@ import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_list_tile.dart';
 import '../../shared/widgets/reeder_button.dart';
 import '../../shared/widgets/reeder_dialog.dart';
+import '../../shared/providers/account_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../data/services/sync/sync_models.dart';
 
@@ -53,15 +54,26 @@ class AccountsPage extends ConsumerWidget {
                       account: account,
                       theme: theme,
                       l10n: l10n,
-                      onTap: () => ref
-                          .read(syncAccountsProvider.notifier)
-                          .setActiveAccount(account.id),
+                      onTap: () {
+                        ref
+                            .read(syncAccountsProvider.notifier)
+                            .setActiveAccount(account.id);
+                        // Navigate back to source list to show refreshed data
+                        context.go('/');
+                      },
                       onEdit: () => context.push(
                         '/settings/accounts/edit/${account.id}',
                       ),
                       onDelete: () => _showDeleteConfirmation(
                         context, ref, account, theme, l10n,
                       ),
+                      onLogout: () => _showLogoutConfirmation(
+                        context, ref, account, theme, l10n,
+                      ),
+                      onSyncNow: () async {
+                        final syncBridge = ref.read(syncBridgeProvider);
+                        await syncBridge.triggerFullSync();
+                      },
                     )),
               Padding(
                 padding: const EdgeInsets.all(AppDimensions.spacing),
@@ -126,6 +138,41 @@ class AccountsPage extends ConsumerWidget {
       ),
     );
   }
+
+  void _showLogoutConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+    SyncAccountInfo account,
+    ReederThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    ReederDialog.show(
+      context: context,
+      builder: (ctx) => ReederDialog(
+        title: l10n.logout,
+        message: l10n.logoutConfirm(account.serviceType.displayName),
+        actions: [
+          ReederDialogAction(
+            label: l10n.cancel,
+            isDefault: true,
+          ),
+          ReederDialogAction(
+            label: l10n.logout,
+            isDestructive: true,
+            onPressed: () {
+              // Logout: deactivate the sync service but keep the account data
+              final registry = ref.read(syncServiceRegistryProvider);
+              final syncService = registry.getService(account.serviceType);
+              syncService?.logout();
+              registry.clearActiveService();
+              ref.read(accountSwitchProvider.notifier).clearActiveAccount();
+              if (context.mounted) context.go('/');
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A tile that displays detailed account information.
@@ -136,6 +183,8 @@ class _AccountTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onLogout;
+  final VoidCallback? onSyncNow;
 
   const _AccountTile({
     required this.account,
@@ -144,6 +193,8 @@ class _AccountTile extends StatelessWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    this.onLogout,
+    this.onSyncNow,
   });
 
   @override
@@ -184,6 +235,44 @@ class _AccountTile extends StatelessWidget {
               ),
             ),
           ),
+          // Sync Now button
+          if (onSyncNow != null)
+            GestureDetector(
+              onTap: onSyncNow,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: Center(
+                  child: Text(
+                    '↻',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: theme.accentColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Logout button
+          if (onLogout != null)
+            GestureDetector(
+              onTap: onLogout,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: Center(
+                  child: Text(
+                    '⏻',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: theme.secondaryTextColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           GestureDetector(
             onTap: onDelete,
             behavior: HitTestBehavior.opaque,

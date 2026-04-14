@@ -7,7 +7,9 @@ import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/services/reader_view_service.dart';
+import '../../data/services/sync/sync_bridge.dart';
 import '../../shared/providers/settings_provider.dart';
+import '../../shared/providers/sync_provider.dart';
 import '../source_list/source_list_controller.dart';
 
 /// Provider family for article detail controllers, keyed by article ID.
@@ -29,6 +31,7 @@ class ArticleDetailController
   late final FeedRepository _feedRepo;
   late final TagRepository _tagRepo;
   late final ReaderViewService _readerViewService;
+  late final SyncBridge _syncBridge;
 
   ArticleDetailController(this._ref, this.articleId)
       : super(const AsyncValue.loading()) {
@@ -36,6 +39,7 @@ class ArticleDetailController
     _feedRepo = _ref.read(feedRepositoryProvider);
     _tagRepo = _ref.read(tagRepositoryProvider);
     _readerViewService = ReaderViewService();
+    _syncBridge = _ref.read(syncBridgeProvider);
     _loadArticle();
   }
 
@@ -111,16 +115,34 @@ class ArticleDetailController
     return states;
   }
 
-  /// Marks the article as read.
+  /// Marks the article as read (with remote sync).
   Future<void> markAsRead() async {
-    await _articleRepo.markAsRead(articleId);
+    await _syncBridge.markAsReadWithSync([articleId]);
   }
 
-  /// Toggles the starred state.
-  Future<void> toggleStarred() async {
-    await _articleRepo.toggleStarred(articleId);
+  /// Marks the article as unread (with remote sync).
+  Future<void> markAsUnread() async {
+    await _syncBridge.markAsUnreadWithSync([articleId]);
     final currentState = state.valueOrNull;
     if (currentState != null) {
+      final updatedArticle = await _articleRepo.getArticleById(articleId);
+      if (updatedArticle != null) {
+        state = AsyncValue.data(currentState.copyWith(
+          article: updatedArticle,
+        ));
+      }
+    }
+  }
+
+  /// Toggles the starred state (with remote sync).
+  Future<void> toggleStarred() async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      if (currentState.article.isStarred) {
+        await _syncBridge.markAsUnstarredWithSync([articleId]);
+      } else {
+        await _syncBridge.markAsStarredWithSync([articleId]);
+      }
       final updatedArticle = await _articleRepo.getArticleById(articleId);
       if (updatedArticle != null) {
         state = AsyncValue.data(currentState.copyWith(

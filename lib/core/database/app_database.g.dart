@@ -48,6 +48,7 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<String> iconUrl = GeneratedColumn<String>(
       'icon_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumnWithTypeConverter<FeedType, int> type =
       GeneratedColumn<int>('type', aliasedName, false,
@@ -81,6 +82,8 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<int> fetchDurationMs = GeneratedColumn<int>(
       'fetch_duration_ms', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _defaultViewerMeta =
+      const VerificationMeta('defaultViewer');
   @override
   late final GeneratedColumnWithTypeConverter<ViewerType, int> defaultViewer =
       GeneratedColumn<int>('default_viewer', aliasedName, false,
@@ -108,6 +111,12 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("notifications_enabled" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _unreadCountMeta =
       const VerificationMeta('unreadCount');
   @override
@@ -152,6 +161,7 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
         defaultViewer,
         autoReaderView,
         notificationsEnabled,
+        accountId,
         unreadCount,
         totalCount,
         createdAt,
@@ -196,6 +206,7 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
       context.handle(_iconUrlMeta,
           iconUrl.isAcceptableOrUnknown(data['icon_url']!, _iconUrlMeta));
     }
+    context.handle(_typeMeta, const VerificationResult.success());
     if (data.containsKey('folder_id')) {
       context.handle(_folderIdMeta,
           folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta));
@@ -216,6 +227,7 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
           fetchDurationMs.isAcceptableOrUnknown(
               data['fetch_duration_ms']!, _fetchDurationMsMeta));
     }
+    context.handle(_defaultViewerMeta, const VerificationResult.success());
     if (data.containsKey('auto_reader_view')) {
       context.handle(
           _autoReaderViewMeta,
@@ -227,6 +239,10 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
           _notificationsEnabledMeta,
           notificationsEnabled.isAcceptableOrUnknown(
               data['notifications_enabled']!, _notificationsEnabledMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('unread_count')) {
       context.handle(
@@ -290,6 +306,8 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
           .read(DriftSqlType.bool, data['${effectivePrefix}auto_reader_view'])!,
       notificationsEnabled: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}notifications_enabled'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       unreadCount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}unread_count'])!,
       totalCount: attachedDatabase.typeMapping
@@ -327,6 +345,7 @@ class Feed extends DataClass implements Insertable<Feed> {
   final ViewerType defaultViewer;
   final bool autoReaderView;
   final bool notificationsEnabled;
+  final int? accountId;
   final int unreadCount;
   final int totalCount;
   final DateTime createdAt;
@@ -346,6 +365,7 @@ class Feed extends DataClass implements Insertable<Feed> {
       required this.defaultViewer,
       required this.autoReaderView,
       required this.notificationsEnabled,
+      this.accountId,
       required this.unreadCount,
       required this.totalCount,
       required this.createdAt,
@@ -384,6 +404,9 @@ class Feed extends DataClass implements Insertable<Feed> {
     }
     map['auto_reader_view'] = Variable<bool>(autoReaderView);
     map['notifications_enabled'] = Variable<bool>(notificationsEnabled);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
+    }
     map['unread_count'] = Variable<int>(unreadCount);
     map['total_count'] = Variable<int>(totalCount);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -419,6 +442,9 @@ class Feed extends DataClass implements Insertable<Feed> {
       defaultViewer: Value(defaultViewer),
       autoReaderView: Value(autoReaderView),
       notificationsEnabled: Value(notificationsEnabled),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       unreadCount: Value(unreadCount),
       totalCount: Value(totalCount),
       createdAt: Value(createdAt),
@@ -447,6 +473,7 @@ class Feed extends DataClass implements Insertable<Feed> {
       autoReaderView: serializer.fromJson<bool>(json['autoReaderView']),
       notificationsEnabled:
           serializer.fromJson<bool>(json['notificationsEnabled']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       unreadCount: serializer.fromJson<int>(json['unreadCount']),
       totalCount: serializer.fromJson<int>(json['totalCount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -472,6 +499,7 @@ class Feed extends DataClass implements Insertable<Feed> {
           $FeedsTable.$converterdefaultViewer.toJson(defaultViewer)),
       'autoReaderView': serializer.toJson<bool>(autoReaderView),
       'notificationsEnabled': serializer.toJson<bool>(notificationsEnabled),
+      'accountId': serializer.toJson<int?>(accountId),
       'unreadCount': serializer.toJson<int>(unreadCount),
       'totalCount': serializer.toJson<int>(totalCount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -494,6 +522,7 @@ class Feed extends DataClass implements Insertable<Feed> {
           ViewerType? defaultViewer,
           bool? autoReaderView,
           bool? notificationsEnabled,
+          Value<int?> accountId = const Value.absent(),
           int? unreadCount,
           int? totalCount,
           DateTime? createdAt,
@@ -515,6 +544,7 @@ class Feed extends DataClass implements Insertable<Feed> {
         defaultViewer: defaultViewer ?? this.defaultViewer,
         autoReaderView: autoReaderView ?? this.autoReaderView,
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+        accountId: accountId.present ? accountId.value : this.accountId,
         unreadCount: unreadCount ?? this.unreadCount,
         totalCount: totalCount ?? this.totalCount,
         createdAt: createdAt ?? this.createdAt,
@@ -546,6 +576,7 @@ class Feed extends DataClass implements Insertable<Feed> {
       notificationsEnabled: data.notificationsEnabled.present
           ? data.notificationsEnabled.value
           : this.notificationsEnabled,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       unreadCount:
           data.unreadCount.present ? data.unreadCount.value : this.unreadCount,
       totalCount:
@@ -572,6 +603,7 @@ class Feed extends DataClass implements Insertable<Feed> {
           ..write('defaultViewer: $defaultViewer, ')
           ..write('autoReaderView: $autoReaderView, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
+          ..write('accountId: $accountId, ')
           ..write('unreadCount: $unreadCount, ')
           ..write('totalCount: $totalCount, ')
           ..write('createdAt: $createdAt, ')
@@ -596,6 +628,7 @@ class Feed extends DataClass implements Insertable<Feed> {
       defaultViewer,
       autoReaderView,
       notificationsEnabled,
+      accountId,
       unreadCount,
       totalCount,
       createdAt,
@@ -618,6 +651,7 @@ class Feed extends DataClass implements Insertable<Feed> {
           other.defaultViewer == this.defaultViewer &&
           other.autoReaderView == this.autoReaderView &&
           other.notificationsEnabled == this.notificationsEnabled &&
+          other.accountId == this.accountId &&
           other.unreadCount == this.unreadCount &&
           other.totalCount == this.totalCount &&
           other.createdAt == this.createdAt &&
@@ -639,6 +673,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
   final Value<ViewerType> defaultViewer;
   final Value<bool> autoReaderView;
   final Value<bool> notificationsEnabled;
+  final Value<int?> accountId;
   final Value<int> unreadCount;
   final Value<int> totalCount;
   final Value<DateTime> createdAt;
@@ -658,6 +693,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
     this.defaultViewer = const Value.absent(),
     this.autoReaderView = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.unreadCount = const Value.absent(),
     this.totalCount = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -678,6 +714,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
     this.defaultViewer = const Value.absent(),
     this.autoReaderView = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.unreadCount = const Value.absent(),
     this.totalCount = const Value.absent(),
     required DateTime createdAt,
@@ -701,6 +738,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
     Expression<int>? defaultViewer,
     Expression<bool>? autoReaderView,
     Expression<bool>? notificationsEnabled,
+    Expression<int>? accountId,
     Expression<int>? unreadCount,
     Expression<int>? totalCount,
     Expression<DateTime>? createdAt,
@@ -722,6 +760,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
       if (autoReaderView != null) 'auto_reader_view': autoReaderView,
       if (notificationsEnabled != null)
         'notifications_enabled': notificationsEnabled,
+      if (accountId != null) 'account_id': accountId,
       if (unreadCount != null) 'unread_count': unreadCount,
       if (totalCount != null) 'total_count': totalCount,
       if (createdAt != null) 'created_at': createdAt,
@@ -744,6 +783,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
       Value<ViewerType>? defaultViewer,
       Value<bool>? autoReaderView,
       Value<bool>? notificationsEnabled,
+      Value<int?>? accountId,
       Value<int>? unreadCount,
       Value<int>? totalCount,
       Value<DateTime>? createdAt,
@@ -763,6 +803,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
       defaultViewer: defaultViewer ?? this.defaultViewer,
       autoReaderView: autoReaderView ?? this.autoReaderView,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      accountId: accountId ?? this.accountId,
       unreadCount: unreadCount ?? this.unreadCount,
       totalCount: totalCount ?? this.totalCount,
       createdAt: createdAt ?? this.createdAt,
@@ -816,6 +857,9 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
     if (notificationsEnabled.present) {
       map['notifications_enabled'] = Variable<bool>(notificationsEnabled.value);
     }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
     if (unreadCount.present) {
       map['unread_count'] = Variable<int>(unreadCount.value);
     }
@@ -848,6 +892,7 @@ class FeedsCompanion extends UpdateCompanion<Feed> {
           ..write('defaultViewer: $defaultViewer, ')
           ..write('autoReaderView: $autoReaderView, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
+          ..write('accountId: $accountId, ')
           ..write('unreadCount: $unreadCount, ')
           ..write('totalCount: $totalCount, ')
           ..write('createdAt: $createdAt, ')
@@ -948,6 +993,8 @@ class $FeedItemsTable extends FeedItems
   late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
       'fetched_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _contentTypeMeta =
+      const VerificationMeta('contentType');
   @override
   late final GeneratedColumnWithTypeConverter<ContentType, int> contentType =
       GeneratedColumn<int>('content_type', aliasedName, false,
@@ -979,6 +1026,12 @@ class $FeedItemsTable extends FeedItems
   @override
   late final GeneratedColumn<int> readingTimeMinutes = GeneratedColumn<int>(
       'reading_time_minutes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _wordCountMeta =
       const VerificationMeta('wordCount');
@@ -1012,6 +1065,7 @@ class $FeedItemsTable extends FeedItems
         isRead,
         isStarred,
         readingTimeMinutes,
+        accountId,
         wordCount,
         createdAt
       ];
@@ -1094,6 +1148,7 @@ class $FeedItemsTable extends FeedItems
     } else if (isInserting) {
       context.missing(_fetchedAtMeta);
     }
+    context.handle(_contentTypeMeta, const VerificationResult.success());
     if (data.containsKey('is_read')) {
       context.handle(_isReadMeta,
           isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta));
@@ -1107,6 +1162,10 @@ class $FeedItemsTable extends FeedItems
           _readingTimeMinutesMeta,
           readingTimeMinutes.isAcceptableOrUnknown(
               data['reading_time_minutes']!, _readingTimeMinutesMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('word_count')) {
       context.handle(_wordCountMeta,
@@ -1164,6 +1223,8 @@ class $FeedItemsTable extends FeedItems
           .read(DriftSqlType.bool, data['${effectivePrefix}is_starred'])!,
       readingTimeMinutes: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}reading_time_minutes']),
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       wordCount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}word_count']),
       createdAt: attachedDatabase.typeMapping
@@ -1201,6 +1262,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
   final bool isRead;
   final bool isStarred;
   final int? readingTimeMinutes;
+  final int? accountId;
   final int? wordCount;
   final DateTime createdAt;
   const FeedItem(
@@ -1222,6 +1284,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
       required this.isRead,
       required this.isStarred,
       this.readingTimeMinutes,
+      this.accountId,
       this.wordCount,
       required this.createdAt});
   @override
@@ -1265,6 +1328,9 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
     map['is_starred'] = Variable<bool>(isStarred);
     if (!nullToAbsent || readingTimeMinutes != null) {
       map['reading_time_minutes'] = Variable<int>(readingTimeMinutes);
+    }
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
     }
     if (!nullToAbsent || wordCount != null) {
       map['word_count'] = Variable<int>(wordCount);
@@ -1310,6 +1376,9 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
       readingTimeMinutes: readingTimeMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(readingTimeMinutes),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       wordCount: wordCount == null && nullToAbsent
           ? const Value.absent()
           : Value(wordCount),
@@ -1340,6 +1409,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
       isRead: serializer.fromJson<bool>(json['isRead']),
       isStarred: serializer.fromJson<bool>(json['isStarred']),
       readingTimeMinutes: serializer.fromJson<int?>(json['readingTimeMinutes']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       wordCount: serializer.fromJson<int?>(json['wordCount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -1367,6 +1437,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
       'isRead': serializer.toJson<bool>(isRead),
       'isStarred': serializer.toJson<bool>(isStarred),
       'readingTimeMinutes': serializer.toJson<int?>(readingTimeMinutes),
+      'accountId': serializer.toJson<int?>(accountId),
       'wordCount': serializer.toJson<int?>(wordCount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -1391,6 +1462,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
           bool? isRead,
           bool? isStarred,
           Value<int?> readingTimeMinutes = const Value.absent(),
+          Value<int?> accountId = const Value.absent(),
           Value<int?> wordCount = const Value.absent(),
           DateTime? createdAt}) =>
       FeedItem(
@@ -1415,6 +1487,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
         readingTimeMinutes: readingTimeMinutes.present
             ? readingTimeMinutes.value
             : this.readingTimeMinutes,
+        accountId: accountId.present ? accountId.value : this.accountId,
         wordCount: wordCount.present ? wordCount.value : this.wordCount,
         createdAt: createdAt ?? this.createdAt,
       );
@@ -1444,6 +1517,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
       readingTimeMinutes: data.readingTimeMinutes.present
           ? data.readingTimeMinutes.value
           : this.readingTimeMinutes,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       wordCount: data.wordCount.present ? data.wordCount.value : this.wordCount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -1470,6 +1544,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
           ..write('isRead: $isRead, ')
           ..write('isStarred: $isStarred, ')
           ..write('readingTimeMinutes: $readingTimeMinutes, ')
+          ..write('accountId: $accountId, ')
           ..write('wordCount: $wordCount, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1477,27 +1552,29 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      feedId,
-      title,
-      summary,
-      content,
-      url,
-      imageUrl,
-      imageUrls,
-      audioUrl,
-      videoUrl,
-      audioDuration,
-      author,
-      publishedAt,
-      fetchedAt,
-      contentType,
-      isRead,
-      isStarred,
-      readingTimeMinutes,
-      wordCount,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        id,
+        feedId,
+        title,
+        summary,
+        content,
+        url,
+        imageUrl,
+        imageUrls,
+        audioUrl,
+        videoUrl,
+        audioDuration,
+        author,
+        publishedAt,
+        fetchedAt,
+        contentType,
+        isRead,
+        isStarred,
+        readingTimeMinutes,
+        accountId,
+        wordCount,
+        createdAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1520,6 +1597,7 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
           other.isRead == this.isRead &&
           other.isStarred == this.isStarred &&
           other.readingTimeMinutes == this.readingTimeMinutes &&
+          other.accountId == this.accountId &&
           other.wordCount == this.wordCount &&
           other.createdAt == this.createdAt);
 }
@@ -1543,6 +1621,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
   final Value<bool> isRead;
   final Value<bool> isStarred;
   final Value<int?> readingTimeMinutes;
+  final Value<int?> accountId;
   final Value<int?> wordCount;
   final Value<DateTime> createdAt;
   const FeedItemsCompanion({
@@ -1564,6 +1643,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
     this.isRead = const Value.absent(),
     this.isStarred = const Value.absent(),
     this.readingTimeMinutes = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.wordCount = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -1586,6 +1666,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
     this.isRead = const Value.absent(),
     this.isStarred = const Value.absent(),
     this.readingTimeMinutes = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.wordCount = const Value.absent(),
     required DateTime createdAt,
   })  : feedId = Value(feedId),
@@ -1613,6 +1694,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
     Expression<bool>? isRead,
     Expression<bool>? isStarred,
     Expression<int>? readingTimeMinutes,
+    Expression<int>? accountId,
     Expression<int>? wordCount,
     Expression<DateTime>? createdAt,
   }) {
@@ -1636,6 +1718,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
       if (isStarred != null) 'is_starred': isStarred,
       if (readingTimeMinutes != null)
         'reading_time_minutes': readingTimeMinutes,
+      if (accountId != null) 'account_id': accountId,
       if (wordCount != null) 'word_count': wordCount,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -1660,6 +1743,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
       Value<bool>? isRead,
       Value<bool>? isStarred,
       Value<int?>? readingTimeMinutes,
+      Value<int?>? accountId,
       Value<int?>? wordCount,
       Value<DateTime>? createdAt}) {
     return FeedItemsCompanion(
@@ -1681,6 +1765,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
       isRead: isRead ?? this.isRead,
       isStarred: isStarred ?? this.isStarred,
       readingTimeMinutes: readingTimeMinutes ?? this.readingTimeMinutes,
+      accountId: accountId ?? this.accountId,
       wordCount: wordCount ?? this.wordCount,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -1744,6 +1829,9 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
     if (readingTimeMinutes.present) {
       map['reading_time_minutes'] = Variable<int>(readingTimeMinutes.value);
     }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
     if (wordCount.present) {
       map['word_count'] = Variable<int>(wordCount.value);
     }
@@ -1774,6 +1862,7 @@ class FeedItemsCompanion extends UpdateCompanion<FeedItem> {
           ..write('isRead: $isRead, ')
           ..write('isStarred: $isStarred, ')
           ..write('readingTimeMinutes: $readingTimeMinutes, ')
+          ..write('accountId: $accountId, ')
           ..write('wordCount: $wordCount, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1799,15 +1888,19 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _iconNameMeta =
       const VerificationMeta('iconName');
   @override
   late final GeneratedColumn<String> iconName = GeneratedColumn<String>(
       'icon_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _isBuiltInMeta =
       const VerificationMeta('isBuiltIn');
   @override
@@ -1861,6 +1954,7 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
         id,
         name,
         iconName,
+        accountId,
         isBuiltIn,
         isShared,
         sharedFeedUrl,
@@ -1890,6 +1984,10 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
     if (data.containsKey('icon_name')) {
       context.handle(_iconNameMeta,
           iconName.isAcceptableOrUnknown(data['icon_name']!, _iconNameMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('is_built_in')) {
       context.handle(
@@ -1936,6 +2034,8 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       iconName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}icon_name']),
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       isBuiltIn: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_built_in'])!,
       isShared: attachedDatabase.typeMapping
@@ -1961,6 +2061,7 @@ class Tag extends DataClass implements Insertable<Tag> {
   final int id;
   final String name;
   final String? iconName;
+  final int? accountId;
   final bool isBuiltIn;
   final bool isShared;
   final String? sharedFeedUrl;
@@ -1971,6 +2072,7 @@ class Tag extends DataClass implements Insertable<Tag> {
       {required this.id,
       required this.name,
       this.iconName,
+      this.accountId,
       required this.isBuiltIn,
       required this.isShared,
       this.sharedFeedUrl,
@@ -1984,6 +2086,9 @@ class Tag extends DataClass implements Insertable<Tag> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || iconName != null) {
       map['icon_name'] = Variable<String>(iconName);
+    }
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
     }
     map['is_built_in'] = Variable<bool>(isBuiltIn);
     map['is_shared'] = Variable<bool>(isShared);
@@ -2003,6 +2108,9 @@ class Tag extends DataClass implements Insertable<Tag> {
       iconName: iconName == null && nullToAbsent
           ? const Value.absent()
           : Value(iconName),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       isBuiltIn: Value(isBuiltIn),
       isShared: Value(isShared),
       sharedFeedUrl: sharedFeedUrl == null && nullToAbsent
@@ -2021,6 +2129,7 @@ class Tag extends DataClass implements Insertable<Tag> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       iconName: serializer.fromJson<String?>(json['iconName']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       isBuiltIn: serializer.fromJson<bool>(json['isBuiltIn']),
       isShared: serializer.fromJson<bool>(json['isShared']),
       sharedFeedUrl: serializer.fromJson<String?>(json['sharedFeedUrl']),
@@ -2036,6 +2145,7 @@ class Tag extends DataClass implements Insertable<Tag> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'iconName': serializer.toJson<String?>(iconName),
+      'accountId': serializer.toJson<int?>(accountId),
       'isBuiltIn': serializer.toJson<bool>(isBuiltIn),
       'isShared': serializer.toJson<bool>(isShared),
       'sharedFeedUrl': serializer.toJson<String?>(sharedFeedUrl),
@@ -2049,6 +2159,7 @@ class Tag extends DataClass implements Insertable<Tag> {
           {int? id,
           String? name,
           Value<String?> iconName = const Value.absent(),
+          Value<int?> accountId = const Value.absent(),
           bool? isBuiltIn,
           bool? isShared,
           Value<String?> sharedFeedUrl = const Value.absent(),
@@ -2059,6 +2170,7 @@ class Tag extends DataClass implements Insertable<Tag> {
         id: id ?? this.id,
         name: name ?? this.name,
         iconName: iconName.present ? iconName.value : this.iconName,
+        accountId: accountId.present ? accountId.value : this.accountId,
         isBuiltIn: isBuiltIn ?? this.isBuiltIn,
         isShared: isShared ?? this.isShared,
         sharedFeedUrl:
@@ -2072,6 +2184,7 @@ class Tag extends DataClass implements Insertable<Tag> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       iconName: data.iconName.present ? data.iconName.value : this.iconName,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       isBuiltIn: data.isBuiltIn.present ? data.isBuiltIn.value : this.isBuiltIn,
       isShared: data.isShared.present ? data.isShared.value : this.isShared,
       sharedFeedUrl: data.sharedFeedUrl.present
@@ -2089,6 +2202,7 @@ class Tag extends DataClass implements Insertable<Tag> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('accountId: $accountId, ')
           ..write('isBuiltIn: $isBuiltIn, ')
           ..write('isShared: $isShared, ')
           ..write('sharedFeedUrl: $sharedFeedUrl, ')
@@ -2100,8 +2214,8 @@ class Tag extends DataClass implements Insertable<Tag> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, iconName, isBuiltIn, isShared,
-      sharedFeedUrl, itemCount, sortOrder, createdAt);
+  int get hashCode => Object.hash(id, name, iconName, accountId, isBuiltIn,
+      isShared, sharedFeedUrl, itemCount, sortOrder, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2109,6 +2223,7 @@ class Tag extends DataClass implements Insertable<Tag> {
           other.id == this.id &&
           other.name == this.name &&
           other.iconName == this.iconName &&
+          other.accountId == this.accountId &&
           other.isBuiltIn == this.isBuiltIn &&
           other.isShared == this.isShared &&
           other.sharedFeedUrl == this.sharedFeedUrl &&
@@ -2121,6 +2236,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> iconName;
+  final Value<int?> accountId;
   final Value<bool> isBuiltIn;
   final Value<bool> isShared;
   final Value<String?> sharedFeedUrl;
@@ -2131,6 +2247,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.iconName = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.isBuiltIn = const Value.absent(),
     this.isShared = const Value.absent(),
     this.sharedFeedUrl = const Value.absent(),
@@ -2142,6 +2259,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     this.id = const Value.absent(),
     required String name,
     this.iconName = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.isBuiltIn = const Value.absent(),
     this.isShared = const Value.absent(),
     this.sharedFeedUrl = const Value.absent(),
@@ -2154,6 +2272,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? iconName,
+    Expression<int>? accountId,
     Expression<bool>? isBuiltIn,
     Expression<bool>? isShared,
     Expression<String>? sharedFeedUrl,
@@ -2165,6 +2284,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (iconName != null) 'icon_name': iconName,
+      if (accountId != null) 'account_id': accountId,
       if (isBuiltIn != null) 'is_built_in': isBuiltIn,
       if (isShared != null) 'is_shared': isShared,
       if (sharedFeedUrl != null) 'shared_feed_url': sharedFeedUrl,
@@ -2178,6 +2298,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
       {Value<int>? id,
       Value<String>? name,
       Value<String?>? iconName,
+      Value<int?>? accountId,
       Value<bool>? isBuiltIn,
       Value<bool>? isShared,
       Value<String?>? sharedFeedUrl,
@@ -2188,6 +2309,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
       id: id ?? this.id,
       name: name ?? this.name,
       iconName: iconName ?? this.iconName,
+      accountId: accountId ?? this.accountId,
       isBuiltIn: isBuiltIn ?? this.isBuiltIn,
       isShared: isShared ?? this.isShared,
       sharedFeedUrl: sharedFeedUrl ?? this.sharedFeedUrl,
@@ -2208,6 +2330,9 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     }
     if (iconName.present) {
       map['icon_name'] = Variable<String>(iconName.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
     }
     if (isBuiltIn.present) {
       map['is_built_in'] = Variable<bool>(isBuiltIn.value);
@@ -2236,6 +2361,7 @@ class TagsCompanion extends UpdateCompanion<Tag> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('accountId: $accountId, ')
           ..write('isBuiltIn: $isBuiltIn, ')
           ..write('isShared: $isShared, ')
           ..write('sharedFeedUrl: $sharedFeedUrl, ')
@@ -2272,6 +2398,12 @@ class $TaggedItemsTable extends TaggedItems
   late final GeneratedColumn<int> itemId = GeneratedColumn<int>(
       'item_id', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _taggedAtMeta =
       const VerificationMeta('taggedAt');
   @override
@@ -2279,7 +2411,8 @@ class $TaggedItemsTable extends TaggedItems
       'tagged_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns => [id, tagId, itemId, taggedAt];
+  List<GeneratedColumn> get $columns =>
+      [id, tagId, itemId, accountId, taggedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2305,6 +2438,10 @@ class $TaggedItemsTable extends TaggedItems
     } else if (isInserting) {
       context.missing(_itemIdMeta);
     }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
+    }
     if (data.containsKey('tagged_at')) {
       context.handle(_taggedAtMeta,
           taggedAt.isAcceptableOrUnknown(data['tagged_at']!, _taggedAtMeta));
@@ -2326,6 +2463,8 @@ class $TaggedItemsTable extends TaggedItems
           .read(DriftSqlType.int, data['${effectivePrefix}tag_id'])!,
       itemId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}item_id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       taggedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}tagged_at'])!,
     );
@@ -2341,11 +2480,13 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
   final int id;
   final int tagId;
   final int itemId;
+  final int? accountId;
   final DateTime taggedAt;
   const TaggedItem(
       {required this.id,
       required this.tagId,
       required this.itemId,
+      this.accountId,
       required this.taggedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2353,6 +2494,9 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
     map['id'] = Variable<int>(id);
     map['tag_id'] = Variable<int>(tagId);
     map['item_id'] = Variable<int>(itemId);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
+    }
     map['tagged_at'] = Variable<DateTime>(taggedAt);
     return map;
   }
@@ -2362,6 +2506,9 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
       id: Value(id),
       tagId: Value(tagId),
       itemId: Value(itemId),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       taggedAt: Value(taggedAt),
     );
   }
@@ -2373,6 +2520,7 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
       id: serializer.fromJson<int>(json['id']),
       tagId: serializer.fromJson<int>(json['tagId']),
       itemId: serializer.fromJson<int>(json['itemId']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       taggedAt: serializer.fromJson<DateTime>(json['taggedAt']),
     );
   }
@@ -2383,15 +2531,22 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
       'id': serializer.toJson<int>(id),
       'tagId': serializer.toJson<int>(tagId),
       'itemId': serializer.toJson<int>(itemId),
+      'accountId': serializer.toJson<int?>(accountId),
       'taggedAt': serializer.toJson<DateTime>(taggedAt),
     };
   }
 
-  TaggedItem copyWith({int? id, int? tagId, int? itemId, DateTime? taggedAt}) =>
+  TaggedItem copyWith(
+          {int? id,
+          int? tagId,
+          int? itemId,
+          Value<int?> accountId = const Value.absent(),
+          DateTime? taggedAt}) =>
       TaggedItem(
         id: id ?? this.id,
         tagId: tagId ?? this.tagId,
         itemId: itemId ?? this.itemId,
+        accountId: accountId.present ? accountId.value : this.accountId,
         taggedAt: taggedAt ?? this.taggedAt,
       );
   TaggedItem copyWithCompanion(TaggedItemsCompanion data) {
@@ -2399,6 +2554,7 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
       id: data.id.present ? data.id.value : this.id,
       tagId: data.tagId.present ? data.tagId.value : this.tagId,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       taggedAt: data.taggedAt.present ? data.taggedAt.value : this.taggedAt,
     );
   }
@@ -2409,13 +2565,14 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
           ..write('id: $id, ')
           ..write('tagId: $tagId, ')
           ..write('itemId: $itemId, ')
+          ..write('accountId: $accountId, ')
           ..write('taggedAt: $taggedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tagId, itemId, taggedAt);
+  int get hashCode => Object.hash(id, tagId, itemId, accountId, taggedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2423,6 +2580,7 @@ class TaggedItem extends DataClass implements Insertable<TaggedItem> {
           other.id == this.id &&
           other.tagId == this.tagId &&
           other.itemId == this.itemId &&
+          other.accountId == this.accountId &&
           other.taggedAt == this.taggedAt);
 }
 
@@ -2430,17 +2588,20 @@ class TaggedItemsCompanion extends UpdateCompanion<TaggedItem> {
   final Value<int> id;
   final Value<int> tagId;
   final Value<int> itemId;
+  final Value<int?> accountId;
   final Value<DateTime> taggedAt;
   const TaggedItemsCompanion({
     this.id = const Value.absent(),
     this.tagId = const Value.absent(),
     this.itemId = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.taggedAt = const Value.absent(),
   });
   TaggedItemsCompanion.insert({
     this.id = const Value.absent(),
     required int tagId,
     required int itemId,
+    this.accountId = const Value.absent(),
     required DateTime taggedAt,
   })  : tagId = Value(tagId),
         itemId = Value(itemId),
@@ -2449,12 +2610,14 @@ class TaggedItemsCompanion extends UpdateCompanion<TaggedItem> {
     Expression<int>? id,
     Expression<int>? tagId,
     Expression<int>? itemId,
+    Expression<int>? accountId,
     Expression<DateTime>? taggedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (tagId != null) 'tag_id': tagId,
       if (itemId != null) 'item_id': itemId,
+      if (accountId != null) 'account_id': accountId,
       if (taggedAt != null) 'tagged_at': taggedAt,
     });
   }
@@ -2463,11 +2626,13 @@ class TaggedItemsCompanion extends UpdateCompanion<TaggedItem> {
       {Value<int>? id,
       Value<int>? tagId,
       Value<int>? itemId,
+      Value<int?>? accountId,
       Value<DateTime>? taggedAt}) {
     return TaggedItemsCompanion(
       id: id ?? this.id,
       tagId: tagId ?? this.tagId,
       itemId: itemId ?? this.itemId,
+      accountId: accountId ?? this.accountId,
       taggedAt: taggedAt ?? this.taggedAt,
     );
   }
@@ -2484,6 +2649,9 @@ class TaggedItemsCompanion extends UpdateCompanion<TaggedItem> {
     if (itemId.present) {
       map['item_id'] = Variable<int>(itemId.value);
     }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
     if (taggedAt.present) {
       map['tagged_at'] = Variable<DateTime>(taggedAt.value);
     }
@@ -2496,6 +2664,7 @@ class TaggedItemsCompanion extends UpdateCompanion<TaggedItem> {
           ..write('id: $id, ')
           ..write('tagId: $tagId, ')
           ..write('itemId: $itemId, ')
+          ..write('accountId: $accountId, ')
           ..write('taggedAt: $taggedAt')
           ..write(')'))
         .toString();
@@ -2520,15 +2689,19 @@ class $FoldersTable extends Folders with TableInfo<$FoldersTable, Folder> {
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _iconNameMeta =
       const VerificationMeta('iconName');
   @override
   late final GeneratedColumn<String> iconName = GeneratedColumn<String>(
       'icon_name', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _sortOrderMeta =
       const VerificationMeta('sortOrder');
   @override
@@ -2572,6 +2745,7 @@ class $FoldersTable extends Folders with TableInfo<$FoldersTable, Folder> {
         id,
         name,
         iconName,
+        accountId,
         sortOrder,
         isExpanded,
         unreadCount,
@@ -2600,6 +2774,10 @@ class $FoldersTable extends Folders with TableInfo<$FoldersTable, Folder> {
     if (data.containsKey('icon_name')) {
       context.handle(_iconNameMeta,
           iconName.isAcceptableOrUnknown(data['icon_name']!, _iconNameMeta));
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('sort_order')) {
       context.handle(_sortOrderMeta,
@@ -2644,6 +2822,8 @@ class $FoldersTable extends Folders with TableInfo<$FoldersTable, Folder> {
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       iconName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}icon_name']),
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       sortOrder: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
       isExpanded: attachedDatabase.typeMapping
@@ -2667,6 +2847,7 @@ class Folder extends DataClass implements Insertable<Folder> {
   final int id;
   final String name;
   final String? iconName;
+  final int? accountId;
   final int sortOrder;
   final bool isExpanded;
   final int unreadCount;
@@ -2676,6 +2857,7 @@ class Folder extends DataClass implements Insertable<Folder> {
       {required this.id,
       required this.name,
       this.iconName,
+      this.accountId,
       required this.sortOrder,
       required this.isExpanded,
       required this.unreadCount,
@@ -2688,6 +2870,9 @@ class Folder extends DataClass implements Insertable<Folder> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || iconName != null) {
       map['icon_name'] = Variable<String>(iconName);
+    }
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
     }
     map['sort_order'] = Variable<int>(sortOrder);
     map['is_expanded'] = Variable<bool>(isExpanded);
@@ -2704,6 +2889,9 @@ class Folder extends DataClass implements Insertable<Folder> {
       iconName: iconName == null && nullToAbsent
           ? const Value.absent()
           : Value(iconName),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       sortOrder: Value(sortOrder),
       isExpanded: Value(isExpanded),
       unreadCount: Value(unreadCount),
@@ -2719,6 +2907,7 @@ class Folder extends DataClass implements Insertable<Folder> {
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       iconName: serializer.fromJson<String?>(json['iconName']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       isExpanded: serializer.fromJson<bool>(json['isExpanded']),
       unreadCount: serializer.fromJson<int>(json['unreadCount']),
@@ -2733,6 +2922,7 @@ class Folder extends DataClass implements Insertable<Folder> {
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
       'iconName': serializer.toJson<String?>(iconName),
+      'accountId': serializer.toJson<int?>(accountId),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'isExpanded': serializer.toJson<bool>(isExpanded),
       'unreadCount': serializer.toJson<int>(unreadCount),
@@ -2745,6 +2935,7 @@ class Folder extends DataClass implements Insertable<Folder> {
           {int? id,
           String? name,
           Value<String?> iconName = const Value.absent(),
+          Value<int?> accountId = const Value.absent(),
           int? sortOrder,
           bool? isExpanded,
           int? unreadCount,
@@ -2754,6 +2945,7 @@ class Folder extends DataClass implements Insertable<Folder> {
         id: id ?? this.id,
         name: name ?? this.name,
         iconName: iconName.present ? iconName.value : this.iconName,
+        accountId: accountId.present ? accountId.value : this.accountId,
         sortOrder: sortOrder ?? this.sortOrder,
         isExpanded: isExpanded ?? this.isExpanded,
         unreadCount: unreadCount ?? this.unreadCount,
@@ -2765,6 +2957,7 @@ class Folder extends DataClass implements Insertable<Folder> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       iconName: data.iconName.present ? data.iconName.value : this.iconName,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       isExpanded:
           data.isExpanded.present ? data.isExpanded.value : this.isExpanded,
@@ -2781,6 +2974,7 @@ class Folder extends DataClass implements Insertable<Folder> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('accountId: $accountId, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isExpanded: $isExpanded, ')
           ..write('unreadCount: $unreadCount, ')
@@ -2791,8 +2985,8 @@ class Folder extends DataClass implements Insertable<Folder> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, iconName, sortOrder, isExpanded,
-      unreadCount, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, name, iconName, accountId, sortOrder,
+      isExpanded, unreadCount, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2800,6 +2994,7 @@ class Folder extends DataClass implements Insertable<Folder> {
           other.id == this.id &&
           other.name == this.name &&
           other.iconName == this.iconName &&
+          other.accountId == this.accountId &&
           other.sortOrder == this.sortOrder &&
           other.isExpanded == this.isExpanded &&
           other.unreadCount == this.unreadCount &&
@@ -2811,6 +3006,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
   final Value<int> id;
   final Value<String> name;
   final Value<String?> iconName;
+  final Value<int?> accountId;
   final Value<int> sortOrder;
   final Value<bool> isExpanded;
   final Value<int> unreadCount;
@@ -2820,6 +3016,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.iconName = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isExpanded = const Value.absent(),
     this.unreadCount = const Value.absent(),
@@ -2830,6 +3027,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
     this.id = const Value.absent(),
     required String name,
     this.iconName = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.isExpanded = const Value.absent(),
     this.unreadCount = const Value.absent(),
@@ -2842,6 +3040,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<String>? iconName,
+    Expression<int>? accountId,
     Expression<int>? sortOrder,
     Expression<bool>? isExpanded,
     Expression<int>? unreadCount,
@@ -2852,6 +3051,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (iconName != null) 'icon_name': iconName,
+      if (accountId != null) 'account_id': accountId,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (isExpanded != null) 'is_expanded': isExpanded,
       if (unreadCount != null) 'unread_count': unreadCount,
@@ -2864,6 +3064,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
       {Value<int>? id,
       Value<String>? name,
       Value<String?>? iconName,
+      Value<int?>? accountId,
       Value<int>? sortOrder,
       Value<bool>? isExpanded,
       Value<int>? unreadCount,
@@ -2873,6 +3074,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
       id: id ?? this.id,
       name: name ?? this.name,
       iconName: iconName ?? this.iconName,
+      accountId: accountId ?? this.accountId,
       sortOrder: sortOrder ?? this.sortOrder,
       isExpanded: isExpanded ?? this.isExpanded,
       unreadCount: unreadCount ?? this.unreadCount,
@@ -2892,6 +3094,9 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
     }
     if (iconName.present) {
       map['icon_name'] = Variable<String>(iconName.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
     }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
@@ -2917,6 +3122,7 @@ class FoldersCompanion extends UpdateCompanion<Folder> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('iconName: $iconName, ')
+          ..write('accountId: $accountId, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('isExpanded: $isExpanded, ')
           ..write('unreadCount: $unreadCount, ')
@@ -2945,9 +3151,13 @@ class $FiltersTable extends Filters with TableInfo<$FiltersTable, Filter> {
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _includeKeywordsMeta =
       const VerificationMeta('includeKeywords');
   @override
@@ -3014,6 +3224,7 @@ class $FiltersTable extends Filters with TableInfo<$FiltersTable, Filter> {
   List<GeneratedColumn> get $columns => [
         id,
         name,
+        accountId,
         includeKeywords,
         excludeKeywords,
         mediaTypes,
@@ -3041,6 +3252,10 @@ class $FiltersTable extends Filters with TableInfo<$FiltersTable, Filter> {
           _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('include_keywords')) {
       context.handle(
@@ -3099,6 +3314,8 @@ class $FiltersTable extends Filters with TableInfo<$FiltersTable, Filter> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       includeKeywords: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}include_keywords'])!,
       excludeKeywords: attachedDatabase.typeMapping.read(
@@ -3127,6 +3344,7 @@ class $FiltersTable extends Filters with TableInfo<$FiltersTable, Filter> {
 class Filter extends DataClass implements Insertable<Filter> {
   final int id;
   final String name;
+  final int? accountId;
 
   /// JSON-encoded List<String> of include keywords.
   final String includeKeywords;
@@ -3146,6 +3364,7 @@ class Filter extends DataClass implements Insertable<Filter> {
   const Filter(
       {required this.id,
       required this.name,
+      this.accountId,
       required this.includeKeywords,
       required this.excludeKeywords,
       required this.mediaTypes,
@@ -3159,6 +3378,9 @@ class Filter extends DataClass implements Insertable<Filter> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
+    }
     map['include_keywords'] = Variable<String>(includeKeywords);
     map['exclude_keywords'] = Variable<String>(excludeKeywords);
     map['media_types'] = Variable<String>(mediaTypes);
@@ -3174,6 +3396,9 @@ class Filter extends DataClass implements Insertable<Filter> {
     return FiltersCompanion(
       id: Value(id),
       name: Value(name),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       includeKeywords: Value(includeKeywords),
       excludeKeywords: Value(excludeKeywords),
       mediaTypes: Value(mediaTypes),
@@ -3191,6 +3416,7 @@ class Filter extends DataClass implements Insertable<Filter> {
     return Filter(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       includeKeywords: serializer.fromJson<String>(json['includeKeywords']),
       excludeKeywords: serializer.fromJson<String>(json['excludeKeywords']),
       mediaTypes: serializer.fromJson<String>(json['mediaTypes']),
@@ -3207,6 +3433,7 @@ class Filter extends DataClass implements Insertable<Filter> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'accountId': serializer.toJson<int?>(accountId),
       'includeKeywords': serializer.toJson<String>(includeKeywords),
       'excludeKeywords': serializer.toJson<String>(excludeKeywords),
       'mediaTypes': serializer.toJson<String>(mediaTypes),
@@ -3221,6 +3448,7 @@ class Filter extends DataClass implements Insertable<Filter> {
   Filter copyWith(
           {int? id,
           String? name,
+          Value<int?> accountId = const Value.absent(),
           String? includeKeywords,
           String? excludeKeywords,
           String? mediaTypes,
@@ -3232,6 +3460,7 @@ class Filter extends DataClass implements Insertable<Filter> {
       Filter(
         id: id ?? this.id,
         name: name ?? this.name,
+        accountId: accountId.present ? accountId.value : this.accountId,
         includeKeywords: includeKeywords ?? this.includeKeywords,
         excludeKeywords: excludeKeywords ?? this.excludeKeywords,
         mediaTypes: mediaTypes ?? this.mediaTypes,
@@ -3245,6 +3474,7 @@ class Filter extends DataClass implements Insertable<Filter> {
     return Filter(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       includeKeywords: data.includeKeywords.present
           ? data.includeKeywords.value
           : this.includeKeywords,
@@ -3268,6 +3498,7 @@ class Filter extends DataClass implements Insertable<Filter> {
     return (StringBuffer('Filter(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('accountId: $accountId, ')
           ..write('includeKeywords: $includeKeywords, ')
           ..write('excludeKeywords: $excludeKeywords, ')
           ..write('mediaTypes: $mediaTypes, ')
@@ -3281,14 +3512,25 @@ class Filter extends DataClass implements Insertable<Filter> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, includeKeywords, excludeKeywords,
-      mediaTypes, feedTypes, matchWholeWord, sortOrder, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      accountId,
+      includeKeywords,
+      excludeKeywords,
+      mediaTypes,
+      feedTypes,
+      matchWholeWord,
+      sortOrder,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Filter &&
           other.id == this.id &&
           other.name == this.name &&
+          other.accountId == this.accountId &&
           other.includeKeywords == this.includeKeywords &&
           other.excludeKeywords == this.excludeKeywords &&
           other.mediaTypes == this.mediaTypes &&
@@ -3302,6 +3544,7 @@ class Filter extends DataClass implements Insertable<Filter> {
 class FiltersCompanion extends UpdateCompanion<Filter> {
   final Value<int> id;
   final Value<String> name;
+  final Value<int?> accountId;
   final Value<String> includeKeywords;
   final Value<String> excludeKeywords;
   final Value<String> mediaTypes;
@@ -3313,6 +3556,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
   const FiltersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.includeKeywords = const Value.absent(),
     this.excludeKeywords = const Value.absent(),
     this.mediaTypes = const Value.absent(),
@@ -3325,6 +3569,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
   FiltersCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.accountId = const Value.absent(),
     this.includeKeywords = const Value.absent(),
     this.excludeKeywords = const Value.absent(),
     this.mediaTypes = const Value.absent(),
@@ -3339,6 +3584,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
   static Insertable<Filter> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<int>? accountId,
     Expression<String>? includeKeywords,
     Expression<String>? excludeKeywords,
     Expression<String>? mediaTypes,
@@ -3351,6 +3597,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (accountId != null) 'account_id': accountId,
       if (includeKeywords != null) 'include_keywords': includeKeywords,
       if (excludeKeywords != null) 'exclude_keywords': excludeKeywords,
       if (mediaTypes != null) 'media_types': mediaTypes,
@@ -3365,6 +3612,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
   FiltersCompanion copyWith(
       {Value<int>? id,
       Value<String>? name,
+      Value<int?>? accountId,
       Value<String>? includeKeywords,
       Value<String>? excludeKeywords,
       Value<String>? mediaTypes,
@@ -3376,6 +3624,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
     return FiltersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      accountId: accountId ?? this.accountId,
       includeKeywords: includeKeywords ?? this.includeKeywords,
       excludeKeywords: excludeKeywords ?? this.excludeKeywords,
       mediaTypes: mediaTypes ?? this.mediaTypes,
@@ -3395,6 +3644,9 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
     }
     if (includeKeywords.present) {
       map['include_keywords'] = Variable<String>(includeKeywords.value);
@@ -3428,6 +3680,7 @@ class FiltersCompanion extends UpdateCompanion<Filter> {
     return (StringBuffer('FiltersCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('accountId: $accountId, ')
           ..write('includeKeywords: $includeKeywords, ')
           ..write('excludeKeywords: $excludeKeywords, ')
           ..write('mediaTypes: $mediaTypes, ')
@@ -3461,9 +3714,13 @@ class $ScrollPositionsTable extends ScrollPositions
   @override
   late final GeneratedColumn<String> timelineId = GeneratedColumn<String>(
       'timeline_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _accountIdMeta =
+      const VerificationMeta('accountId');
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+      'account_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _lastItemIdMeta =
       const VerificationMeta('lastItemId');
   @override
@@ -3486,7 +3743,7 @@ class $ScrollPositionsTable extends ScrollPositions
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, timelineId, lastItemId, scrollOffset, savedAt];
+      [id, timelineId, accountId, lastItemId, scrollOffset, savedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3507,6 +3764,10 @@ class $ScrollPositionsTable extends ScrollPositions
               data['timeline_id']!, _timelineIdMeta));
     } else if (isInserting) {
       context.missing(_timelineIdMeta);
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(_accountIdMeta,
+          accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta));
     }
     if (data.containsKey('last_item_id')) {
       context.handle(
@@ -3539,6 +3800,8 @@ class $ScrollPositionsTable extends ScrollPositions
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       timelineId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}timeline_id'])!,
+      accountId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}account_id']),
       lastItemId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}last_item_id']),
       scrollOffset: attachedDatabase.typeMapping
@@ -3557,12 +3820,14 @@ class $ScrollPositionsTable extends ScrollPositions
 class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
   final int id;
   final String timelineId;
+  final int? accountId;
   final int? lastItemId;
   final double scrollOffset;
   final DateTime savedAt;
   const ScrollPosition(
       {required this.id,
       required this.timelineId,
+      this.accountId,
       this.lastItemId,
       required this.scrollOffset,
       required this.savedAt});
@@ -3571,6 +3836,9 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['timeline_id'] = Variable<String>(timelineId);
+    if (!nullToAbsent || accountId != null) {
+      map['account_id'] = Variable<int>(accountId);
+    }
     if (!nullToAbsent || lastItemId != null) {
       map['last_item_id'] = Variable<int>(lastItemId);
     }
@@ -3583,6 +3851,9 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
     return ScrollPositionsCompanion(
       id: Value(id),
       timelineId: Value(timelineId),
+      accountId: accountId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountId),
       lastItemId: lastItemId == null && nullToAbsent
           ? const Value.absent()
           : Value(lastItemId),
@@ -3597,6 +3868,7 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
     return ScrollPosition(
       id: serializer.fromJson<int>(json['id']),
       timelineId: serializer.fromJson<String>(json['timelineId']),
+      accountId: serializer.fromJson<int?>(json['accountId']),
       lastItemId: serializer.fromJson<int?>(json['lastItemId']),
       scrollOffset: serializer.fromJson<double>(json['scrollOffset']),
       savedAt: serializer.fromJson<DateTime>(json['savedAt']),
@@ -3608,6 +3880,7 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'timelineId': serializer.toJson<String>(timelineId),
+      'accountId': serializer.toJson<int?>(accountId),
       'lastItemId': serializer.toJson<int?>(lastItemId),
       'scrollOffset': serializer.toJson<double>(scrollOffset),
       'savedAt': serializer.toJson<DateTime>(savedAt),
@@ -3617,12 +3890,14 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
   ScrollPosition copyWith(
           {int? id,
           String? timelineId,
+          Value<int?> accountId = const Value.absent(),
           Value<int?> lastItemId = const Value.absent(),
           double? scrollOffset,
           DateTime? savedAt}) =>
       ScrollPosition(
         id: id ?? this.id,
         timelineId: timelineId ?? this.timelineId,
+        accountId: accountId.present ? accountId.value : this.accountId,
         lastItemId: lastItemId.present ? lastItemId.value : this.lastItemId,
         scrollOffset: scrollOffset ?? this.scrollOffset,
         savedAt: savedAt ?? this.savedAt,
@@ -3632,6 +3907,7 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
       id: data.id.present ? data.id.value : this.id,
       timelineId:
           data.timelineId.present ? data.timelineId.value : this.timelineId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
       lastItemId:
           data.lastItemId.present ? data.lastItemId.value : this.lastItemId,
       scrollOffset: data.scrollOffset.present
@@ -3646,6 +3922,7 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
     return (StringBuffer('ScrollPosition(')
           ..write('id: $id, ')
           ..write('timelineId: $timelineId, ')
+          ..write('accountId: $accountId, ')
           ..write('lastItemId: $lastItemId, ')
           ..write('scrollOffset: $scrollOffset, ')
           ..write('savedAt: $savedAt')
@@ -3655,13 +3932,14 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
 
   @override
   int get hashCode =>
-      Object.hash(id, timelineId, lastItemId, scrollOffset, savedAt);
+      Object.hash(id, timelineId, accountId, lastItemId, scrollOffset, savedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ScrollPosition &&
           other.id == this.id &&
           other.timelineId == this.timelineId &&
+          other.accountId == this.accountId &&
           other.lastItemId == this.lastItemId &&
           other.scrollOffset == this.scrollOffset &&
           other.savedAt == this.savedAt);
@@ -3670,12 +3948,14 @@ class ScrollPosition extends DataClass implements Insertable<ScrollPosition> {
 class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
   final Value<int> id;
   final Value<String> timelineId;
+  final Value<int?> accountId;
   final Value<int?> lastItemId;
   final Value<double> scrollOffset;
   final Value<DateTime> savedAt;
   const ScrollPositionsCompanion({
     this.id = const Value.absent(),
     this.timelineId = const Value.absent(),
+    this.accountId = const Value.absent(),
     this.lastItemId = const Value.absent(),
     this.scrollOffset = const Value.absent(),
     this.savedAt = const Value.absent(),
@@ -3683,6 +3963,7 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
   ScrollPositionsCompanion.insert({
     this.id = const Value.absent(),
     required String timelineId,
+    this.accountId = const Value.absent(),
     this.lastItemId = const Value.absent(),
     this.scrollOffset = const Value.absent(),
     required DateTime savedAt,
@@ -3691,6 +3972,7 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
   static Insertable<ScrollPosition> custom({
     Expression<int>? id,
     Expression<String>? timelineId,
+    Expression<int>? accountId,
     Expression<int>? lastItemId,
     Expression<double>? scrollOffset,
     Expression<DateTime>? savedAt,
@@ -3698,6 +3980,7 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (timelineId != null) 'timeline_id': timelineId,
+      if (accountId != null) 'account_id': accountId,
       if (lastItemId != null) 'last_item_id': lastItemId,
       if (scrollOffset != null) 'scroll_offset': scrollOffset,
       if (savedAt != null) 'saved_at': savedAt,
@@ -3707,12 +3990,14 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
   ScrollPositionsCompanion copyWith(
       {Value<int>? id,
       Value<String>? timelineId,
+      Value<int?>? accountId,
       Value<int?>? lastItemId,
       Value<double>? scrollOffset,
       Value<DateTime>? savedAt}) {
     return ScrollPositionsCompanion(
       id: id ?? this.id,
       timelineId: timelineId ?? this.timelineId,
+      accountId: accountId ?? this.accountId,
       lastItemId: lastItemId ?? this.lastItemId,
       scrollOffset: scrollOffset ?? this.scrollOffset,
       savedAt: savedAt ?? this.savedAt,
@@ -3727,6 +4012,9 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
     }
     if (timelineId.present) {
       map['timeline_id'] = Variable<String>(timelineId.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
     }
     if (lastItemId.present) {
       map['last_item_id'] = Variable<int>(lastItemId.value);
@@ -3745,6 +4033,7 @@ class ScrollPositionsCompanion extends UpdateCompanion<ScrollPosition> {
     return (StringBuffer('ScrollPositionsCompanion(')
           ..write('id: $id, ')
           ..write('timelineId: $timelineId, ')
+          ..write('accountId: $accountId, ')
           ..write('lastItemId: $lastItemId, ')
           ..write('scrollOffset: $scrollOffset, ')
           ..write('savedAt: $savedAt')
@@ -5959,6 +6248,7 @@ typedef $$FeedsTableCreateCompanionBuilder = FeedsCompanion Function({
   Value<ViewerType> defaultViewer,
   Value<bool> autoReaderView,
   Value<bool> notificationsEnabled,
+  Value<int?> accountId,
   Value<int> unreadCount,
   Value<int> totalCount,
   required DateTime createdAt,
@@ -5979,6 +6269,7 @@ typedef $$FeedsTableUpdateCompanionBuilder = FeedsCompanion Function({
   Value<ViewerType> defaultViewer,
   Value<bool> autoReaderView,
   Value<bool> notificationsEnabled,
+  Value<int?> accountId,
   Value<int> unreadCount,
   Value<int> totalCount,
   Value<DateTime> createdAt,
@@ -6041,6 +6332,9 @@ class $$FeedsTableFilterComposer extends Composer<_$AppDatabase, $FeedsTable> {
   ColumnFilters<bool> get notificationsEnabled => $composableBuilder(
       column: $table.notificationsEnabled,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get unreadCount => $composableBuilder(
       column: $table.unreadCount, builder: (column) => ColumnFilters(column));
@@ -6110,6 +6404,9 @@ class $$FeedsTableOrderingComposer
       column: $table.notificationsEnabled,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get unreadCount => $composableBuilder(
       column: $table.unreadCount, builder: (column) => ColumnOrderings(column));
 
@@ -6175,6 +6472,9 @@ class $$FeedsTableAnnotationComposer
   GeneratedColumn<bool> get notificationsEnabled => $composableBuilder(
       column: $table.notificationsEnabled, builder: (column) => column);
 
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
   GeneratedColumn<int> get unreadCount => $composableBuilder(
       column: $table.unreadCount, builder: (column) => column);
 
@@ -6225,6 +6525,7 @@ class $$FeedsTableTableManager extends RootTableManager<
             Value<ViewerType> defaultViewer = const Value.absent(),
             Value<bool> autoReaderView = const Value.absent(),
             Value<bool> notificationsEnabled = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
             Value<int> totalCount = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -6245,6 +6546,7 @@ class $$FeedsTableTableManager extends RootTableManager<
             defaultViewer: defaultViewer,
             autoReaderView: autoReaderView,
             notificationsEnabled: notificationsEnabled,
+            accountId: accountId,
             unreadCount: unreadCount,
             totalCount: totalCount,
             createdAt: createdAt,
@@ -6265,6 +6567,7 @@ class $$FeedsTableTableManager extends RootTableManager<
             Value<ViewerType> defaultViewer = const Value.absent(),
             Value<bool> autoReaderView = const Value.absent(),
             Value<bool> notificationsEnabled = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
             Value<int> totalCount = const Value.absent(),
             required DateTime createdAt,
@@ -6285,6 +6588,7 @@ class $$FeedsTableTableManager extends RootTableManager<
             defaultViewer: defaultViewer,
             autoReaderView: autoReaderView,
             notificationsEnabled: notificationsEnabled,
+            accountId: accountId,
             unreadCount: unreadCount,
             totalCount: totalCount,
             createdAt: createdAt,
@@ -6328,6 +6632,7 @@ typedef $$FeedItemsTableCreateCompanionBuilder = FeedItemsCompanion Function({
   Value<bool> isRead,
   Value<bool> isStarred,
   Value<int?> readingTimeMinutes,
+  Value<int?> accountId,
   Value<int?> wordCount,
   required DateTime createdAt,
 });
@@ -6350,6 +6655,7 @@ typedef $$FeedItemsTableUpdateCompanionBuilder = FeedItemsCompanion Function({
   Value<bool> isRead,
   Value<bool> isStarred,
   Value<int?> readingTimeMinutes,
+  Value<int?> accountId,
   Value<int?> wordCount,
   Value<DateTime> createdAt,
 });
@@ -6419,6 +6725,9 @@ class $$FeedItemsTableFilterComposer
   ColumnFilters<int> get readingTimeMinutes => $composableBuilder(
       column: $table.readingTimeMinutes,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get wordCount => $composableBuilder(
       column: $table.wordCount, builder: (column) => ColumnFilters(column));
@@ -6492,6 +6801,9 @@ class $$FeedItemsTableOrderingComposer
       column: $table.readingTimeMinutes,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get wordCount => $composableBuilder(
       column: $table.wordCount, builder: (column) => ColumnOrderings(column));
 
@@ -6563,6 +6875,9 @@ class $$FeedItemsTableAnnotationComposer
   GeneratedColumn<int> get readingTimeMinutes => $composableBuilder(
       column: $table.readingTimeMinutes, builder: (column) => column);
 
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
   GeneratedColumn<int> get wordCount =>
       $composableBuilder(column: $table.wordCount, builder: (column) => column);
 
@@ -6611,6 +6926,7 @@ class $$FeedItemsTableTableManager extends RootTableManager<
             Value<bool> isRead = const Value.absent(),
             Value<bool> isStarred = const Value.absent(),
             Value<int?> readingTimeMinutes = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int?> wordCount = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
@@ -6633,6 +6949,7 @@ class $$FeedItemsTableTableManager extends RootTableManager<
             isRead: isRead,
             isStarred: isStarred,
             readingTimeMinutes: readingTimeMinutes,
+            accountId: accountId,
             wordCount: wordCount,
             createdAt: createdAt,
           ),
@@ -6655,6 +6972,7 @@ class $$FeedItemsTableTableManager extends RootTableManager<
             Value<bool> isRead = const Value.absent(),
             Value<bool> isStarred = const Value.absent(),
             Value<int?> readingTimeMinutes = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int?> wordCount = const Value.absent(),
             required DateTime createdAt,
           }) =>
@@ -6677,6 +6995,7 @@ class $$FeedItemsTableTableManager extends RootTableManager<
             isRead: isRead,
             isStarred: isStarred,
             readingTimeMinutes: readingTimeMinutes,
+            accountId: accountId,
             wordCount: wordCount,
             createdAt: createdAt,
           ),
@@ -6703,6 +7022,7 @@ typedef $$TagsTableCreateCompanionBuilder = TagsCompanion Function({
   Value<int> id,
   required String name,
   Value<String?> iconName,
+  Value<int?> accountId,
   Value<bool> isBuiltIn,
   Value<bool> isShared,
   Value<String?> sharedFeedUrl,
@@ -6714,6 +7034,7 @@ typedef $$TagsTableUpdateCompanionBuilder = TagsCompanion Function({
   Value<int> id,
   Value<String> name,
   Value<String?> iconName,
+  Value<int?> accountId,
   Value<bool> isBuiltIn,
   Value<bool> isShared,
   Value<String?> sharedFeedUrl,
@@ -6738,6 +7059,9 @@ class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
 
   ColumnFilters<String> get iconName => $composableBuilder(
       column: $table.iconName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isBuiltIn => $composableBuilder(
       column: $table.isBuiltIn, builder: (column) => ColumnFilters(column));
@@ -6774,6 +7098,9 @@ class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
 
   ColumnOrderings<String> get iconName => $composableBuilder(
       column: $table.iconName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<bool> get isBuiltIn => $composableBuilder(
       column: $table.isBuiltIn, builder: (column) => ColumnOrderings(column));
@@ -6812,6 +7139,9 @@ class $$TagsTableAnnotationComposer
 
   GeneratedColumn<String> get iconName =>
       $composableBuilder(column: $table.iconName, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
 
   GeneratedColumn<bool> get isBuiltIn =>
       $composableBuilder(column: $table.isBuiltIn, builder: (column) => column);
@@ -6858,6 +7188,7 @@ class $$TagsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String?> iconName = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<bool> isBuiltIn = const Value.absent(),
             Value<bool> isShared = const Value.absent(),
             Value<String?> sharedFeedUrl = const Value.absent(),
@@ -6869,6 +7200,7 @@ class $$TagsTableTableManager extends RootTableManager<
             id: id,
             name: name,
             iconName: iconName,
+            accountId: accountId,
             isBuiltIn: isBuiltIn,
             isShared: isShared,
             sharedFeedUrl: sharedFeedUrl,
@@ -6880,6 +7212,7 @@ class $$TagsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             required String name,
             Value<String?> iconName = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<bool> isBuiltIn = const Value.absent(),
             Value<bool> isShared = const Value.absent(),
             Value<String?> sharedFeedUrl = const Value.absent(),
@@ -6891,6 +7224,7 @@ class $$TagsTableTableManager extends RootTableManager<
             id: id,
             name: name,
             iconName: iconName,
+            accountId: accountId,
             isBuiltIn: isBuiltIn,
             isShared: isShared,
             sharedFeedUrl: sharedFeedUrl,
@@ -6922,6 +7256,7 @@ typedef $$TaggedItemsTableCreateCompanionBuilder = TaggedItemsCompanion
   Value<int> id,
   required int tagId,
   required int itemId,
+  Value<int?> accountId,
   required DateTime taggedAt,
 });
 typedef $$TaggedItemsTableUpdateCompanionBuilder = TaggedItemsCompanion
@@ -6929,6 +7264,7 @@ typedef $$TaggedItemsTableUpdateCompanionBuilder = TaggedItemsCompanion
   Value<int> id,
   Value<int> tagId,
   Value<int> itemId,
+  Value<int?> accountId,
   Value<DateTime> taggedAt,
 });
 
@@ -6949,6 +7285,9 @@ class $$TaggedItemsTableFilterComposer
 
   ColumnFilters<int> get itemId => $composableBuilder(
       column: $table.itemId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get taggedAt => $composableBuilder(
       column: $table.taggedAt, builder: (column) => ColumnFilters(column));
@@ -6972,6 +7311,9 @@ class $$TaggedItemsTableOrderingComposer
   ColumnOrderings<int> get itemId => $composableBuilder(
       column: $table.itemId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get taggedAt => $composableBuilder(
       column: $table.taggedAt, builder: (column) => ColumnOrderings(column));
 }
@@ -6993,6 +7335,9 @@ class $$TaggedItemsTableAnnotationComposer
 
   GeneratedColumn<int> get itemId =>
       $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get taggedAt =>
       $composableBuilder(column: $table.taggedAt, builder: (column) => column);
@@ -7024,24 +7369,28 @@ class $$TaggedItemsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> tagId = const Value.absent(),
             Value<int> itemId = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<DateTime> taggedAt = const Value.absent(),
           }) =>
               TaggedItemsCompanion(
             id: id,
             tagId: tagId,
             itemId: itemId,
+            accountId: accountId,
             taggedAt: taggedAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int tagId,
             required int itemId,
+            Value<int?> accountId = const Value.absent(),
             required DateTime taggedAt,
           }) =>
               TaggedItemsCompanion.insert(
             id: id,
             tagId: tagId,
             itemId: itemId,
+            accountId: accountId,
             taggedAt: taggedAt,
           ),
           withReferenceMapper: (p0) => p0
@@ -7067,6 +7416,7 @@ typedef $$FoldersTableCreateCompanionBuilder = FoldersCompanion Function({
   Value<int> id,
   required String name,
   Value<String?> iconName,
+  Value<int?> accountId,
   Value<int> sortOrder,
   Value<bool> isExpanded,
   Value<int> unreadCount,
@@ -7077,6 +7427,7 @@ typedef $$FoldersTableUpdateCompanionBuilder = FoldersCompanion Function({
   Value<int> id,
   Value<String> name,
   Value<String?> iconName,
+  Value<int?> accountId,
   Value<int> sortOrder,
   Value<bool> isExpanded,
   Value<int> unreadCount,
@@ -7101,6 +7452,9 @@ class $$FoldersTableFilterComposer
 
   ColumnFilters<String> get iconName => $composableBuilder(
       column: $table.iconName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
       column: $table.sortOrder, builder: (column) => ColumnFilters(column));
@@ -7136,6 +7490,9 @@ class $$FoldersTableOrderingComposer
   ColumnOrderings<String> get iconName => $composableBuilder(
       column: $table.iconName, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
       column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
 
@@ -7169,6 +7526,9 @@ class $$FoldersTableAnnotationComposer
 
   GeneratedColumn<String> get iconName =>
       $composableBuilder(column: $table.iconName, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
@@ -7212,6 +7572,7 @@ class $$FoldersTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String?> iconName = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
             Value<bool> isExpanded = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
@@ -7222,6 +7583,7 @@ class $$FoldersTableTableManager extends RootTableManager<
             id: id,
             name: name,
             iconName: iconName,
+            accountId: accountId,
             sortOrder: sortOrder,
             isExpanded: isExpanded,
             unreadCount: unreadCount,
@@ -7232,6 +7594,7 @@ class $$FoldersTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             required String name,
             Value<String?> iconName = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int> sortOrder = const Value.absent(),
             Value<bool> isExpanded = const Value.absent(),
             Value<int> unreadCount = const Value.absent(),
@@ -7242,6 +7605,7 @@ class $$FoldersTableTableManager extends RootTableManager<
             id: id,
             name: name,
             iconName: iconName,
+            accountId: accountId,
             sortOrder: sortOrder,
             isExpanded: isExpanded,
             unreadCount: unreadCount,
@@ -7270,6 +7634,7 @@ typedef $$FoldersTableProcessedTableManager = ProcessedTableManager<
 typedef $$FiltersTableCreateCompanionBuilder = FiltersCompanion Function({
   Value<int> id,
   required String name,
+  Value<int?> accountId,
   Value<String> includeKeywords,
   Value<String> excludeKeywords,
   Value<String> mediaTypes,
@@ -7282,6 +7647,7 @@ typedef $$FiltersTableCreateCompanionBuilder = FiltersCompanion Function({
 typedef $$FiltersTableUpdateCompanionBuilder = FiltersCompanion Function({
   Value<int> id,
   Value<String> name,
+  Value<int?> accountId,
   Value<String> includeKeywords,
   Value<String> excludeKeywords,
   Value<String> mediaTypes,
@@ -7306,6 +7672,9 @@ class $$FiltersTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get includeKeywords => $composableBuilder(
       column: $table.includeKeywords,
@@ -7350,6 +7719,9 @@ class $$FiltersTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get includeKeywords => $composableBuilder(
       column: $table.includeKeywords,
       builder: (column) => ColumnOrderings(column));
@@ -7392,6 +7764,9 @@ class $$FiltersTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
 
   GeneratedColumn<String> get includeKeywords => $composableBuilder(
       column: $table.includeKeywords, builder: (column) => column);
@@ -7443,6 +7818,7 @@ class $$FiltersTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<String> includeKeywords = const Value.absent(),
             Value<String> excludeKeywords = const Value.absent(),
             Value<String> mediaTypes = const Value.absent(),
@@ -7455,6 +7831,7 @@ class $$FiltersTableTableManager extends RootTableManager<
               FiltersCompanion(
             id: id,
             name: name,
+            accountId: accountId,
             includeKeywords: includeKeywords,
             excludeKeywords: excludeKeywords,
             mediaTypes: mediaTypes,
@@ -7467,6 +7844,7 @@ class $$FiltersTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<int?> accountId = const Value.absent(),
             Value<String> includeKeywords = const Value.absent(),
             Value<String> excludeKeywords = const Value.absent(),
             Value<String> mediaTypes = const Value.absent(),
@@ -7479,6 +7857,7 @@ class $$FiltersTableTableManager extends RootTableManager<
               FiltersCompanion.insert(
             id: id,
             name: name,
+            accountId: accountId,
             includeKeywords: includeKeywords,
             excludeKeywords: excludeKeywords,
             mediaTypes: mediaTypes,
@@ -7511,6 +7890,7 @@ typedef $$ScrollPositionsTableCreateCompanionBuilder = ScrollPositionsCompanion
     Function({
   Value<int> id,
   required String timelineId,
+  Value<int?> accountId,
   Value<int?> lastItemId,
   Value<double> scrollOffset,
   required DateTime savedAt,
@@ -7519,6 +7899,7 @@ typedef $$ScrollPositionsTableUpdateCompanionBuilder = ScrollPositionsCompanion
     Function({
   Value<int> id,
   Value<String> timelineId,
+  Value<int?> accountId,
   Value<int?> lastItemId,
   Value<double> scrollOffset,
   Value<DateTime> savedAt,
@@ -7538,6 +7919,9 @@ class $$ScrollPositionsTableFilterComposer
 
   ColumnFilters<String> get timelineId => $composableBuilder(
       column: $table.timelineId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get lastItemId => $composableBuilder(
       column: $table.lastItemId, builder: (column) => ColumnFilters(column));
@@ -7564,6 +7948,9 @@ class $$ScrollPositionsTableOrderingComposer
   ColumnOrderings<String> get timelineId => $composableBuilder(
       column: $table.timelineId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get accountId => $composableBuilder(
+      column: $table.accountId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get lastItemId => $composableBuilder(
       column: $table.lastItemId, builder: (column) => ColumnOrderings(column));
 
@@ -7589,6 +7976,9 @@ class $$ScrollPositionsTableAnnotationComposer
 
   GeneratedColumn<String> get timelineId => $composableBuilder(
       column: $table.timelineId, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
 
   GeneratedColumn<int> get lastItemId => $composableBuilder(
       column: $table.lastItemId, builder: (column) => column);
@@ -7629,6 +8019,7 @@ class $$ScrollPositionsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> timelineId = const Value.absent(),
+            Value<int?> accountId = const Value.absent(),
             Value<int?> lastItemId = const Value.absent(),
             Value<double> scrollOffset = const Value.absent(),
             Value<DateTime> savedAt = const Value.absent(),
@@ -7636,6 +8027,7 @@ class $$ScrollPositionsTableTableManager extends RootTableManager<
               ScrollPositionsCompanion(
             id: id,
             timelineId: timelineId,
+            accountId: accountId,
             lastItemId: lastItemId,
             scrollOffset: scrollOffset,
             savedAt: savedAt,
@@ -7643,6 +8035,7 @@ class $$ScrollPositionsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String timelineId,
+            Value<int?> accountId = const Value.absent(),
             Value<int?> lastItemId = const Value.absent(),
             Value<double> scrollOffset = const Value.absent(),
             required DateTime savedAt,
@@ -7650,6 +8043,7 @@ class $$ScrollPositionsTableTableManager extends RootTableManager<
               ScrollPositionsCompanion.insert(
             id: id,
             timelineId: timelineId,
+            accountId: accountId,
             lastItemId: lastItemId,
             scrollOffset: scrollOffset,
             savedAt: savedAt,

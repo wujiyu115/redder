@@ -31,10 +31,10 @@ class FeedRepository {
   ///
   /// Fetches the feed, saves metadata and items locally.
   /// Returns the saved [Feed] with its assigned ID.
-  /// Throws if the feed URL already exists.
-  Future<Feed> addFeed(String feedUrl) async {
-    // Check if already subscribed
-    if (await _localDs.exists(feedUrl)) {
+  /// Throws if the feed URL already exists for the given account.
+  Future<Feed> addFeed(String feedUrl, {int? accountId}) async {
+    // Check if already subscribed (scoped to account)
+    if (await _localDs.exists(feedUrl, accountId: accountId)) {
       throw Exception('Already subscribed to this feed');
     }
 
@@ -43,56 +43,70 @@ class FeedRepository {
 
     // Convert ParsedFeed DTO to FeedsCompanion and save
     final companion = result.feed.toCompanion();
-    final feedId = await _localDs.upsert(companion);
+    final feedId = await _localDs.upsert(companion, accountId: accountId);
 
     // Return the saved feed data
     final saved = await _localDs.getById(feedId);
     return saved!;
   }
 
-  /// Gets all feeds.
-  Future<List<Feed>> getAllFeeds() {
-    return _localDs.getAll();
+  /// Gets all feeds, optionally filtered by [accountId].
+  Future<List<Feed>> getAllFeeds({int? accountId}) {
+    return _localDs.getAll(accountId: accountId);
   }
 
   /// Gets a feed by its ID.
-  Future<Feed?> getFeedById(int id) {
-    return _localDs.getById(id);
+  Future<Feed?> getFeedById(int id, {int? accountId}) {
+    return _localDs.getById(id, accountId: accountId);
   }
 
-  /// Gets a feed by its URL.
-  Future<Feed?> getFeedByUrl(String feedUrl) {
-    return _localDs.getByUrl(feedUrl);
+  /// Gets a feed by its URL, optionally scoped to [accountId].
+  Future<Feed?> getFeedByUrl(String feedUrl, {int? accountId}) {
+    return _localDs.getByUrl(feedUrl, accountId: accountId);
   }
 
-  /// Gets all feeds of a specific type.
-  Future<List<Feed>> getFeedsByType(FeedType type) {
-    return _localDs.getByType(type);
+  /// Gets all feeds of a specific type, optionally filtered by [accountId].
+  Future<List<Feed>> getFeedsByType(FeedType type, {int? accountId}) {
+    return _localDs.getByType(type, accountId: accountId);
   }
 
-  /// Gets all feeds in a specific folder.
-  Future<List<Feed>> getFeedsByFolder(int folderId) {
-    return _localDs.getByFolderId(folderId);
+  /// Gets all feeds in a specific folder, optionally filtered by [accountId].
+  Future<List<Feed>> getFeedsByFolder(int folderId, {int? accountId}) {
+    return _localDs.getByFolderId(folderId, accountId: accountId);
   }
 
-  /// Gets all feeds without a folder (root level).
-  Future<List<Feed>> getRootFeeds() {
-    return _localDs.getRootFeeds();
+  /// Gets all feeds without a folder (root level), optionally filtered by [accountId].
+  Future<List<Feed>> getRootFeeds({int? accountId}) {
+    return _localDs.getRootFeeds(accountId: accountId);
   }
 
-  /// Gets the total number of feeds.
-  Future<int> getFeedCount() {
-    return _localDs.count();
+  /// Gets the total number of feeds, optionally filtered by [accountId].
+  Future<int> getFeedCount({int? accountId}) {
+    return _localDs.count(accountId: accountId);
   }
 
   /// Updates a feed's metadata using a [FeedsCompanion].
-  Future<void> updateFeed(FeedsCompanion feed) async {
-    await _localDs.upsert(feed);
+  Future<void> updateFeed(FeedsCompanion feed, {int? accountId}) async {
+    await _localDs.upsert(feed, accountId: accountId);
+  }
+
+  /// Renames a feed.
+  Future<void> renameFeed(int feedId, String newTitle, {int? accountId}) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
+    if (feed != null) {
+      await _localDs.upsert(FeedsCompanion(
+        id: Value(feed.id),
+        title: Value(newTitle),
+        feedUrl: Value(feed.feedUrl),
+        updatedAt: Value(DateTime.now()),
+        createdAt: Value(feed.createdAt),
+      ), accountId: accountId);
+    }
   }
 
   /// Moves a feed to a folder.
-  Future<void> moveFeedToFolder(int feedId, int? folderId) async {
-    final feed = await _localDs.getById(feedId);
+  Future<void> moveFeedToFolder(int feedId, int? folderId, {int? accountId}) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
     if (feed != null) {
       await _localDs.upsert(FeedsCompanion(
         id: Value(feed.id),
@@ -101,13 +115,13 @@ class FeedRepository {
         folderId: Value(folderId),
         updatedAt: Value(DateTime.now()),
         createdAt: Value(feed.createdAt),
-      ));
+      ), accountId: accountId);
     }
   }
 
   /// Updates the default viewer for a feed.
-  Future<void> setDefaultViewer(int feedId, ViewerType viewer) async {
-    final feed = await _localDs.getById(feedId);
+  Future<void> setDefaultViewer(int feedId, ViewerType viewer, {int? accountId}) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
     if (feed != null) {
       await _localDs.upsert(FeedsCompanion(
         id: Value(feed.id),
@@ -116,13 +130,13 @@ class FeedRepository {
         defaultViewer: Value(viewer),
         updatedAt: Value(DateTime.now()),
         createdAt: Value(feed.createdAt),
-      ));
+      ), accountId: accountId);
     }
   }
 
   /// Toggles auto Reader View for a feed.
-  Future<void> toggleAutoReaderView(int feedId) async {
-    final feed = await _localDs.getById(feedId);
+  Future<void> toggleAutoReaderView(int feedId, {int? accountId}) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
     if (feed != null) {
       await _localDs.upsert(FeedsCompanion(
         id: Value(feed.id),
@@ -131,7 +145,7 @@ class FeedRepository {
         autoReaderView: Value(!feed.autoReaderView),
         updatedAt: Value(DateTime.now()),
         createdAt: Value(feed.createdAt),
-      ));
+      ), accountId: accountId);
     }
   }
 
@@ -150,19 +164,19 @@ class FeedRepository {
     return _localDs.updateUnreadCount(feedId, count);
   }
 
-  /// Watches all feeds for changes.
-  Stream<List<Feed>> watchAllFeeds() {
-    return _localDs.watchAll();
+  /// Watches all feeds for changes, optionally filtered by [accountId].
+  Stream<List<Feed>> watchAllFeeds({int? accountId}) {
+    return _localDs.watchAll(accountId: accountId);
   }
 
-  /// Checks if a feed URL is already subscribed.
-  Future<bool> isSubscribed(String feedUrl) {
-    return _localDs.exists(feedUrl);
+  /// Checks if a feed URL is already subscribed, optionally scoped to [accountId].
+  Future<bool> isSubscribed(String feedUrl, {int? accountId}) {
+    return _localDs.exists(feedUrl, accountId: accountId);
   }
 
   /// Updates the sort order for a feed.
-  Future<void> updateFeedSortOrder(int feedId, int sortOrder) async {
-    final feed = await _localDs.getById(feedId);
+  Future<void> updateFeedSortOrder(int feedId, int sortOrder, {int? accountId}) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
     if (feed != null) {
       await _localDs.upsert(FeedsCompanion(
         id: Value(feed.id),
@@ -171,13 +185,13 @@ class FeedRepository {
         sortOrder: Value(sortOrder),
         updatedAt: Value(DateTime.now()),
         createdAt: Value(feed.createdAt),
-      ));
+      ), accountId: accountId);
     }
   }
 
-  /// Gets feeds grouped by type.
-  Future<Map<FeedType, List<Feed>>> getFeedsGroupedByType() async {
-    final feeds = await _localDs.getAll();
+  /// Gets feeds grouped by type, optionally filtered by [accountId].
+  Future<Map<FeedType, List<Feed>>> getFeedsGroupedByType({int? accountId}) async {
+    final feeds = await _localDs.getAll(accountId: accountId);
     final grouped = <FeedType, List<Feed>>{};
     for (final feed in feeds) {
       grouped.putIfAbsent(feed.type, () => []).add(feed);

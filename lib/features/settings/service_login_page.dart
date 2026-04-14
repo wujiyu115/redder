@@ -133,13 +133,13 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
           _successMessage = l10n.loginSuccess;
         });
 
-        // Defer provider invalidation and navigation to after the current
-        // frame to avoid calling setState/markNeedsBuild during build.
+        // Defer navigation to after the current frame to avoid
+        // calling setState/markNeedsBuild during build.
         SchedulerBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
 
-          // Trigger RSS subscription list refresh
-          ref.invalidate(sourceListControllerProvider);
+          // Reload the source list so newly synced feeds appear
+          await ref.read(sourceListControllerProvider.notifier).reload();
 
           // Delay so the user can clearly see the success message
           await Future<void>.delayed(const Duration(milliseconds: 1500));

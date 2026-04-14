@@ -57,11 +57,14 @@ class SyncRepository {
     return await _localDs.upsertAccount(companion);
   }
 
-  /// Removes a sync account and its credentials.
+  /// Removes a sync account, its credentials, and all associated data.
   ///
-  /// Deletes the account from the database and securely removes stored credentials.
+  /// Deletes the account from the database, securely removes stored credentials,
+  /// and clears all associated feeds, articles, folders, tags, etc.
   Future<void> removeAccount(int accountId) async {
-    // Delete credentials first
+    // Clear all associated data first
+    await _localDs.clearAccountData(accountId);
+    // Delete credentials
     await _authService.deleteCredentials(accountId);
     // Then delete account from database
     await _localDs.deleteAccount(accountId);

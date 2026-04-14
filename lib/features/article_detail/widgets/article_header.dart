@@ -91,10 +91,10 @@ class ArticleHeader extends StatelessWidget {
         fadeInDuration: const Duration(milliseconds: 200),
         errorWidget: (_, __, ___) => Container(
           color: theme.secondaryBackgroundColor,
-          child: Center(
+          child: const Center(
             child: Text(
               '🖼',
-              style: const TextStyle(fontSize: 32),
+              style: TextStyle(fontSize: 32),
             ),
           ),
         ),

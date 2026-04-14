@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/app_logger.dart';
+import '../../data/datasources/local/sync_local_ds.dart';
+import '../../data/repositories/feed_repository.dart';
+import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../../data/services/auth/auth_service.dart';
 import '../../data/services/sync/feedbin_sync_service.dart';
@@ -8,8 +11,13 @@ import '../../data/services/sync/feedly_sync_service.dart';
 import '../../data/services/sync/freshrss_sync_service.dart';
 import '../../data/services/sync/inoreader_sync_service.dart';
 import '../../data/services/sync/reader_sync_service.dart';
+import '../../data/services/sync/sync_bridge.dart';
+import '../../data/services/sync/sync_engine.dart';
 import '../../data/services/sync/sync_models.dart';
+import '../../data/services/sync/sync_queue.dart';
+import '../../data/services/sync/sync_service.dart';
 import '../../data/services/sync/sync_service_registry.dart';
+import 'account_provider.dart';
 
 /// Provider for the [SyncRepository] singleton.
 final syncRepositoryProvider = Provider<SyncRepository>((ref) {
@@ -52,10 +60,47 @@ final availableSyncServicesProvider = Provider<List<SyncServiceInfo>>((ref) {
   return registry.availableServices;
 });
 
+/// Provider for the [SyncLocalDataSource] singleton.
+final syncLocalDataSourceProvider = Provider<SyncLocalDataSource>((ref) {
+  return SyncLocalDataSource();
+});
+
+/// Provider for the [SyncQueue] singleton.
+final syncQueueProvider = Provider<SyncQueue>((ref) {
+  final syncLocalDs = ref.watch(syncLocalDataSourceProvider);
+  return SyncQueue(syncLocalDs);
+});
+
+/// Provider for the [SyncEngine] singleton.
+final syncEngineProvider = Provider<SyncEngine>((ref) {
+  final registry = ref.watch(syncServiceRegistryProvider);
+  final syncLocalDs = ref.watch(syncLocalDataSourceProvider);
+  final syncQueue = ref.watch(syncQueueProvider);
+  return SyncEngine(
+    registry: registry,
+    localDataSource: syncLocalDs,
+    syncQueue: syncQueue,
+  );
+});
+
+/// Provider for the [SyncBridge] singleton.
+///
+/// Provides a unified interface for local operations with remote sync.
+final syncBridgeProvider = Provider<SyncBridge>((ref) {
+  return SyncBridge(
+    feedRepo: FeedRepository(),
+    articleRepo: ArticleRepository(),
+    syncLocalDs: ref.watch(syncLocalDataSourceProvider),
+    syncEngine: ref.watch(syncEngineProvider),
+    registry: ref.watch(syncServiceRegistryProvider),
+    syncQueue: ref.watch(syncQueueProvider),
+  );
+});
+
 /// Provider for sync status stream.
 final syncStatusProvider = StreamProvider<SyncStatus>((ref) {
-  // Returns idle status until sync engine is initialized
-  return Stream.value(SyncStatus.idle);
+  final engine = ref.watch(syncEngineProvider);
+  return engine.syncStatusStream;
 });
 
 /// Notifier that manages sync accounts state.
@@ -73,9 +118,11 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
   }
 
   Future<void> _loadAccounts() async {
+    _log.info('_loadAccounts: loading accounts');
     try {
       final accounts = await _repository.getAccounts();
       state = AsyncValue.data(accounts);
+      _log.info('_loadAccounts: loaded ${accounts.length} accounts');
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -119,12 +166,27 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
           throw Exception('Authentication failed. Please check your credentials.');
         }
         _log.info('addAccount: authentication succeeded for account $accountId');
+
+        // Set accountId on service and trigger full sync to write data to local DB
+        if (syncService is ReaderSyncService) {
+          syncService.accountId = accountId;
+        }
+
+        // Activate the sync service in the registry
+        registry.setActiveService(serviceType);
+
+        // Perform full sync (writes remote data to local DB with accountId)
+        await _performFullSync(syncService, accountId);
       } else {
         _log.warning('addAccount: no SyncService registered for ${serviceType.displayName}, skipping verification');
       }
 
       await _repository.setActiveAccount(accountId);
       _log.info('addAccount: account $accountId set as active');
+
+      // Update account switch provider state
+      _ref.read(accountSwitchProvider.notifier).switchAccount(accountId);
+
       await _loadAccounts();
     } catch (e, st) {
       _log.error('addAccount: failed for ${serviceType.displayName}', error: e, stackTrace: st);
@@ -138,6 +200,33 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
       }
       state = AsyncValue.error(e, st);
       rethrow;
+    }
+  }
+
+  /// Performs a full sync using the sync service's fullSync method.
+  ///
+  /// This replaces the old _syncRemoteFeeds approach by delegating to
+  /// the sync service's fullSync which now writes data to the local database
+  /// with proper accountId association.
+  Future<void> _performFullSync(SyncService syncService, int accountId) async {
+    try {
+      _log.info('_performFullSync: starting full sync for account $accountId');
+
+      // Set accountId on the sync service if it supports it
+      if (syncService is ReaderSyncService) {
+        syncService.accountId = accountId;
+      }
+
+      // Trigger full sync which now writes to local DB
+      final result = await syncService.fullSync();
+      _log.info('_performFullSync: completed — $result');
+
+      // Invalidate account-related providers to refresh UI
+      _ref.invalidate(activeAccountIdProvider);
+      _ref.invalidate(activeAccountInfoProvider);
+    } catch (e) {
+      // Don't fail the entire addAccount flow if sync fails
+      _log.error('_performFullSync: failed for account $accountId', error: e);
     }
   }
 
@@ -193,6 +282,14 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
           throw Exception('Authentication failed. Please check your credentials.');
         }
         _log.info('updateAccount: authentication succeeded for account $accountId');
+
+        // Set accountId on service and trigger full sync
+        if (syncService is ReaderSyncService) {
+          syncService.accountId = accountId;
+        }
+
+        // Perform full sync (writes remote data to local DB with accountId)
+        await _performFullSync(syncService, accountId);
       } else {
         _log.warning('updateAccount: no SyncService registered for ${credentials.serviceType.displayName}, skipping verification');
       }
@@ -208,6 +305,7 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
 
   /// Removes a sync account.
   Future<void> removeAccount(int accountId) async {
+    _log.info('removeAccount: removing account $accountId');
     try {
       await _repository.removeAccount(accountId);
       await _loadAccounts();
@@ -216,16 +314,46 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
     }
   }
 
-  /// Sets an account as active.
+  /// Sets an account as active and triggers global data refresh.
   Future<void> setActiveAccount(int accountId) async {
+    _log.info('setActiveAccount: setting account $accountId as active');
     try {
       await _repository.setActiveAccount(accountId);
+
+      // Activate the corresponding sync service in the registry
+      final account = await _repository.getAccountById(accountId);
+      if (account != null) {
+        final registry = _ref.read(syncServiceRegistryProvider);
+        final syncService = registry.getService(account.serviceType);
+        if (syncService != null) {
+          registry.setActiveService(account.serviceType);
+
+          // Set accountId on the sync service
+          if (syncService is ReaderSyncService) {
+            syncService.accountId = accountId;
+          }
+
+          // Re-authenticate if credentials are available
+          final credentials = await _authService.getCredentials(accountId);
+          if (credentials != null && !syncService.isAuthenticated) {
+            await syncService.authenticate(credentials);
+          }
+        }
+      }
+
+      // Trigger account switch which invalidates all data providers
+      _ref.read(accountSwitchProvider.notifier).switchAccount(accountId);
+
       await _loadAccounts();
+      _log.info('setActiveAccount: account $accountId set as active successfully');
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   /// Refreshes the accounts list.
-  Future<void> refreshAccounts() => _loadAccounts();
+  Future<void> refreshAccounts() {
+    _log.info('refreshAccounts: refreshing accounts list');
+    return _loadAccounts();
+  }
 }

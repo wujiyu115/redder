@@ -373,5 +373,23 @@
   "accountUpdated": "Account updated successfully",
   "verifyingCredentials": "Verifying credentials…",
   "loginSuccess": "Login successful! Refreshing subscriptions…",
-  "authenticationFailed": "Authentication failed. Please check your credentials."
+  "authenticationFailed": "Authentication failed. Please check your credentials.",
+
+  "star": "Star",
+  "unstar": "Unstar",
+  "markRead": "Mark Read",
+  "markUnread": "Mark Unread",
+  "markAllAsRead": "Mark All as Read",
+  "syncing": "Syncing...",
+  "syncNow": "Sync Now",
+  "logout": "Log Out",
+  "logoutConfirm": "Are you sure you want to log out of {serviceName}?",
+  "@logoutConfirm": {
+    "placeholders": {
+      "serviceName": { "type": "String" }
+    }
+  },
+  "syncStatus": "Sync Status",
+  "syncIdle": "Idle",
+  "syncError": "Sync Error"
 }

@@ -8,9 +8,12 @@ import 'package:flutter/foundation.dart';
 /// Logging panel (via [developer.log]).  Console output is only enabled
 /// in debug mode.
 ///
+/// In debug mode, each log line includes the caller's file name and line
+/// number for easy navigation (e.g. `feed_refresh_service.dart:42`).
+///
 /// Usage:
 /// ```dart
-/// final _log = AppLogger('Sync');
+/// static const _log = AppLogger('Sync');
 /// _log.info('Account added');
 /// _log.warning('Token expiring soon');
 /// _log.error('Authentication failed', error: e);
@@ -25,27 +28,55 @@ class AppLogger {
 
   /// Logs an informational message (level 0 — default).
   void info(String message) {
-    _print('💡 [$_tag] $message');
-    developer.log(message, name: _tag);
+    final location = _callerLocation();
+    _print('💡 [$_tag] $location$message');
+    developer.log('$location$message', name: _tag);
   }
 
   /// Logs a warning message (level 900).
   void warning(String message) {
-    _print('⚠️ [$_tag] $message');
-    developer.log(message, name: _tag, level: 900);
+    final location = _callerLocation();
+    _print('⚠️ [$_tag] $location$message');
+    developer.log('$location$message', name: _tag, level: 900);
   }
 
   /// Logs an error message (level 1000) with an optional [error] object
   /// and [stackTrace].
   void error(String message, {Object? error, StackTrace? stackTrace}) {
-    _print('❌ [$_tag] $message${error != null ? ' | $error' : ''}');
+    final location = _callerLocation();
+    _print('❌ [$_tag] $location$message${error != null ? ' | $error' : ''}');
     developer.log(
-      message,
+      '$location$message',
       name: _tag,
       level: 1000,
       error: error,
       stackTrace: stackTrace,
     );
+  }
+
+  /// Extracts the caller's file name and line number from the stack trace.
+  ///
+  /// Returns a string like ` (feed_refresh_service.dart:42)` in debug mode,
+  /// or an empty string in release mode (zero overhead).
+  static String _callerLocation() {
+    if (!kDebugMode) return '';
+    try {
+      // Frame 0: _callerLocation
+      // Frame 1: info/warning/error
+      // Frame 2: actual caller
+      final frames = StackTrace.current.toString().split('\n');
+      if (frames.length < 3) return '';
+      final callerFrame = frames[2];
+      // Dart stack frames look like:
+      //   #2      FeedRefreshService.refreshAll (package:reeder/data/services/feed_refresh_service.dart:42:5)
+      final match = RegExp(r'\(package:.*?/(.+?):(\d+):\d+\)').firstMatch(callerFrame);
+      if (match != null) {
+        return ' (${match.group(1)}:${match.group(2)})';
+      }
+      return '';
+    } catch (_) {
+      return '';
+    }
   }
 
   /// Prints to the debug console only in debug mode.

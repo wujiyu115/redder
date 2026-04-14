@@ -1,14 +1,10 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:reeder/core/database/app_database.dart';
-import 'package:reeder/data/datasources/local/sync_local_ds.dart';
 import 'package:reeder/data/services/sync/sync_engine.dart';
 import 'package:reeder/data/services/sync/sync_models.dart';
 import 'package:reeder/data/services/sync/sync_queue.dart';
-import 'package:reeder/data/services/sync/sync_service.dart';
-import 'package:reeder/data/services/sync/sync_service_registry.dart';
 
 import '../../../test_mocks.mocks.dart';
 
@@ -28,6 +24,7 @@ void main() {
     mockConnectivity = MockConnectivity();
 
     when(mockRegistry.activeService).thenReturn(mockSyncService);
+    when(mockSyncService.serviceName).thenReturn('MockService');
     when(mockConnectivity.checkConnectivity())
         .thenAnswer((_) async => [ConnectivityResult.wifi]);
 

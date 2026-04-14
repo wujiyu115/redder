@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -70,8 +70,61 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(syncQueueItems);
             await m.createTable(remoteIdMappings);
           }
+          if (from < 3) {
+            // Add accountId column to all core tables for multi-account data isolation
+            await customStatement('ALTER TABLE feeds ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE feed_items ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE folders ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE tags ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE tagged_items ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE filters ADD COLUMN account_id INTEGER');
+            await customStatement('ALTER TABLE scroll_positions ADD COLUMN account_id INTEGER');
+
+            // Recreate tables that had unique constraints removed
+            // For folders: remove unique constraint on name
+            // For tags: remove unique constraint on name
+            // For filters: remove unique constraint on name
+            // For scroll_positions: remove unique constraint on timeline_id
+            // Note: SQLite doesn't support DROP CONSTRAINT, so we recreate tables
+
+            // Recreate folders table without unique constraint on name
+            await customStatement('CREATE TABLE folders_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, sort_order INTEGER NOT NULL DEFAULT 0, is_expanded INTEGER NOT NULL DEFAULT 1, unread_count INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
+            await customStatement('INSERT INTO folders_new SELECT id, name, icon_name, account_id, sort_order, is_expanded, unread_count, created_at, updated_at FROM folders');
+            await customStatement('DROP TABLE folders');
+            await customStatement('ALTER TABLE folders_new RENAME TO folders');
+
+            // Recreate tags table without unique constraint on name
+            await customStatement('CREATE TABLE tags_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, is_built_in INTEGER NOT NULL DEFAULT 0, is_shared INTEGER NOT NULL DEFAULT 0, shared_feed_url TEXT, item_count INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)');
+            await customStatement('INSERT INTO tags_new SELECT id, name, icon_name, account_id, is_built_in, is_shared, shared_feed_url, item_count, sort_order, created_at FROM tags');
+            await customStatement('DROP TABLE tags');
+            await customStatement('ALTER TABLE tags_new RENAME TO tags');
+
+            // Recreate filters table without unique constraint on name
+            await customStatement('CREATE TABLE filters_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, account_id INTEGER, include_keywords TEXT NOT NULL DEFAULT \'[]\', exclude_keywords TEXT NOT NULL DEFAULT \'[]\', media_types TEXT NOT NULL DEFAULT \'[]\', feed_types TEXT NOT NULL DEFAULT \'[]\', match_whole_word INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
+            await customStatement('INSERT INTO filters_new SELECT id, name, account_id, include_keywords, exclude_keywords, media_types, feed_types, match_whole_word, sort_order, created_at, updated_at FROM filters');
+            await customStatement('DROP TABLE filters');
+            await customStatement('ALTER TABLE filters_new RENAME TO filters');
+
+            // Recreate scroll_positions table without unique constraint on timeline_id
+            await customStatement('CREATE TABLE scroll_positions_new (id INTEGER PRIMARY KEY AUTOINCREMENT, timeline_id TEXT NOT NULL, account_id INTEGER, last_item_id INTEGER, scroll_offset REAL NOT NULL DEFAULT 0.0, saved_at INTEGER NOT NULL)');
+            await customStatement('INSERT INTO scroll_positions_new SELECT id, timeline_id, account_id, last_item_id, scroll_offset, saved_at FROM scroll_positions');
+            await customStatement('DROP TABLE scroll_positions');
+            await customStatement('ALTER TABLE scroll_positions_new RENAME TO scroll_positions');
+          }
         },
       );
+
+  /// Creates an in-memory database for testing.
+  AppDatabase.forTesting() : super(NativeDatabase.memory());
+
+  /// Initializes the database with an in-memory backend for testing.
+  ///
+  /// This avoids file system dependencies in test environments.
+  static Future<void> initializeForTesting() async {
+    if (_instance != null) return;
+    _instance = AppDatabase.forTesting();
+    await _instance!.customSelect('SELECT 1').get();
+  }
 
   /// Initializes the database.
   ///
