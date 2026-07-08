@@ -1,0 +1,25 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B9BFF"/>
+      <stop offset="1" stop-color="#0A6CFF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.28" cy="0.22" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Full-bleed background (iOS masks the corners itself) -->
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#glow)"/>
+
+  <!-- Classic RSS broadcast mark, centered -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round">
+    <!-- outer arc -->
+    <path d="M 360 348 A 316 316 0 0 1 676 664" stroke-width="76"/>
+    <!-- inner arc -->
+    <path d="M 360 496 A 168 168 0 0 1 528 664" stroke-width="76"/>
+  </g>
+  <circle cx="360" cy="664" r="62" fill="#FFFFFF"/>
+</svg>

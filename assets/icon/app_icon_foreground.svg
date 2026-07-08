@@ -1,0 +1,11 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Transparent background; glyph centered inside the adaptive-icon safe zone.
+       Mark's native bbox center is (506,518); scale about it and recenter to 512,512. -->
+  <g transform="translate(512,512) scale(1.1) translate(-506,-518)">
+    <g fill="none" stroke="#FFFFFF" stroke-linecap="round">
+      <path d="M 360 348 A 316 316 0 0 1 676 664" stroke-width="76"/>
+      <path d="M 360 496 A 168 168 0 0 1 528 664" stroke-width="76"/>
+    </g>
+    <circle cx="360" cy="664" r="62" fill="#FFFFFF"/>
+  </g>
+</svg>
