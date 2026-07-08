@@ -1,9 +1,23 @@
 /// Extension methods on [String] for the Reeder app.
 extension StringExt on String {
+  static final RegExp _htmlTag = RegExp(r'<[^>]*>');
+  static final RegExp _whitespace = RegExp(r'\s+');
+  static final RegExp _email =
+      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
   /// Returns the string truncated to [maxLength] with an ellipsis.
   String truncate(int maxLength) {
     if (length <= maxLength) return this;
-    return '${substring(0, maxLength)}…';
+    var end = maxLength;
+    // Avoid cutting in the middle of a UTF-16 surrogate pair, which would
+    // otherwise produce a broken/replacement glyph.
+    if (end > 0) {
+      final unit = codeUnitAt(end - 1);
+      if (unit >= 0xD800 && unit <= 0xDBFF) {
+        end -= 1;
+      }
+    }
+    return '${substring(0, end)}…';
   }
 
   /// Returns the string with the first character capitalized.
@@ -30,8 +44,7 @@ extension StringExt on String {
 
   /// Checks if the string is a valid email address.
   bool get isValidEmail {
-    return RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        .hasMatch(this);
+    return _email.hasMatch(this);
   }
 
   /// Returns the domain from a URL string.
@@ -42,7 +55,7 @@ extension StringExt on String {
 
   /// Strips HTML tags from the string.
   String get stripHtml {
-    return replaceAll(RegExp(r'<[^>]*>'), '');
+    return replaceAll(_htmlTag, '');
   }
 
   /// Returns null if the string is empty, otherwise returns the string.
@@ -52,7 +65,7 @@ extension StringExt on String {
 
   /// Normalizes whitespace (collapses multiple spaces/newlines).
   String get normalizeWhitespace {
-    return replaceAll(RegExp(r'\s+'), ' ').trim();
+    return replaceAll(_whitespace, ' ').trim();
   }
 
   /// Ensures the string starts with the given prefix.

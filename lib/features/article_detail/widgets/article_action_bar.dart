@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_durations.dart';

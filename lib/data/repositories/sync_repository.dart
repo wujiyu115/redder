@@ -111,8 +111,9 @@ class SyncRepository {
     await _localDs.upsertAccount(SyncAccountsCompanion(
       id: Value(existing.id),
       serviceType: Value(existing.serviceType),
-      serverUrl: Value(serverUrl),
-      username: Value(username),
+      // Preserve existing values when a field is not provided (partial update).
+      serverUrl: Value(serverUrl ?? existing.serverUrl),
+      username: Value(username ?? existing.username),
       isActive: Value(existing.isActive),
       lastSyncAt: Value(existing.lastSyncAt),
       createdAt: Value(existing.createdAt),

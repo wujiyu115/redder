@@ -48,7 +48,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<String> iconUrl = GeneratedColumn<String>(
       'icon_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumnWithTypeConverter<FeedType, int> type =
       GeneratedColumn<int>('type', aliasedName, false,
@@ -82,8 +81,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   late final GeneratedColumn<int> fetchDurationMs = GeneratedColumn<int>(
       'fetch_duration_ms', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _defaultViewerMeta =
-      const VerificationMeta('defaultViewer');
   @override
   late final GeneratedColumnWithTypeConverter<ViewerType, int> defaultViewer =
       GeneratedColumn<int>('default_viewer', aliasedName, false,
@@ -206,7 +203,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
       context.handle(_iconUrlMeta,
           iconUrl.isAcceptableOrUnknown(data['icon_url']!, _iconUrlMeta));
     }
-    context.handle(_typeMeta, const VerificationResult.success());
     if (data.containsKey('folder_id')) {
       context.handle(_folderIdMeta,
           folderId.isAcceptableOrUnknown(data['folder_id']!, _folderIdMeta));
@@ -227,7 +223,6 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
           fetchDurationMs.isAcceptableOrUnknown(
               data['fetch_duration_ms']!, _fetchDurationMsMeta));
     }
-    context.handle(_defaultViewerMeta, const VerificationResult.success());
     if (data.containsKey('auto_reader_view')) {
       context.handle(
           _autoReaderViewMeta,
@@ -993,8 +988,6 @@ class $FeedItemsTable extends FeedItems
   late final GeneratedColumn<DateTime> fetchedAt = GeneratedColumn<DateTime>(
       'fetched_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _contentTypeMeta =
-      const VerificationMeta('contentType');
   @override
   late final GeneratedColumnWithTypeConverter<ContentType, int> contentType =
       GeneratedColumn<int>('content_type', aliasedName, false,
@@ -1148,7 +1141,6 @@ class $FeedItemsTable extends FeedItems
     } else if (isInserting) {
       context.missing(_fetchedAtMeta);
     }
-    context.handle(_contentTypeMeta, const VerificationResult.success());
     if (data.containsKey('is_read')) {
       context.handle(_isReadMeta,
           isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta));

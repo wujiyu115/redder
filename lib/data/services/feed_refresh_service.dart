@@ -59,11 +59,7 @@ class FeedRefreshService {
   /// Refreshes multiple feeds by IDs.
   Future<RefreshResult> refreshFeeds(List<int> feedIds) async {
     _log.info('refreshFeeds: ${feedIds.length} feed IDs');
-    final feeds = <Feed>[];
-    for (final id in feedIds) {
-      final feed = await _feedDs.getById(id);
-      if (feed != null) feeds.add(feed);
-    }
+    final feeds = await _feedDs.getByIds(feedIds);
     return _refreshFeeds(feeds);
   }
 
@@ -119,6 +115,15 @@ class FeedRefreshService {
       final result = await _remoteDs.fetchFeed(feed.feedUrl);
       int newItemCount = 0;
 
+      // Deduplicate by URL against the database in a single batch query
+      // (avoids an N+1 SELECT-per-item pattern).
+      final candidateUrls =
+          result.items.map((i) => i.url).where((u) => u.isNotEmpty).toList();
+      final existing = await _articleDs.existingUrls(
+        candidateUrls,
+        accountId: feed.accountId,
+      );
+
       // Process each parsed item (mutable DTO)
       final newItems = <FeedItemsCompanion>[];
       final seenUrls = <String>{};
@@ -130,7 +135,7 @@ class FeedRefreshService {
         if (!seenUrls.add(item.url)) continue;
 
         // Skip if already exists in database (deduplication by URL)
-        if (await _articleDs.exists(item.url)) {
+        if (existing.contains(item.url)) {
           continue;
         }
 
@@ -163,9 +168,9 @@ class FeedRefreshService {
         newItemCount++;
       }
 
-      // Batch save new items
+      // Batch save new items (scoped to the feed's account for isolation)
       if (newItems.isNotEmpty) {
-        await _articleDs.upsertAll(newItems);
+        await _articleDs.upsertAll(newItems, accountId: feed.accountId);
       }
 
       // Update feed metadata
@@ -176,7 +181,8 @@ class FeedRefreshService {
       );
 
       // Update unread count
-      final unreadCount = await _articleDs.unreadCountForFeed(feed.id);
+      final unreadCount =
+          await _articleDs.unreadCountForFeed(feed.id, accountId: feed.accountId);
       await _feedDs.updateUnreadCount(feed.id, unreadCount);
 
       _log.info('_refreshSingleFeed: ${feed.title} — $newItemCount new items in ${stopwatch.elapsedMilliseconds}ms');

@@ -303,6 +303,36 @@ void main() {
 
       verify(mockSyncService.markAsUnstarred(['article1'])).called(1);
     });
+
+    test('enqueues for retry when the online remote call fails (regression)',
+        () async {
+      final mockAccount = SyncAccount(
+        id: 1,
+        serviceType: 0,
+        serverUrl: null,
+        username: 'test',
+        isActive: true,
+        lastSyncAt: null,
+        syncState: null,
+        createdAt: DateTime(2024, 1, 1),
+      );
+
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
+      when(mockConnectivity.checkConnectivity())
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      // Remote call fails transiently.
+      when(mockSyncService.markAsRead(any))
+          .thenThrow(Exception('Network error'));
+      when(mockSyncQueue.enqueue(any, any, any)).thenAnswer((_) async {});
+
+      // Previously the exception propagated to the caller and the change was
+      // lost; now it must be swallowed and enqueued for later retry.
+      await syncEngine.pushStateChange(SyncQueueAction.markRead, ['article1']);
+
+      verify(mockSyncQueue.enqueue(1, SyncQueueAction.markRead, ['article1']))
+          .called(1);
+    });
   });
 
   group('status stream', () {

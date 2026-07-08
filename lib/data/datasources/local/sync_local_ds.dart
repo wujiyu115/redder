@@ -90,10 +90,14 @@ class SyncLocalDataSource {
 
   /// Increments the retry count for a queue item.
   Future<void> incrementRetryCount(int queueItemId) async {
+    final item = await (_db.select(_db.syncQueueItems)
+          ..where((t) => t.id.equals(queueItemId)))
+        .getSingleOrNull();
+    if (item == null) return;
     await (_db.update(_db.syncQueueItems)
           ..where((t) => t.id.equals(queueItemId)))
-        .write(const SyncQueueItemsCompanion(
-      retryCount: Value.absent(),
+        .write(SyncQueueItemsCompanion(
+      retryCount: Value(item.retryCount + 1),
     ));
   }
 
