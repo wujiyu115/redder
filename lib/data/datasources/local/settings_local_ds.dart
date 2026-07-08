@@ -20,8 +20,9 @@ class SettingsLocalDataSource {
     final settings = await query.getSingleOrNull();
     if (settings != null) return settings;
 
-    // Create default settings
-    await _db.into(_db.appSettingsTable).insert(
+    // Create default settings. Use insertOnConflictUpdate so two concurrent
+    // first-time callers don't trigger a primary-key violation on id = 0.
+    await _db.into(_db.appSettingsTable).insertOnConflictUpdate(
       AppSettingsTableCompanion.insert(
         id: const Value(0),
       ),

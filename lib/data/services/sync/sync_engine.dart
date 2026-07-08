@@ -190,10 +190,15 @@ class SyncEngine {
     final isOnline = !connectivityResult.contains(ConnectivityResult.none);
 
     if (isOnline) {
-      // 在线，直接调用远程服务
+      // 在线，直接调用远程服务；失败时加入队列稍后重试
       _log.info('pushStateChange: executing $action for ${itemIds.length} items (online)');
-      await _executeRemoteAction(activeService, action, itemIds);
-      _log.info('pushStateChange: $action completed');
+      try {
+        await _executeRemoteAction(activeService, action, itemIds);
+        _log.info('pushStateChange: $action completed');
+      } catch (e) {
+        _log.warning('pushStateChange: $action failed, enqueuing for retry (account $accountId)');
+        await _syncQueue.enqueue(accountId, action, itemIds);
+      }
     } else {
       // 离线，加入队列
       _log.info('pushStateChange: offline, enqueuing $action for ${itemIds.length} items (account $accountId)');
@@ -222,11 +227,13 @@ class SyncEngine {
         await syncService.markAsUnstarred(itemIds);
         break;
       case SyncQueueAction.addFeed:
-        // 添加 Feed 的逻辑由调用方处理
+        for (final feedUrl in itemIds) {
+          await syncService.addFeed(feedUrl);
+        }
         break;
       case SyncQueueAction.removeFeed:
-        for (final feedId in itemIds) {
-          await syncService.markFeedAsRead(feedId);
+        for (final feedRemoteId in itemIds) {
+          await syncService.removeFeed(feedRemoteId);
         }
         break;
     }

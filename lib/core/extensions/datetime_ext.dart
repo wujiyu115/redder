@@ -2,16 +2,20 @@
 extension DateTimeExt on DateTime {
   /// Returns true if this date is today.
   bool get isToday {
+    final local = toLocal();
     final now = DateTime.now();
-    return year == now.year && month == now.month && day == now.day;
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
   }
 
   /// Returns true if this date is yesterday.
   bool get isYesterday {
+    final local = toLocal();
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    return year == yesterday.year &&
-        month == yesterday.month &&
-        day == yesterday.day;
+    return local.year == yesterday.year &&
+        local.month == yesterday.month &&
+        local.day == yesterday.day;
   }
 
   /// Returns true if this date is within the last 7 days.
@@ -23,7 +27,7 @@ extension DateTimeExt on DateTime {
 
   /// Returns true if this date is in the current year.
   bool get isThisYear {
-    return year == DateTime.now().year;
+    return toLocal().year == DateTime.now().year;
   }
 
   /// Returns the start of the day (midnight).

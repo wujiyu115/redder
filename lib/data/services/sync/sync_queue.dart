@@ -100,11 +100,15 @@ class SyncQueue {
         await syncService.markAsUnstarred(itemIds);
         break;
       case SyncQueueAction.addFeed:
-        // 添加 Feed 的逻辑由 syncEngine 处理
+        // itemIds 存储的是待添加的 feed URL
+        for (final feedUrl in itemIds) {
+          await syncService.addFeed(feedUrl);
+        }
         break;
       case SyncQueueAction.removeFeed:
-        for (final feedId in itemIds) {
-          await syncService.markFeedAsRead(feedId);
+        // itemIds 存储的是远程 feed ID
+        for (final feedRemoteId in itemIds) {
+          await syncService.removeFeed(feedRemoteId);
         }
         break;
     }

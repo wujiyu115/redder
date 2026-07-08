@@ -8,6 +8,18 @@
 class BionicReading {
   BionicReading._();
 
+  /// Matches a single "letter" character (Latin, Latin-extended, or CJK).
+  /// Hoisted to a `static final` so it is compiled once instead of on every
+  /// character/word — this runs on the article-rendering hot path.
+  static final RegExp _letter =
+      RegExp(r'[a-zA-ZÀ-ɏ一-鿿]');
+
+  /// Matches runs of non-whitespace or whitespace (word/separator tokens).
+  static final RegExp _wordOrSpace = RegExp(r'(\S+|\s+)');
+
+  /// Matches the opening tag name at the start of an HTML tag.
+  static final RegExp _tagNamePattern = RegExp(r'^<([a-zA-Z][a-zA-Z0-9]*)');
+
   /// Converts plain text to HTML with Bionic Reading formatting.
   ///
   /// Each word gets its first N letters wrapped in `<b>` tags,
@@ -21,9 +33,11 @@ class BionicReading {
     if (text.isEmpty) return text;
 
     final buffer = StringBuffer();
-    final words = text.split(RegExp(r'(\s+)'));
-
-    for (final segment in words) {
+    // Iterate word/whitespace tokens with allMatches so separators are kept.
+    // (Dart's String.split discards the separator even with a capturing
+    // group, which would collapse all whitespace between words.)
+    for (final match in _wordOrSpace.allMatches(text)) {
+      final segment = match.group(0)!;
       if (segment.trim().isEmpty) {
         // Preserve whitespace
         buffer.write(segment);
@@ -64,12 +78,15 @@ class BionicReading {
         // Check if this is a skip tag (opening)
         final tagName = _extractTagName(tag);
         if (tagName != null && skipTags.contains(tagName.toLowerCase())) {
-          // Find the closing tag and copy everything as-is
-          final closingTag = '</$tagName>';
-          final closingIndex = html.indexOf(closingTag, tagEnd + 1);
-          if (closingIndex != -1) {
-            buffer.write(html.substring(tagEnd + 1, closingIndex + closingTag.length));
-            i = closingIndex + closingTag.length;
+          // Find the closing tag (case-insensitively, allowing whitespace like
+          // "</PRE >") and copy everything inside as-is.
+          final closingPattern =
+              RegExp('</\\s*$tagName\\s*>', caseSensitive: false);
+          final closingMatch = closingPattern.firstMatch(html.substring(tagEnd + 1));
+          if (closingMatch != null) {
+            final closeEnd = tagEnd + 1 + closingMatch.end;
+            buffer.write(html.substring(tagEnd + 1, closeEnd));
+            i = closeEnd;
           } else {
             i = tagEnd + 1;
           }
@@ -97,8 +114,7 @@ class BionicReading {
 
     final buffer = StringBuffer();
     // Split by word boundaries while preserving separators
-    final regex = RegExp(r'(\S+|\s+)');
-    final matches = regex.allMatches(text);
+    final matches = _wordOrSpace.allMatches(text);
 
     for (final match in matches) {
       final segment = match.group(0)!;
@@ -118,23 +134,21 @@ class BionicReading {
     if (word.length <= 1) return word;
 
     // Check if the word contains any letters
-    if (!RegExp(r'[a-zA-Z\u00C0-\u024F\u4e00-\u9fff]').hasMatch(word)) {
+    if (!_letter.hasMatch(word)) {
       return word;
     }
 
     // Handle words with leading punctuation
     int leadingPunct = 0;
     while (leadingPunct < word.length &&
-        !RegExp(r'[a-zA-Z\u00C0-\u024F\u4e00-\u9fff]')
-            .hasMatch(word[leadingPunct])) {
+        !_letter.hasMatch(word[leadingPunct])) {
       leadingPunct++;
     }
 
     // Handle words with trailing punctuation
     int trailingPunct = word.length;
     while (trailingPunct > leadingPunct &&
-        !RegExp(r'[a-zA-Z\u00C0-\u024F\u4e00-\u9fff]')
-            .hasMatch(word[trailingPunct - 1])) {
+        !_letter.hasMatch(word[trailingPunct - 1])) {
       trailingPunct--;
     }
 
@@ -175,7 +189,7 @@ class BionicReading {
   static String? _extractTagName(String tag) {
     if (tag.startsWith('</') || tag.startsWith('<!')) return null;
 
-    final match = RegExp(r'^<([a-zA-Z][a-zA-Z0-9]*)').firstMatch(tag);
+    final match = _tagNamePattern.firstMatch(tag);
     return match?.group(1);
   }
 }

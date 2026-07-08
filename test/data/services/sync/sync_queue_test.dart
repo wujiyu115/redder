@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:reeder/core/database/app_database.dart';
 import 'package:reeder/data/datasources/local/sync_local_ds.dart';
+import 'package:reeder/data/services/sync/sync_models.dart';
 import 'package:reeder/data/services/sync/sync_queue.dart';
 import 'package:reeder/data/services/sync/sync_service.dart';
 
@@ -219,6 +220,64 @@ void main() {
       await syncQueue.processQueue(testAccountId, mockSyncService);
 
       verify(mockSyncService.markAsStarred(['article1'])).called(1);
+    });
+
+    test('processQueue() - removeFeed action 调用 syncService.removeFeed()', () async {
+      final queueItem = SyncQueueItem(
+        id: 1,
+        accountId: testAccountId,
+        action: 'removeFeed',
+        itemIds: '["remote-feed-1"]',
+        createdAt: DateTime(2024, 1, 1),
+        retryCount: 0,
+      );
+
+      var dequeueCallCount = 0;
+      when(mockLocalDataSource.dequeueAction(testAccountId))
+          .thenAnswer((_) async {
+        dequeueCallCount++;
+        return dequeueCallCount == 1 ? queueItem : null;
+      });
+      when(mockSyncService.removeFeed('remote-feed-1'))
+          .thenAnswer((_) async {});
+      when(mockLocalDataSource.deleteQueueItem(1)).thenAnswer((_) async => true);
+
+      await syncQueue.processQueue(testAccountId, mockSyncService);
+
+      // Regression: removeFeed used to (incorrectly) call markFeedAsRead.
+      verify(mockSyncService.removeFeed('remote-feed-1')).called(1);
+      verifyNever(mockSyncService.markFeedAsRead(any));
+    });
+
+    test('processQueue() - addFeed action 调用 syncService.addFeed()', () async {
+      final queueItem = SyncQueueItem(
+        id: 1,
+        accountId: testAccountId,
+        action: 'addFeed',
+        itemIds: '["https://example.com/feed"]',
+        createdAt: DateTime(2024, 1, 1),
+        retryCount: 0,
+      );
+
+      var dequeueCallCount = 0;
+      when(mockLocalDataSource.dequeueAction(testAccountId))
+          .thenAnswer((_) async {
+        dequeueCallCount++;
+        return dequeueCallCount == 1 ? queueItem : null;
+      });
+      when(mockSyncService.addFeed('https://example.com/feed'))
+          .thenAnswer((_) async => SyncFeed(
+                remoteId: 'r1',
+                title: 'Example',
+                feedUrl: 'https://example.com/feed',
+              ));
+      when(mockLocalDataSource.deleteQueueItem(1)).thenAnswer((_) async => true);
+
+      await syncQueue.processQueue(testAccountId, mockSyncService);
+
+      // Regression: addFeed used to be a silent no-op, losing offline adds.
+      verify(mockSyncService.addFeed('https://example.com/feed')).called(1);
+      verify(mockLocalDataSource.deleteQueueItem(1)).called(1);
     });
 
     test('getQueueSize() - 返回正确数量', () async {

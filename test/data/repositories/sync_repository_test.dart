@@ -191,5 +191,58 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    group('updateAccount()', () {
+      SyncAccount existing() => SyncAccount(
+            id: 1,
+            serviceType: 3,
+            serverUrl: 'https://old.example.com',
+            username: 'olduser',
+            isActive: true,
+            lastSyncAt: DateTime(2024, 1, 2),
+            syncState: null,
+            createdAt: DateTime(2024, 1, 1),
+          );
+
+      test('preserves username when only serverUrl is updated (regression)',
+          () async {
+        when(mockLocalDs.getAccountById(1))
+            .thenAnswer((_) async => existing());
+        when(mockLocalDs.upsertAccount(any)).thenAnswer((_) async => 1);
+
+        await repository.updateAccount(1, serverUrl: 'https://new.example.com');
+
+        final captured = verify(mockLocalDs.upsertAccount(captureAny))
+            .captured
+            .single as SyncAccountsCompanion;
+        expect(captured.serverUrl.value, 'https://new.example.com');
+        // Previously username would be clobbered to null here.
+        expect(captured.username.value, 'olduser');
+      });
+
+      test('preserves serverUrl when only username is updated (regression)',
+          () async {
+        when(mockLocalDs.getAccountById(1))
+            .thenAnswer((_) async => existing());
+        when(mockLocalDs.upsertAccount(any)).thenAnswer((_) async => 1);
+
+        await repository.updateAccount(1, username: 'newuser');
+
+        final captured = verify(mockLocalDs.upsertAccount(captureAny))
+            .captured
+            .single as SyncAccountsCompanion;
+        expect(captured.username.value, 'newuser');
+        expect(captured.serverUrl.value, 'https://old.example.com');
+      });
+
+      test('throws StateError when the account does not exist', () async {
+        when(mockLocalDs.getAccountById(42)).thenAnswer((_) async => null);
+
+        expect(
+          () => repository.updateAccount(42, username: 'x'),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
   });
 }

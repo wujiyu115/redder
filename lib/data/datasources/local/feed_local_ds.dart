@@ -50,6 +50,18 @@ class FeedLocalDataSource {
     return query.getSingleOrNull();
   }
 
+  /// Gets multiple feeds by their IDs in a single query.
+  ///
+  /// Avoids the N+1 pattern of calling [getById] in a loop.
+  Future<List<Feed>> getByIds(List<int> ids, {int? accountId}) {
+    if (ids.isEmpty) return Future.value(<Feed>[]);
+    final query = _db.select(_db.feeds)..where((t) => t.id.isIn(ids));
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.get();
+  }
+
   /// Gets a feed by its feed URL.
   /// When [accountId] is provided, filters by account (different accounts can subscribe to the same URL).
   Future<Feed?> getByUrl(String feedUrl, {int? accountId}) async {

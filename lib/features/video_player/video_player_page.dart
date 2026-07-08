@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';

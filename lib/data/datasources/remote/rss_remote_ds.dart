@@ -197,7 +197,9 @@ class RssRemoteDataSource {
         ..author = entry.authors?.isNotEmpty == true
             ? entry.authors!.first.name
             : null
-        ..publishedAt = (entry.published as DateTime?) ?? (entry.updated as DateTime?) ?? DateTime.now();
+        ..publishedAt = DateTime.tryParse(entry.published ?? '') ??
+            entry.updated ??
+            DateTime.now();
 
       items.add(item);
     }

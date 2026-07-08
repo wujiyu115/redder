@@ -332,4 +332,20 @@ class ArticleLocalDataSource {
     final item = await getByUrl(url, accountId: accountId);
     return item != null;
   }
+
+  /// Returns the subset of [urls] that already exist in the database.
+  ///
+  /// Uses a single `WHERE url IN (...)` query instead of one query per URL,
+  /// avoiding the N+1 pattern during feed refresh deduplication.
+  Future<Set<String>> existingUrls(List<String> urls, {int? accountId}) async {
+    if (urls.isEmpty) return <String>{};
+    final query = _db.selectOnly(_db.feedItems)
+      ..addColumns([_db.feedItems.url])
+      ..where(_db.feedItems.url.isIn(urls));
+    if (accountId != null) {
+      query.where(_db.feedItems.accountId.equals(accountId));
+    }
+    final results = await query.get();
+    return results.map((r) => r.read(_db.feedItems.url)!).toSet();
+  }
 }

@@ -10,8 +10,15 @@ class OpmlParser {
   /// Parses an OPML string and returns a list of feed outlines.
   ///
   /// Supports nested outlines (folders containing feeds).
+  /// Returns an empty list if the content is not well-formed XML, so a
+  /// malformed imported file cannot crash the import flow.
   static List<OpmlOutline> parse(String opmlContent) {
-    final document = XmlDocument.parse(opmlContent);
+    final XmlDocument document;
+    try {
+      document = XmlDocument.parse(opmlContent);
+    } on XmlException {
+      return [];
+    }
     final body = document.findAllElements('body').firstOrNull;
     if (body == null) return [];
 

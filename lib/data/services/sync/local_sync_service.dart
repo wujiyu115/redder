@@ -181,7 +181,12 @@ class LocalSyncService extends SyncService {
 
   @override
   Future<void> markAsUnread(List<String> articleRemoteIds) async {
-    // Local implementation - no remote call needed
+    for (final id in articleRemoteIds) {
+      final intId = int.tryParse(id);
+      if (intId != null) {
+        await _articleDs.markAsUnread(intId);
+      }
+    }
   }
 
   @override
@@ -189,7 +194,7 @@ class LocalSyncService extends SyncService {
     for (final id in articleRemoteIds) {
       final intId = int.tryParse(id);
       if (intId != null) {
-        await _articleDs.toggleStarred(intId);
+        await _articleDs.markAsStarred(intId);
       }
     }
   }
@@ -199,7 +204,7 @@ class LocalSyncService extends SyncService {
     for (final id in articleRemoteIds) {
       final intId = int.tryParse(id);
       if (intId != null) {
-        await _articleDs.toggleStarred(intId);
+        await _articleDs.markAsUnstarred(intId);
       }
     }
   }

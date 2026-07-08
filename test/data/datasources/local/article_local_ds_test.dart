@@ -923,6 +923,41 @@ void main() {
     });
   });
 
+  group('existingUrls', () {
+    Future<void> seed(String url) => dataSource.upsert(
+          FeedItemsCompanion.insert(
+            feedId: 1,
+            title: 'T',
+            url: url,
+            publishedAt: DateTime(2024, 1, 1),
+            fetchedAt: DateTime(2024, 1, 1),
+            createdAt: DateTime(2024, 1, 1),
+          ),
+        );
+
+    test('returns only the URLs that already exist', () async {
+      await seed('https://example.com/a');
+      await seed('https://example.com/b');
+
+      final result = await dataSource.existingUrls([
+        'https://example.com/a',
+        'https://example.com/b',
+        'https://example.com/c',
+      ]);
+
+      expect(result, {'https://example.com/a', 'https://example.com/b'});
+    });
+
+    test('returns empty set for empty input', () async {
+      expect(await dataSource.existingUrls([]), isEmpty);
+    });
+
+    test('returns empty set when none exist', () async {
+      final result = await dataSource.existingUrls(['https://none.example/x']);
+      expect(result, isEmpty);
+    });
+  });
+
   group('count', () {
     test('should return total count of items', () async {
       final items = List.generate(

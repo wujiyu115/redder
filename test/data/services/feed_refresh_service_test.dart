@@ -90,11 +90,13 @@ void main() {
       when(mockFeedDs.getAll()).thenAnswer((_) async => [feed]);
       when(mockRemoteDs.fetchFeed(feed.feedUrl))
           .thenAnswer((_) async => parseResult);
-      when(mockArticleDs.exists(any)).thenAnswer((_) async => false);
-      when(mockArticleDs.upsertAll(any)).thenAnswer((_) async {});
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => <String>{});
+      when(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async {});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 2);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -107,7 +109,8 @@ void main() {
       expect(result.newItems, equals(2));
       expect(result.hasNewItems, isTrue);
       verify(mockRemoteDs.fetchFeed(feed.feedUrl)).called(1);
-      verify(mockArticleDs.upsertAll(any)).called(1);
+      verify(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')))
+          .called(1);
     });
 
     test('should record errors when feed refresh fails', () async {
@@ -123,9 +126,11 @@ void main() {
           .thenAnswer((_) async => parseResult);
       when(mockRemoteDs.fetchFeed(feed2.feedUrl))
           .thenThrow(Exception('Network error'));
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => <String>{});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 0);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -152,11 +157,13 @@ void main() {
       when(mockFeedDs.getById(1)).thenAnswer((_) async => feed);
       when(mockRemoteDs.fetchFeed(feed.feedUrl))
           .thenAnswer((_) async => parseResult);
-      when(mockArticleDs.exists(any)).thenAnswer((_) async => false);
-      when(mockArticleDs.upsertAll(any)).thenAnswer((_) async {});
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => <String>{});
+      when(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async {});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 1);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -188,8 +195,8 @@ void main() {
       final item1 = createParsedItem(url: 'https://example1.com/article');
       final item2 = createParsedItem(url: 'https://example2.com/article');
 
-      when(mockFeedDs.getById(1)).thenAnswer((_) async => feed1);
-      when(mockFeedDs.getById(2)).thenAnswer((_) async => feed2);
+      when(mockFeedDs.getByIds([1, 2], accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => [feed1, feed2]);
       when(mockRemoteDs.fetchFeed(feed1.feedUrl)).thenAnswer((_) async =>
           FeedParseResult(
             feed: ParsedFeed()..title = 'Feed 1'..feedUrl = feed1.feedUrl,
@@ -200,11 +207,13 @@ void main() {
             feed: ParsedFeed()..title = 'Feed 2'..feedUrl = feed2.feedUrl,
             items: [item2],
           ));
-      when(mockArticleDs.exists(any)).thenAnswer((_) async => false);
-      when(mockArticleDs.upsertAll(any)).thenAnswer((_) async {});
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => <String>{});
+      when(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async {});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 1);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -213,23 +222,26 @@ void main() {
 
       expect(result.totalFeeds, equals(2));
       expect(result.newItems, equals(2));
-      verify(mockFeedDs.getById(1)).called(1);
-      verify(mockFeedDs.getById(2)).called(1);
+      verify(mockFeedDs.getByIds([1, 2], accountId: anyNamed('accountId')))
+          .called(1);
     });
 
     test('should skip non-existent feeds', () async {
       final feed1 = createFeed(id: 1, feedUrl: 'https://example.com/feed');
 
-      when(mockFeedDs.getById(1)).thenAnswer((_) async => feed1);
-      when(mockFeedDs.getById(999)).thenAnswer((_) async => null);
+      // getByIds only returns feeds that exist; 999 is silently absent.
+      when(mockFeedDs.getByIds([1, 999], accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => [feed1]);
       when(mockRemoteDs.fetchFeed(feed1.feedUrl)).thenAnswer((_) async =>
           FeedParseResult(
             feed: ParsedFeed()..title = 'Feed 1'..feedUrl = feed1.feedUrl,
             items: [],
           ));
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => <String>{});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 0);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -237,8 +249,8 @@ void main() {
       final result = await service.refreshFeeds([1, 999]);
 
       expect(result.totalFeeds, equals(1));
-      verify(mockFeedDs.getById(1)).called(1);
-      verify(mockFeedDs.getById(999)).called(1);
+      verify(mockFeedDs.getByIds([1, 999], accountId: anyNamed('accountId')))
+          .called(1);
     });
   });
 
@@ -261,14 +273,13 @@ void main() {
       when(mockFeedDs.getById(1)).thenAnswer((_) async => feed);
       when(mockRemoteDs.fetchFeed(feed.feedUrl))
           .thenAnswer((_) async => parseResult);
-      when(mockArticleDs.exists('https://example.com/existing'))
-          .thenAnswer((_) async => true);
-      when(mockArticleDs.exists('https://example.com/new'))
-          .thenAnswer((_) async => false);
-      when(mockArticleDs.upsertAll(any)).thenAnswer((_) async {});
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => {'https://example.com/existing'});
+      when(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async {});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 1);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -276,8 +287,8 @@ void main() {
       final result = await service.refreshFeed(1);
 
       expect(result.newItems, equals(1));
-      verify(mockArticleDs.exists('https://example.com/existing')).called(1);
-      verify(mockArticleDs.exists('https://example.com/new')).called(1);
+      verify(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .called(1);
     });
 
     test('should not call upsertAll when all items already exist', () async {
@@ -293,10 +304,11 @@ void main() {
       when(mockFeedDs.getById(1)).thenAnswer((_) async => feed);
       when(mockRemoteDs.fetchFeed(feed.feedUrl))
           .thenAnswer((_) async => parseResult);
-      when(mockArticleDs.exists(any)).thenAnswer((_) async => true);
+      when(mockArticleDs.existingUrls(any, accountId: anyNamed('accountId')))
+          .thenAnswer((_) async => {'https://example.com/existing'});
       when(mockFeedDs.updateLastFetched(any, durationMs: anyNamed('durationMs')))
           .thenAnswer((_) async {});
-      when(mockArticleDs.unreadCountForFeed(any))
+      when(mockArticleDs.unreadCountForFeed(any, accountId: anyNamed('accountId')))
           .thenAnswer((_) async => 0);
       when(mockFeedDs.updateUnreadCount(any, any))
           .thenAnswer((_) async {});
@@ -304,7 +316,7 @@ void main() {
       final result = await service.refreshFeed(1);
 
       expect(result.newItems, equals(0));
-      verifyNever(mockArticleDs.upsertAll(any));
+      verifyNever(mockArticleDs.upsertAll(any, accountId: anyNamed('accountId')));
     });
   });
 }
