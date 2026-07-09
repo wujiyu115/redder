@@ -35,6 +35,13 @@ class ReederTextField extends StatefulWidget {
   /// Whether to show a clear button when text is present.
   final bool showClearButton;
 
+  /// Whether to draw the field's own rounded background/border.
+  ///
+  /// Set to `false` when embedding the field inside a grouped container
+  /// (e.g. a settings-style card) that already provides the frame, so the
+  /// field blends in instead of showing a box-in-box border.
+  final bool bordered;
+
   /// Keyboard type.
   final TextInputType? keyboardType;
 
@@ -60,6 +67,7 @@ class ReederTextField extends StatefulWidget {
     this.obscureText = false,
     this.autofocus = false,
     this.showClearButton = true,
+    this.bordered = true,
     this.keyboardType,
     this.textInputAction,
     this.maxLines = 1,
@@ -119,17 +127,21 @@ class _ReederTextFieldState extends State<ReederTextField> {
     final theme = ReederTheme.of(context);
 
     return Container(
-      decoration: BoxDecoration(
-        color: theme.secondaryBackgroundColor,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: _isFocused
-            ? Border.all(color: theme.accentColor, width: 1.5)
-            : Border.all(color: theme.separatorColor, width: 0.5),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spacingM,
-        vertical: AppDimensions.spacingS,
-      ),
+      decoration: widget.bordered
+          ? BoxDecoration(
+              color: theme.secondaryBackgroundColor,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              border: _isFocused
+                  ? Border.all(color: theme.accentColor, width: 1.5)
+                  : Border.all(color: theme.separatorColor, width: 0.5),
+            )
+          : null,
+      padding: widget.bordered
+          ? const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spacingM,
+              vertical: AppDimensions.spacingS,
+            )
+          : EdgeInsets.zero,
       child: Row(
         children: [
           // Prefix

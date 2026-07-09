@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:reeder/l10n/app_localizations.dart';
@@ -6,7 +7,6 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/reeder_dialog.dart';
 import '../../../shared/widgets/reeder_text_field.dart';
-import '../../../shared/widgets/reeder_button.dart';
 import '../../../data/services/feed_discovery_service.dart';
 import '../source_list_controller.dart';
 
@@ -117,40 +117,74 @@ class _AddFeedDialogContentState
           ),
           const SizedBox(height: AppDimensions.spacing),
 
-          // URL input
-          ReederTextField(
-            controller: _urlController,
-            placeholder: l10n.enterFeedUrl,
-            onSubmitted: (_) => _discoverFeeds(),
+          // Grouped input card: URL field + discover action share one frame
+          // so the address bar no longer floats on its own.
+          Container(
+            decoration: BoxDecoration(
+              color: theme.secondaryBackgroundColor,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+              border: Border.all(color: theme.separatorColor, width: 0.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // URL field (frameless — the card provides the frame)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.spacing,
+                    vertical: AppDimensions.spacingM,
+                  ),
+                  child: ReederTextField(
+                    controller: _urlController,
+                    placeholder: l10n.enterFeedUrl,
+                    bordered: false,
+                    keyboardType: TextInputType.url,
+                    textInputAction: TextInputAction.go,
+                    onSubmitted: (_) => _discoverFeeds(),
+                  ),
+                ),
+
+                // Hairline separator between field and action
+                Container(
+                  height: 0.5,
+                  color: theme.separatorColor,
+                ),
+
+                // Discover action row (part of the same card)
+                GestureDetector(
+                  onTap: _isLoading ? null : _discoverFeeds,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppDimensions.spacing,
+                    ),
+                    child: Center(
+                      child: Text(
+                        _isLoading ? l10n.searching : l10n.discoverFeeds,
+                        style: theme.typography.body.copyWith(
+                          color: _isLoading
+                              ? theme.secondaryTextColor
+                              : theme.accentColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: AppDimensions.spacingM),
 
           // Error message
           if (_error != null) ...[
+            const SizedBox(height: AppDimensions.spacingM),
             Text(
               _error!,
               style: theme.typography.caption.copyWith(
                 color: theme.destructiveColor,
               ),
             ),
-            const SizedBox(height: AppDimensions.spacingS),
           ],
-
-          // Loading indicator
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppDimensions.spacing,
-              ),
-              child: Center(
-                child: Text(
-                  l10n.searching,
-                  style: theme.typography.body.copyWith(
-                    color: theme.secondaryTextColor,
-                  ),
-                ),
-              ),
-            ),
 
           // Discovered feeds list
           if (_discoveredFeeds != null && !_isLoading) ...[
@@ -209,15 +243,6 @@ class _AddFeedDialogContentState
                   ),
                 ),
               ),
-          ],
-
-          // Action buttons
-          if (_discoveredFeeds == null && !_isLoading) ...[
-            const SizedBox(height: AppDimensions.spacingS),
-            ReederButton.filled(
-              label: l10n.discoverFeeds,
-              onPressed: _discoverFeeds,
-            ),
           ],
         ],
       ),
