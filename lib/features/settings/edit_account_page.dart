@@ -240,6 +240,7 @@ class _EditAccountPageState extends ConsumerState<EditAccountPage> {
                 ReederTextField(
                   controller: _passwordController,
                   placeholder: l10n.password,
+                  obscureText: true,
                   onChanged: (_) =>
                       setState(() => _passwordError = null),
                 ),

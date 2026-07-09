@@ -231,6 +231,7 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
             ReederTextField(
               controller: _passwordController,
               placeholder: l10n.password,
+              obscureText: true,
               onChanged: (_) => setState(() => _passwordError = null),
             ),
             if (_passwordError != null)
@@ -267,6 +268,7 @@ class _ServiceLoginPageState extends ConsumerState<ServiceLoginPage> {
             ReederTextField(
               controller: _passwordController,
               placeholder: l10n.password,
+              obscureText: true,
               onChanged: (_) => setState(() => _passwordError = null),
             ),
             if (_passwordError != null)

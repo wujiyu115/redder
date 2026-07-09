@@ -1,5 +1,4 @@
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';
@@ -26,6 +25,9 @@ class ReederTextField extends StatefulWidget {
 
   /// Whether the field is read-only.
   final bool readOnly;
+
+  /// Whether to obscure the text (for password fields).
+  final bool obscureText;
 
   /// Whether to auto-focus when the widget is first built.
   final bool autofocus;
@@ -55,6 +57,7 @@ class ReederTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.readOnly = false,
+    this.obscureText = false,
     this.autofocus = false,
     this.showClearButton = true,
     this.keyboardType,
@@ -98,11 +101,12 @@ class _ReederTextFieldState extends State<ReederTextField> {
   }
 
   void _onTextChanged() {
+    // Only tracks clear-button visibility here; the change callback is wired
+    // directly on the text field to avoid firing onChanged twice.
     final hasText = _controller.text.isNotEmpty;
     if (hasText != _hasText) {
       setState(() => _hasText = hasText);
     }
-    widget.onChanged?.call(_controller.text);
   }
 
   void _clearText() {
@@ -140,19 +144,34 @@ class _ReederTextFieldState extends State<ReederTextField> {
             const SizedBox(width: AppDimensions.spacingS),
           ],
 
-          // Text input
+          // Text input.
+          //
+          // Uses CupertinoTextField (not a bare EditableText) so that text
+          // selection, the long-press/right-click context menu and — crucially
+          // — Paste all work. It is rendered borderless/transparent so the
+          // surrounding Container keeps providing the focus border and fill.
           Expanded(
-            child: EditableText(
+            child: CupertinoTextField(
               controller: _controller,
               focusNode: _focusNode,
-              style: theme.typography.body,
+              style: theme.typography.body.copyWith(
+                color: theme.primaryTextColor,
+              ),
+              placeholder: widget.placeholder,
+              placeholderStyle: theme.typography.body.copyWith(
+                color: theme.secondaryTextColor,
+              ),
               cursorColor: theme.accentColor,
-              backgroundCursorColor: theme.tertiaryTextColor,
+              padding: EdgeInsets.zero,
+              decoration: const BoxDecoration(),
               maxLines: widget.maxLines,
+              minLines: 1,
               readOnly: widget.readOnly,
+              obscureText: widget.obscureText,
               autofocus: widget.autofocus,
               keyboardType: widget.keyboardType,
               textInputAction: widget.textInputAction,
+              clearButtonMode: OverlayVisibilityMode.never,
               onChanged: widget.onChanged,
               onSubmitted: widget.onSubmitted,
             ),
