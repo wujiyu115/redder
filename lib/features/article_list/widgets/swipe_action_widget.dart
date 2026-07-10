@@ -86,6 +86,11 @@ class _SwipeActionWidgetState extends State<SwipeActionWidget>
     _animation = _controller.drive(
       Tween<double>(begin: 0.0, end: 0.0),
     );
+    _controller.addListener(() {
+      setState(() {
+        _dragExtent = _animation.value;
+      });
+    });
   }
 
   @override
@@ -139,39 +144,55 @@ class _SwipeActionWidgetState extends State<SwipeActionWidget>
     _isDragging = false;
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final threshold = screenWidth * widget.triggerThreshold;
+    final fullSwipeThreshold = screenWidth * widget.triggerThreshold;
 
-    // Check if we should trigger an action
-    if (_dragExtent.abs() > threshold) {
+    final maxLeft = widget.actionWidth * widget.leftSwipeActions.length;
+    final maxRight = widget.actionWidth * widget.rightSwipeActions.length;
+
+    // Full swipe past threshold triggers the first action immediately.
+    if (_dragExtent.abs() > fullSwipeThreshold) {
       if (_dragExtent < 0 && widget.leftSwipeActions.isNotEmpty) {
-        // Triggered left swipe action
         widget.leftSwipeActions.first.onTriggered?.call();
+        _animateTo(0.0);
+        return;
       } else if (_dragExtent > 0 && widget.rightSwipeActions.isNotEmpty) {
-        // Triggered right swipe action
         widget.rightSwipeActions.first.onTriggered?.call();
+        _animateTo(0.0);
+        return;
       }
     }
 
-    // Animate back to center
-    _animateBack();
+    // Otherwise settle the menu OPEN if revealed past half the action strip,
+    // so buttons stay visible and tappable; else snap closed.
+    if (_dragExtent < 0 &&
+        widget.leftSwipeActions.isNotEmpty &&
+        -_dragExtent > maxLeft * 0.5) {
+      _animateTo(-maxLeft);
+    } else if (_dragExtent > 0 &&
+        widget.rightSwipeActions.isNotEmpty &&
+        _dragExtent > maxRight * 0.5) {
+      _animateTo(maxRight);
+    } else {
+      _animateTo(0.0);
+    }
   }
 
-  void _animateBack() {
+  void _animateTo(double target) {
     _animation = Tween<double>(
       begin: _dragExtent,
-      end: 0.0,
+      end: target,
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCubic,
     ));
 
-    _animation.addListener(() {
-      setState(() {
-        _dragExtent = _animation.value;
-      });
-    });
-
     _controller.forward(from: 0.0);
+  }
+
+  /// Runs an action then closes the menu.
+  void _runAction(SwipeAction action) {
+    action.onTriggered?.call();
+    _animateTo(0.0);
   }
 
   @override
@@ -185,27 +206,31 @@ class _SwipeActionWidgetState extends State<SwipeActionWidget>
               child: Row(
                 children: [
                   for (final action in widget.rightSwipeActions)
-                    Container(
-                      width: _dragExtent / widget.rightSwipeActions.length,
-                      color: action.color,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              action.icon,
-                              style: const TextStyle(fontSize: 22),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              action.label,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFFFFFFFF),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _runAction(action),
+                      child: Container(
+                        width: _dragExtent / widget.rightSwipeActions.length,
+                        color: action.color,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                action.icon,
+                                style: const TextStyle(fontSize: 22),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                action.label,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFFFFFFFF),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -221,27 +246,31 @@ class _SwipeActionWidgetState extends State<SwipeActionWidget>
                 children: [
                   const Spacer(),
                   for (final action in widget.leftSwipeActions)
-                    Container(
-                      width: -_dragExtent / widget.leftSwipeActions.length,
-                      color: action.color,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              action.icon,
-                              style: const TextStyle(fontSize: 22),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              action.label,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFFFFFFFF),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _runAction(action),
+                      child: Container(
+                        width: -_dragExtent / widget.leftSwipeActions.length,
+                        color: action.color,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                action.icon,
+                                style: const TextStyle(fontSize: 22),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                action.label,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFFFFFFFF),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
