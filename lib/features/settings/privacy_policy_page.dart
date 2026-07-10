@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';
@@ -16,10 +17,11 @@ class PrivacyPolicyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return ReederScaffold(
       navBar: ReederNavBar(
-        title: 'Privacy Policy',
+        title: l10n.privacyPolicy,
         showBackButton: true,
         onBack: () => Navigator.of(context).pop(),
       ),
@@ -32,7 +34,7 @@ class PrivacyPolicyPage extends StatelessWidget {
 
             // Title
             Text(
-              'Privacy Policy',
+              l10n.privacyPolicy,
               style: theme.typography.largeTitle.copyWith(
                 color: theme.primaryTextColor,
               ),

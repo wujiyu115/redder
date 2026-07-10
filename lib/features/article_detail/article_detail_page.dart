@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_durations.dart';
@@ -162,7 +163,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           data: (state) => _buildContent(context, state, theme),
           loading: () => const ShimmerLoading(itemCount: 1),
           error: (e, _) => ErrorState(
-            message: 'Failed to load article',
+            message: AppLocalizations.of(context)!.failedToLoadArticle,
             details: '$e',
             onRetry: () => ref
                 .read(articleDetailControllerProvider(widget.articleId).notifier)

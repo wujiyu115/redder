@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../../core/constants/app_durations.dart';
 import '../../../core/theme/app_theme.dart';
@@ -61,30 +62,31 @@ class TimelineControlButton extends ConsumerWidget {
     );
 
     final hideRead = ref.read(hideReadArticlesProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     final selected = await ReederPopupMenu.show(
       context: context,
       position: position,
       items: [
-        const ReederPopupMenuItem(
+        ReederPopupMenuItem(
           id: 'sync',
-          label: 'Sync',
+          label: l10n.sync,
         ),
-        const ReederPopupMenuItem(
+        ReederPopupMenuItem(
           id: 'refresh',
-          label: 'Refresh',
+          label: l10n.refresh,
         ),
         ReederPopupMenuItem(
           id: 'toggle_hide_read',
-          label: hideRead ? 'Show Read Articles' : 'Hide Read Articles',
+          label: hideRead ? l10n.showReadArticles : l10n.hideReadArticles,
         ),
-        const ReederPopupMenuItem(
+        ReederPopupMenuItem(
           id: 'scroll_top',
-          label: 'Scroll to Top',
+          label: l10n.scrollToTop,
         ),
-        const ReederPopupMenuItem(
+        ReederPopupMenuItem(
           id: 'mark_all_read',
-          label: 'Mark All as Read',
+          label: l10n.markAllAsRead,
           isDestructive: true,
         ),
       ],
