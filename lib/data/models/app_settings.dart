@@ -27,6 +27,7 @@ class AppSettingsTable extends Table {
   TextColumn get sortOrder => text().withDefault(const Constant('newest'))();
   BoolColumn get groupByFeed => boolean().withDefault(const Constant(false))();
   BoolColumn get markReadOnScroll => boolean().withDefault(const Constant(false))();
+  BoolColumn get hideReadFeeds => boolean().withDefault(const Constant(false))();
   IntColumn get contentExpiryDays => integer().withDefault(const Constant(0))();
 
   // ─── Notifications ─────────────────────────────────────

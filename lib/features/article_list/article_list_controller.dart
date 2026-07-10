@@ -150,6 +150,7 @@ class ArticleListController
       }
       // Reload the list to reflect changes
       await _loadInitial();
+      await _ref.read(sourceListControllerProvider.notifier).reload();
     } catch (e) {
       // Silently fail on mark-all-read errors
     }

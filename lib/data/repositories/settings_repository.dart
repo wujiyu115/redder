@@ -161,6 +161,16 @@ class SettingsRepository {
     return settings.markReadOnScroll;
   }
 
+  /// Toggles hiding fully-read feeds in the source list.
+  Future<bool> toggleHideReadFeeds() async {
+    final settings = await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        hideReadFeeds: Value(!s.hideReadFeeds),
+      ),
+    );
+    return settings.hideReadFeeds;
+  }
+
   /// Sets content expiry days (0 = never).
   Future<void> setContentExpiryDays(int days) async {
     await _localDs.updateSettings(

@@ -131,8 +131,12 @@ class _SourceSectionState extends State<SourceSection>
                   child: Text(
                     widget.title,
                     style: theme.typography.body.copyWith(
-                      color: theme.primaryTextColor,
-                      fontWeight: FontWeight.w500,
+                      color: widget.unreadCount > 0
+                          ? theme.primaryTextColor
+                          : theme.secondaryTextColor,
+                      fontWeight: widget.unreadCount > 0
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -144,7 +148,8 @@ class _SourceSectionState extends State<SourceSection>
                   Text(
                     '${widget.unreadCount}',
                     style: theme.typography.caption.copyWith(
-                      color: theme.secondaryTextColor,
+                      color: theme.accentColor,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
               ],

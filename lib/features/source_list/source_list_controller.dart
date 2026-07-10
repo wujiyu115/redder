@@ -12,6 +12,7 @@ import '../../data/services/feed_refresh_service.dart';
 import '../../data/services/sync/sync_bridge.dart';
 import '../../data/services/sync/sync_models.dart';
 import '../../shared/providers/account_provider.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 
 /// Provider for the source list controller.
@@ -68,8 +69,18 @@ class SourceListController
 
   AppDatabase get _db => AppDatabase.instance;
 
+  /// Whether to hide fully-read feeds/folders from the list (persisted setting).
+  bool get _hideRead =>
+      _ref.read(settingsProvider).valueOrNull?.hideReadFeeds ?? false;
+
   /// Gets the current active account ID.
   int? get _activeAccountId => _ref.read(accountSwitchProvider);
+
+  /// Toggles the persisted "unread only" filter and reloads.
+  Future<void> toggleHideRead() async {
+    await _ref.read(settingsProvider.notifier).toggleHideReadFeeds();
+    await _loadData();
+  }
 
   Future<void> _init() async {
     try {
@@ -85,8 +96,16 @@ class SourceListController
   Future<void> _loadData() async {
     try {
       final accountId = _activeAccountId;
-      final feeds = await _feedRepo.getAllFeeds(accountId: accountId);
+      final rawFeeds = await _feedRepo.getAllFeeds(accountId: accountId);
       final tags = await _tagRepo.getAllTags(accountId: accountId);
+
+      // Recompute each feed's unread count live from articles so badges stay
+      // accurate even between refresh/sync cycles.
+      final feeds = <Feed>[];
+      for (final f in rawFeeds) {
+        final unread = await _articleRepo.getUnreadCount(f.id, accountId: accountId);
+        feeds.add(unread == f.unreadCount ? f : f.copyWith(unreadCount: unread));
+      }
 
       // Load folders from Drift, filtered by accountId
       final folderQuery = _db.select(_db.folders)
@@ -94,7 +113,19 @@ class SourceListController
       if (accountId != null) {
         folderQuery.where((t) => t.accountId.equals(accountId));
       }
-      final folders = await folderQuery.get();
+      final rawFolders = await folderQuery.get();
+
+      // Aggregate folder unread from live feed counts.
+      final unreadByFolder = <int, int>{};
+      for (final f in feeds) {
+        if (f.folderId != null) {
+          unreadByFolder[f.folderId!] =
+              (unreadByFolder[f.folderId!] ?? 0) + f.unreadCount;
+        }
+      }
+      final folders = rawFolders
+          .map((fo) => fo.copyWith(unreadCount: unreadByFolder[fo.id] ?? 0))
+          .toList();
 
       // Load filters from Drift, filtered by accountId
       final filterQuery = _db.select(_db.filters)
@@ -134,6 +165,7 @@ class SourceListController
         feedsByFolder: feedsByFolder,
         feedsByType: feedsByType,
         totalUnreadCount: totalUnread,
+        hideRead: _hideRead,
       ));
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -487,6 +519,7 @@ class SourceListState {
   final Map<int, List<Feed>> feedsByFolder;
   final Map<FeedType, List<Feed>> feedsByType;
   final int totalUnreadCount;
+  final bool hideRead;
 
   const SourceListState({
     required this.feeds,
@@ -497,5 +530,6 @@ class SourceListState {
     required this.feedsByFolder,
     required this.feedsByType,
     required this.totalUnreadCount,
+    this.hideRead = false,
   });
 }

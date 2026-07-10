@@ -35,6 +35,10 @@ class SourceItem extends StatefulWidget {
   /// Whether to indent the item (for items inside folders).
   final bool indented;
 
+  /// Whether to dim the item (gray, normal weight) when [count] is 0.
+  /// Feeds set this true so fully-read feeds recede; nav entries leave it false.
+  final bool dimWhenRead;
+
   const SourceItem({
     super.key,
     this.icon,
@@ -44,6 +48,7 @@ class SourceItem extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.indented = false,
+    this.dimWhenRead = false,
   });
 
   @override
@@ -112,7 +117,13 @@ class _SourceItemState extends State<SourceItem> {
               child: Text(
                 widget.title,
                 style: theme.typography.body.copyWith(
-                  color: theme.primaryTextColor,
+                  color: widget.count > 0
+                      ? theme.primaryTextColor
+                      : (widget.dimWhenRead
+                          ? theme.secondaryTextColor
+                          : theme.primaryTextColor),
+                  fontWeight:
+                      widget.count > 0 ? FontWeight.w600 : FontWeight.w400,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -125,7 +136,8 @@ class _SourceItemState extends State<SourceItem> {
               Text(
                 '${widget.count}',
                 style: theme.typography.caption.copyWith(
-                  color: theme.secondaryTextColor,
+                  color: theme.accentColor,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

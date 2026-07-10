@@ -118,6 +118,7 @@ class ArticleDetailController
   /// Marks the article as read (with remote sync).
   Future<void> markAsRead() async {
     await _syncBridge.markAsReadWithSync([articleId]);
+    await _ref.read(sourceListControllerProvider.notifier).reload();
   }
 
   /// Marks the article as unread (with remote sync).
@@ -132,6 +133,7 @@ class ArticleDetailController
         ));
       }
     }
+    await _ref.read(sourceListControllerProvider.notifier).reload();
   }
 
   /// Toggles the starred state (with remote sync).
@@ -263,6 +265,16 @@ class ArticleDetailState {
     this.lineHeight = 1.5,
     this.bionicReading = false,
   });
+
+  /// The HTML body to render, falling back to [FeedItem.summary] when
+  /// [FeedItem.content] is empty. GReader-family servers (Miniflux, FreshRSS,
+  /// etc.) return the full article HTML in the `summary` field rather than
+  /// `content`, so the fallback is required to show anything.
+  String get displayContent {
+    final c = article.content;
+    if (c != null && c.trim().isNotEmpty) return c;
+    return article.summary ?? '';
+  }
 
   ArticleDetailState copyWith({
     FeedItem? article,

@@ -107,6 +107,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Toggles hiding fully-read feeds in the source list.
+  Future<void> toggleHideReadFeeds() async {
+    await _repository.toggleHideReadFeeds();
+    await _loadSettings();
+  }
+
   /// Sets content expiry days.
   Future<void> setContentExpiryDays(int days) async {
     await _repository.setContentExpiryDays(days);

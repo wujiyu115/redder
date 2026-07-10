@@ -127,48 +127,73 @@ class SourceListPage extends ConsumerWidget {
         // ─── FEEDS Section ────────────────────────────────
         ReederSectionHeader(
           title: l10n.feeds,
-          trailing: ReederButton.icon(
-            icon: const Text('+', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w300)),
-            onPressed: () => _showAddFeedDialog(context),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Unread-only filter toggle
+              ReederButton.icon(
+                icon: Text(
+                  state.hideRead ? '◉' : '◎',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: state.hideRead
+                        ? theme.accentColor
+                        : theme.secondaryTextColor,
+                  ),
+                ),
+                onPressed: () => ref
+                    .read(sourceListControllerProvider.notifier)
+                    .toggleHideRead(),
+              ),
+              ReederButton.icon(
+                icon: const Text('+', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w300)),
+                onPressed: () => _showAddFeedDialog(context),
+              ),
+            ],
           ),
         ),
 
         // Folders with long-press context menu
         for (final folder in state.folders)
-          SourceSection(
-            title: folder.name,
-            iconName: folder.iconName,
-            isExpanded: folder.isExpanded,
-            unreadCount: folder.unreadCount,
-            onTap: () => context.push('/timeline/folder_${folder.id}'),
-            onLongPress: () => _showFolderContextMenu(
-              context, ref, folder, theme,
+          if (!state.hideRead || folder.unreadCount > 0)
+            SourceSection(
+              title: folder.name,
+              iconName: folder.iconName,
+              isExpanded: folder.isExpanded,
+              unreadCount: folder.unreadCount,
+              onTap: () => context.push('/timeline/folder_${folder.id}'),
+              onLongPress: () => _showFolderContextMenu(
+                context, ref, folder, theme,
+              ),
+              children: [
+                for (final feed in state.feedsByFolder[folder.id] ?? [])
+                  if (!state.hideRead || feed.unreadCount > 0)
+                    SourceItem(
+                      title: feed.title,
+                      iconUrl: feed.iconUrl,
+                      count: feed.unreadCount,
+                      dimWhenRead: true,
+                      onTap: () => context.push('/timeline/feed_${feed.id}'),
+                      onLongPress: () => _showFeedContextMenu(
+                        context, ref, feed, state.folders, theme,
+                      ),
+                    ),
+              ],
             ),
-            children: [
-              for (final feed in state.feedsByFolder[folder.id] ?? [])
-                SourceItem(
-                  title: feed.title,
-                  iconUrl: feed.iconUrl,
-                  count: feed.unreadCount,
-                  onTap: () => context.push('/timeline/feed_${feed.id}'),
-                  onLongPress: () => _showFeedContextMenu(
-                    context, ref, feed, state.folders, theme,
-                  ),
-                ),
-            ],
-          ),
 
         // Root feeds (not in any folder) with long-press context menu
         for (final feed in state.rootFeeds)
-          SourceItem(
-            title: feed.title,
-            iconUrl: feed.iconUrl,
-            count: feed.unreadCount,
-            onTap: () => context.push('/timeline/feed_${feed.id}'),
-            onLongPress: () => _showFeedContextMenu(
-              context, ref, feed, state.folders, theme,
+          if (!state.hideRead || feed.unreadCount > 0)
+            SourceItem(
+              title: feed.title,
+              iconUrl: feed.iconUrl,
+              count: feed.unreadCount,
+              dimWhenRead: true,
+              onTap: () => context.push('/timeline/feed_${feed.id}'),
+              onLongPress: () => _showFeedContextMenu(
+                context, ref, feed, state.folders, theme,
+              ),
             ),
-          ),
 
         // New Folder button
         Padding(

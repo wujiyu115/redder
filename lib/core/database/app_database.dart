@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -110,6 +110,10 @@ class AppDatabase extends _$AppDatabase {
             await customStatement('INSERT INTO scroll_positions_new SELECT id, timeline_id, account_id, last_item_id, scroll_offset, saved_at FROM scroll_positions');
             await customStatement('DROP TABLE scroll_positions');
             await customStatement('ALTER TABLE scroll_positions_new RENAME TO scroll_positions');
+          }
+          if (from < 4) {
+            await customStatement(
+                'ALTER TABLE app_settings_table ADD COLUMN hide_read_feeds INTEGER NOT NULL DEFAULT 0');
           }
         },
       );

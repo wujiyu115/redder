@@ -189,10 +189,8 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                       ),
                       child: ArticleContentView(
                         content: state.isReaderView
-                            ? (state.readerContent ??
-                                state.article.content ??
-                                '')
-                            : (state.article.content ?? ''),
+                            ? (state.readerContent ?? state.displayContent)
+                            : state.displayContent,
                         fontSize: state.fontSize,
                         lineHeight: state.lineHeight,
                         bionicReading: state.bionicReading,
@@ -253,8 +251,8 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   ) {
     // Collect all image URLs from the article
     final content = state.isReaderView
-        ? (state.readerContent ?? state.article.content ?? '')
-        : (state.article.content ?? '');
+        ? (state.readerContent ?? state.displayContent)
+        : state.displayContent;
 
     final imageUrls = _extractImageUrls(content);
 

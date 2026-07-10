@@ -265,6 +265,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     }
     // Reload list to reflect changes
     ref.read(articleListControllerProvider(widget.timelineId).notifier).refresh();
+    ref.read(sourceListControllerProvider.notifier).reload();
   }
 
   /// Toggles the starred state of an article (with remote sync).
