@@ -125,6 +125,16 @@ class TimelineSettingsPage extends ConsumerWidget {
               },
             ),
           ),
+          ReederListTile(
+            title: l10n.hideReadArticles,
+            subtitle: l10n.hideReadArticlesDesc,
+            trailing: ReederSwitch(
+              value: settings.hideReadArticles,
+              onChanged: (_) {
+                ref.read(settingsProvider.notifier).toggleHideReadArticles();
+              },
+            ),
+          ),
 
           const SizedBox(height: AppDimensions.spacingXL),
 

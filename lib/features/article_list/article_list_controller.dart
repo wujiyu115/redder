@@ -105,6 +105,11 @@ class ArticleListController
     }
   }
 
+  /// Reloads the timeline from local storage without triggering a remote
+  /// sync. Use after read/star state changes so the list reflects them
+  /// immediately (e.g. hide-read removing the just-read article).
+  Future<void> reload() => _loadInitial();
+
   /// Refreshes the timeline (pull-to-refresh).
   ///
   /// If an active sync account exists, triggers an incremental sync

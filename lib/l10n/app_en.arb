@@ -26,6 +26,8 @@
   "bionicReadingDesc": "Bold the beginning of words for faster reading",
   "markAsReadOnScroll": "Mark as Read on Scroll",
   "markAsReadOnScrollDesc": "Automatically mark articles as read when scrolled past",
+  "hideReadArticles": "Hide Read Articles",
+  "hideReadArticlesDesc": "Remove articles from the timeline once they are read",
   "sortOrder": "Sort Order",
   "newestFirst": "Newest First",
   "oldestFirst": "Oldest First",
@@ -391,5 +393,17 @@
   },
   "syncStatus": "Sync Status",
   "syncIdle": "Idle",
-  "syncError": "Sync Error"
+  "syncError": "Sync Error",
+  "sync": "Sync",
+  "scrollToTop": "Scroll to Top",
+  "showReadArticles": "Show Read Articles",
+  "loadingMore": "Loading more...",
+  "failedToLoadArticles": "Failed to load articles",
+  "failedToLoadArticle": "Failed to load article",
+  "timelineAll": "All",
+  "timelineArticles": "Articles",
+  "timelineFeed": "Feed",
+  "timelineFolder": "Folder",
+  "timelineTag": "Tag",
+  "timelineFilter": "Filter"
 }

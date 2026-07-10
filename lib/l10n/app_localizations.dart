@@ -206,6 +206,18 @@ abstract class AppLocalizations {
   /// **'Automatically mark articles as read when scrolled past'**
   String get markAsReadOnScrollDesc;
 
+  /// No description provided for @hideReadArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Read Articles'**
+  String get hideReadArticles;
+
+  /// No description provided for @hideReadArticlesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove articles from the timeline once they are read'**
+  String get hideReadArticlesDesc;
+
   /// No description provided for @sortOrder.
   ///
   /// In en, this message translates to:
@@ -1615,6 +1627,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync Error'**
   String get syncError;
+
+  /// No description provided for @sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get sync;
+
+  /// No description provided for @scrollToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll to Top'**
+  String get scrollToTop;
+
+  /// No description provided for @showReadArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Read Articles'**
+  String get showReadArticles;
+
+  /// No description provided for @loadingMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more...'**
+  String get loadingMore;
+
+  /// No description provided for @failedToLoadArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load articles'**
+  String get failedToLoadArticles;
+
+  /// No description provided for @failedToLoadArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load article'**
+  String get failedToLoadArticle;
+
+  /// No description provided for @timelineAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get timelineAll;
+
+  /// No description provided for @timelineArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Articles'**
+  String get timelineArticles;
+
+  /// No description provided for @timelineFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed'**
+  String get timelineFeed;
+
+  /// No description provided for @timelineFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get timelineFolder;
+
+  /// No description provided for @timelineTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag'**
+  String get timelineTag;
+
+  /// No description provided for @timelineFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get timelineFilter;
 }
 
 class _AppLocalizationsDelegate

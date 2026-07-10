@@ -21,6 +21,8 @@
   "bionicReadingDesc": "加粗单词开头以加快阅读速度",
   "markAsReadOnScroll": "滚动时标记为已读",
   "markAsReadOnScrollDesc": "滚动经过文章时自动标记为已读",
+  "hideReadArticles": "隐藏已读文章",
+  "hideReadArticlesDesc": "文章读完后从时间线中移除",
   "sortOrder": "排序方式",
   "newestFirst": "最新优先",
   "oldestFirst": "最旧优先",
@@ -261,5 +263,34 @@
   "accountUpdated": "账户更新成功",
   "verifyingCredentials": "正在验证凭证…",
   "loginSuccess": "登录成功！正在刷新订阅列表…",
-  "authenticationFailed": "验证失败，请检查您的凭证。"
+  "authenticationFailed": "验证失败，请检查您的凭证。",
+  "star": "收藏",
+  "unstar": "取消收藏",
+  "markRead": "标为已读",
+  "markUnread": "标为未读",
+  "markAllAsRead": "全部标为已读",
+  "syncing": "同步中…",
+  "syncNow": "立即同步",
+  "logout": "退出登录",
+  "logoutConfirm": "确定要退出 {serviceName} 吗？",
+  "@logoutConfirm": {
+    "placeholders": {
+      "serviceName": { "type": "String" }
+    }
+  },
+  "syncStatus": "同步状态",
+  "syncIdle": "空闲",
+  "syncError": "同步出错",
+  "sync": "同步",
+  "scrollToTop": "滚动到顶部",
+  "showReadArticles": "显示已读文章",
+  "loadingMore": "加载更多…",
+  "failedToLoadArticles": "加载文章失败",
+  "failedToLoadArticle": "加载文章失败",
+  "timelineAll": "全部",
+  "timelineArticles": "文章",
+  "timelineFeed": "订阅源",
+  "timelineFolder": "文件夹",
+  "timelineTag": "标签",
+  "timelineFilter": "过滤器"
 }

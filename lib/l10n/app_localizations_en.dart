@@ -67,6 +67,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically mark articles as read when scrolled past';
 
   @override
+  String get hideReadArticles => 'Hide Read Articles';
+
+  @override
+  String get hideReadArticlesDesc =>
+      'Remove articles from the timeline once they are read';
+
+  @override
   String get sortOrder => 'Sort Order';
 
   @override
@@ -841,4 +848,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncError => 'Sync Error';
+
+  @override
+  String get sync => 'Sync';
+
+  @override
+  String get scrollToTop => 'Scroll to Top';
+
+  @override
+  String get showReadArticles => 'Show Read Articles';
+
+  @override
+  String get loadingMore => 'Loading more...';
+
+  @override
+  String get failedToLoadArticles => 'Failed to load articles';
+
+  @override
+  String get failedToLoadArticle => 'Failed to load article';
+
+  @override
+  String get timelineAll => 'All';
+
+  @override
+  String get timelineArticles => 'Articles';
+
+  @override
+  String get timelineFeed => 'Feed';
+
+  @override
+  String get timelineFolder => 'Folder';
+
+  @override
+  String get timelineTag => 'Tag';
+
+  @override
+  String get timelineFilter => 'Filter';
 }

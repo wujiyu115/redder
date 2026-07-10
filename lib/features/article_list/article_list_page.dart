@@ -122,12 +122,13 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final listState = ref.watch(articleListControllerProvider(widget.timelineId));
     final isCompact = ref.watch(compactModeProvider);
 
     return ReederScaffold(
       navBar: ReederNavBar(
-        title: _resolveTitle(widget.timelineId),
+        title: _resolveTitle(widget.timelineId, l10n),
         showBackButton: true,
         onBack: () => context.pop(),
         actions: [
@@ -144,7 +145,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         ),
         loading: () => ShimmerLoading(compact: isCompact),
         error: (e, _) => ErrorState(
-          message: 'Failed to load articles',
+          message: AppLocalizations.of(context)!.failedToLoadArticles,
           details: '$e',
           onRetry: _onRefresh,
         ),
@@ -175,7 +176,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
             padding: const EdgeInsets.all(AppDimensions.spacing),
             child: Center(
               child: Text(
-                'Loading more...',
+                l10n.loadingMore,
                 style: theme.typography.caption.copyWith(
                   color: theme.secondaryTextColor,
                 ),
@@ -192,9 +193,19 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               ref,
               item,
               feedTitle: state.feedTitles[item.feedId],
-              openArticle: () => context.push(
-                '/timeline/${widget.timelineId}/article/${item.id}',
-              ),
+              openArticle: () async {
+                await context.push(
+                  '/timeline/${widget.timelineId}/article/${item.id}',
+                );
+                // Article was marked read while open; reload so hide-read
+                // removes it from the list immediately.
+                if (mounted) {
+                  ref
+                      .read(articleListControllerProvider(widget.timelineId)
+                          .notifier)
+                      .reload();
+                }
+              },
             );
 
         final listItemWidget = isCompact
@@ -271,7 +282,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       await syncBridge.markAsReadWithSync([itemId]);
     }
     // Reload list to reflect changes
-    ref.read(articleListControllerProvider(widget.timelineId).notifier).refresh();
+    ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
     ref.read(sourceListControllerProvider.notifier).reload();
   }
 
@@ -284,18 +295,18 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       await syncBridge.markAsStarredWithSync([itemId]);
     }
     // Reload list to reflect changes
-    ref.read(articleListControllerProvider(widget.timelineId).notifier).refresh();
+    ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
   }
 
-  String _resolveTitle(String timelineId) {
-    if (timelineId == 'all') return 'All';
-    if (timelineId == 'articles') return 'Articles';
-    if (timelineId == 'podcasts') return 'Podcasts';
-    if (timelineId == 'videos') return 'Videos';
-    if (timelineId.startsWith('feed_')) return 'Feed';
-    if (timelineId.startsWith('folder_')) return 'Folder';
-    if (timelineId.startsWith('tag_')) return 'Tag';
-    if (timelineId.startsWith('filter_')) return 'Filter';
-    return 'Timeline';
+  String _resolveTitle(String timelineId, AppLocalizations l10n) {
+    if (timelineId == 'all') return l10n.timelineAll;
+    if (timelineId == 'articles') return l10n.timelineArticles;
+    if (timelineId == 'podcasts') return l10n.podcasts;
+    if (timelineId == 'videos') return l10n.videos;
+    if (timelineId.startsWith('feed_')) return l10n.timelineFeed;
+    if (timelineId.startsWith('folder_')) return l10n.timelineFolder;
+    if (timelineId.startsWith('tag_')) return l10n.timelineTag;
+    if (timelineId.startsWith('filter_')) return l10n.timelineFilter;
+    return l10n.timeline;
   }
 }

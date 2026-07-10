@@ -65,6 +65,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get markAsReadOnScrollDesc => '滚动经过文章时自动标记为已读';
 
   @override
+  String get hideReadArticles => '隐藏已读文章';
+
+  @override
+  String get hideReadArticlesDesc => '文章读完后从时间线中移除';
+
+  @override
   String get sortOrder => '排序方式';
 
   @override
@@ -792,40 +798,76 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authenticationFailed => '验证失败，请检查您的凭证。';
 
   @override
-  String get star => 'Star';
+  String get star => '收藏';
 
   @override
-  String get unstar => 'Unstar';
+  String get unstar => '取消收藏';
 
   @override
-  String get markRead => 'Mark Read';
+  String get markRead => '标为已读';
 
   @override
-  String get markUnread => 'Mark Unread';
+  String get markUnread => '标为未读';
 
   @override
-  String get markAllAsRead => 'Mark All as Read';
+  String get markAllAsRead => '全部标为已读';
 
   @override
-  String get syncing => 'Syncing...';
+  String get syncing => '同步中…';
 
   @override
-  String get syncNow => 'Sync Now';
+  String get syncNow => '立即同步';
 
   @override
-  String get logout => 'Log Out';
+  String get logout => '退出登录';
 
   @override
   String logoutConfirm(String serviceName) {
-    return 'Are you sure you want to log out of $serviceName?';
+    return '确定要退出 $serviceName 吗？';
   }
 
   @override
-  String get syncStatus => 'Sync Status';
+  String get syncStatus => '同步状态';
 
   @override
-  String get syncIdle => 'Idle';
+  String get syncIdle => '空闲';
 
   @override
-  String get syncError => 'Sync Error';
+  String get syncError => '同步出错';
+
+  @override
+  String get sync => '同步';
+
+  @override
+  String get scrollToTop => '滚动到顶部';
+
+  @override
+  String get showReadArticles => '显示已读文章';
+
+  @override
+  String get loadingMore => '加载更多…';
+
+  @override
+  String get failedToLoadArticles => '加载文章失败';
+
+  @override
+  String get failedToLoadArticle => '加载文章失败';
+
+  @override
+  String get timelineAll => '全部';
+
+  @override
+  String get timelineArticles => '文章';
+
+  @override
+  String get timelineFeed => '订阅源';
+
+  @override
+  String get timelineFolder => '文件夹';
+
+  @override
+  String get timelineTag => '标签';
+
+  @override
+  String get timelineFilter => '过滤器';
 }
