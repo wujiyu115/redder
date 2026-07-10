@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +114,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await customStatement(
                 'ALTER TABLE app_settings_table ADD COLUMN hide_read_feeds INTEGER NOT NULL DEFAULT 0');
+          }
+          if (from < 5) {
+            await customStatement(
+                'ALTER TABLE app_settings_table ADD COLUMN hide_read_articles INTEGER NOT NULL DEFAULT 1');
           }
         },
       );

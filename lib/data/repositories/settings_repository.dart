@@ -171,6 +171,16 @@ class SettingsRepository {
     return settings.hideReadFeeds;
   }
 
+  /// Toggles hiding read articles in timelines.
+  Future<bool> toggleHideReadArticles() async {
+    final settings = await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        hideReadArticles: Value(!s.hideReadArticles),
+      ),
+    );
+    return settings.hideReadArticles;
+  }
+
   /// Sets content expiry days (0 = never).
   Future<void> setContentExpiryDays(int days) async {
     await _localDs.updateSettings(

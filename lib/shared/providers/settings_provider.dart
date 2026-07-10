@@ -113,6 +113,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Toggles hiding read articles in timelines.
+  Future<void> toggleHideReadArticles() async {
+    await _repository.toggleHideReadArticles();
+    await _loadSettings();
+  }
+
   /// Sets content expiry days.
   Future<void> setContentExpiryDays(int days) async {
     await _repository.setContentExpiryDays(days);
@@ -170,4 +176,12 @@ final fontSizeProvider = Provider<double>((ref) {
 final lineHeightProvider = Provider<double>((ref) {
   return ref.watch(settingsProvider).whenOrNull(data: (s) => s.lineHeight) ??
       1.5;
+});
+
+/// Whether read articles are hidden in timelines.
+final hideReadArticlesProvider = Provider<bool>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.hideReadArticles) ??
+      true;
 });

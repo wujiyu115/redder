@@ -4175,6 +4175,16 @@ class $AppSettingsTableTable extends AppSettingsTable
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("hide_read_feeds" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _hideReadArticlesMeta =
+      const VerificationMeta('hideReadArticles');
+  @override
+  late final GeneratedColumn<bool> hideReadArticles = GeneratedColumn<bool>(
+      'hide_read_articles', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("hide_read_articles" IN (0, 1))'),
+      defaultValue: const Constant(true));
   static const VerificationMeta _contentExpiryDaysMeta =
       const VerificationMeta('contentExpiryDays');
   @override
@@ -4260,6 +4270,7 @@ class $AppSettingsTableTable extends AppSettingsTable
         groupByFeed,
         markReadOnScroll,
         hideReadFeeds,
+        hideReadArticles,
         contentExpiryDays,
         notificationsEnabled,
         cacheImages,
@@ -4365,6 +4376,12 @@ class $AppSettingsTableTable extends AppSettingsTable
           hideReadFeeds.isAcceptableOrUnknown(
               data['hide_read_feeds']!, _hideReadFeedsMeta));
     }
+    if (data.containsKey('hide_read_articles')) {
+      context.handle(
+          _hideReadArticlesMeta,
+          hideReadArticles.isAcceptableOrUnknown(
+              data['hide_read_articles']!, _hideReadArticlesMeta));
+    }
     if (data.containsKey('content_expiry_days')) {
       context.handle(
           _contentExpiryDaysMeta,
@@ -4453,6 +4470,8 @@ class $AppSettingsTableTable extends AppSettingsTable
           DriftSqlType.bool, data['${effectivePrefix}mark_read_on_scroll'])!,
       hideReadFeeds: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}hide_read_feeds'])!,
+      hideReadArticles: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}hide_read_articles'])!,
       contentExpiryDays: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}content_expiry_days'])!,
       notificationsEnabled: attachedDatabase.typeMapping.read(
@@ -4496,6 +4515,7 @@ class AppSettingsTableData extends DataClass
   final bool groupByFeed;
   final bool markReadOnScroll;
   final bool hideReadFeeds;
+  final bool hideReadArticles;
   final int contentExpiryDays;
   final bool notificationsEnabled;
   final bool cacheImages;
@@ -4520,6 +4540,7 @@ class AppSettingsTableData extends DataClass
       required this.groupByFeed,
       required this.markReadOnScroll,
       required this.hideReadFeeds,
+      required this.hideReadArticles,
       required this.contentExpiryDays,
       required this.notificationsEnabled,
       required this.cacheImages,
@@ -4546,6 +4567,7 @@ class AppSettingsTableData extends DataClass
     map['group_by_feed'] = Variable<bool>(groupByFeed);
     map['mark_read_on_scroll'] = Variable<bool>(markReadOnScroll);
     map['hide_read_feeds'] = Variable<bool>(hideReadFeeds);
+    map['hide_read_articles'] = Variable<bool>(hideReadArticles);
     map['content_expiry_days'] = Variable<int>(contentExpiryDays);
     map['notifications_enabled'] = Variable<bool>(notificationsEnabled);
     map['cache_images'] = Variable<bool>(cacheImages);
@@ -4575,6 +4597,7 @@ class AppSettingsTableData extends DataClass
       groupByFeed: Value(groupByFeed),
       markReadOnScroll: Value(markReadOnScroll),
       hideReadFeeds: Value(hideReadFeeds),
+      hideReadArticles: Value(hideReadArticles),
       contentExpiryDays: Value(contentExpiryDays),
       notificationsEnabled: Value(notificationsEnabled),
       cacheImages: Value(cacheImages),
@@ -4605,6 +4628,7 @@ class AppSettingsTableData extends DataClass
       groupByFeed: serializer.fromJson<bool>(json['groupByFeed']),
       markReadOnScroll: serializer.fromJson<bool>(json['markReadOnScroll']),
       hideReadFeeds: serializer.fromJson<bool>(json['hideReadFeeds']),
+      hideReadArticles: serializer.fromJson<bool>(json['hideReadArticles']),
       contentExpiryDays: serializer.fromJson<int>(json['contentExpiryDays']),
       notificationsEnabled:
           serializer.fromJson<bool>(json['notificationsEnabled']),
@@ -4637,6 +4661,7 @@ class AppSettingsTableData extends DataClass
       'groupByFeed': serializer.toJson<bool>(groupByFeed),
       'markReadOnScroll': serializer.toJson<bool>(markReadOnScroll),
       'hideReadFeeds': serializer.toJson<bool>(hideReadFeeds),
+      'hideReadArticles': serializer.toJson<bool>(hideReadArticles),
       'contentExpiryDays': serializer.toJson<int>(contentExpiryDays),
       'notificationsEnabled': serializer.toJson<bool>(notificationsEnabled),
       'cacheImages': serializer.toJson<bool>(cacheImages),
@@ -4665,6 +4690,7 @@ class AppSettingsTableData extends DataClass
           bool? groupByFeed,
           bool? markReadOnScroll,
           bool? hideReadFeeds,
+          bool? hideReadArticles,
           int? contentExpiryDays,
           bool? notificationsEnabled,
           bool? cacheImages,
@@ -4689,6 +4715,7 @@ class AppSettingsTableData extends DataClass
         groupByFeed: groupByFeed ?? this.groupByFeed,
         markReadOnScroll: markReadOnScroll ?? this.markReadOnScroll,
         hideReadFeeds: hideReadFeeds ?? this.hideReadFeeds,
+        hideReadArticles: hideReadArticles ?? this.hideReadArticles,
         contentExpiryDays: contentExpiryDays ?? this.contentExpiryDays,
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
         cacheImages: cacheImages ?? this.cacheImages,
@@ -4738,6 +4765,9 @@ class AppSettingsTableData extends DataClass
       hideReadFeeds: data.hideReadFeeds.present
           ? data.hideReadFeeds.value
           : this.hideReadFeeds,
+      hideReadArticles: data.hideReadArticles.present
+          ? data.hideReadArticles.value
+          : this.hideReadArticles,
       contentExpiryDays: data.contentExpiryDays.present
           ? data.contentExpiryDays.value
           : this.contentExpiryDays,
@@ -4782,6 +4812,7 @@ class AppSettingsTableData extends DataClass
           ..write('groupByFeed: $groupByFeed, ')
           ..write('markReadOnScroll: $markReadOnScroll, ')
           ..write('hideReadFeeds: $hideReadFeeds, ')
+          ..write('hideReadArticles: $hideReadArticles, ')
           ..write('contentExpiryDays: $contentExpiryDays, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
           ..write('cacheImages: $cacheImages, ')
@@ -4811,6 +4842,7 @@ class AppSettingsTableData extends DataClass
         groupByFeed,
         markReadOnScroll,
         hideReadFeeds,
+        hideReadArticles,
         contentExpiryDays,
         notificationsEnabled,
         cacheImages,
@@ -4839,6 +4871,7 @@ class AppSettingsTableData extends DataClass
           other.groupByFeed == this.groupByFeed &&
           other.markReadOnScroll == this.markReadOnScroll &&
           other.hideReadFeeds == this.hideReadFeeds &&
+          other.hideReadArticles == this.hideReadArticles &&
           other.contentExpiryDays == this.contentExpiryDays &&
           other.notificationsEnabled == this.notificationsEnabled &&
           other.cacheImages == this.cacheImages &&
@@ -4865,6 +4898,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
   final Value<bool> groupByFeed;
   final Value<bool> markReadOnScroll;
   final Value<bool> hideReadFeeds;
+  final Value<bool> hideReadArticles;
   final Value<int> contentExpiryDays;
   final Value<bool> notificationsEnabled;
   final Value<bool> cacheImages;
@@ -4889,6 +4923,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     this.groupByFeed = const Value.absent(),
     this.markReadOnScroll = const Value.absent(),
     this.hideReadFeeds = const Value.absent(),
+    this.hideReadArticles = const Value.absent(),
     this.contentExpiryDays = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
     this.cacheImages = const Value.absent(),
@@ -4914,6 +4949,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     this.groupByFeed = const Value.absent(),
     this.markReadOnScroll = const Value.absent(),
     this.hideReadFeeds = const Value.absent(),
+    this.hideReadArticles = const Value.absent(),
     this.contentExpiryDays = const Value.absent(),
     this.notificationsEnabled = const Value.absent(),
     this.cacheImages = const Value.absent(),
@@ -4939,6 +4975,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     Expression<bool>? groupByFeed,
     Expression<bool>? markReadOnScroll,
     Expression<bool>? hideReadFeeds,
+    Expression<bool>? hideReadArticles,
     Expression<int>? contentExpiryDays,
     Expression<bool>? notificationsEnabled,
     Expression<bool>? cacheImages,
@@ -4964,6 +5001,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       if (groupByFeed != null) 'group_by_feed': groupByFeed,
       if (markReadOnScroll != null) 'mark_read_on_scroll': markReadOnScroll,
       if (hideReadFeeds != null) 'hide_read_feeds': hideReadFeeds,
+      if (hideReadArticles != null) 'hide_read_articles': hideReadArticles,
       if (contentExpiryDays != null) 'content_expiry_days': contentExpiryDays,
       if (notificationsEnabled != null)
         'notifications_enabled': notificationsEnabled,
@@ -4995,6 +5033,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       Value<bool>? groupByFeed,
       Value<bool>? markReadOnScroll,
       Value<bool>? hideReadFeeds,
+      Value<bool>? hideReadArticles,
       Value<int>? contentExpiryDays,
       Value<bool>? notificationsEnabled,
       Value<bool>? cacheImages,
@@ -5019,6 +5058,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       groupByFeed: groupByFeed ?? this.groupByFeed,
       markReadOnScroll: markReadOnScroll ?? this.markReadOnScroll,
       hideReadFeeds: hideReadFeeds ?? this.hideReadFeeds,
+      hideReadArticles: hideReadArticles ?? this.hideReadArticles,
       contentExpiryDays: contentExpiryDays ?? this.contentExpiryDays,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       cacheImages: cacheImages ?? this.cacheImages,
@@ -5079,6 +5119,9 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     if (hideReadFeeds.present) {
       map['hide_read_feeds'] = Variable<bool>(hideReadFeeds.value);
     }
+    if (hideReadArticles.present) {
+      map['hide_read_articles'] = Variable<bool>(hideReadArticles.value);
+    }
     if (contentExpiryDays.present) {
       map['content_expiry_days'] = Variable<int>(contentExpiryDays.value);
     }
@@ -5125,6 +5168,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
           ..write('groupByFeed: $groupByFeed, ')
           ..write('markReadOnScroll: $markReadOnScroll, ')
           ..write('hideReadFeeds: $hideReadFeeds, ')
+          ..write('hideReadArticles: $hideReadArticles, ')
           ..write('contentExpiryDays: $contentExpiryDays, ')
           ..write('notificationsEnabled: $notificationsEnabled, ')
           ..write('cacheImages: $cacheImages, ')
@@ -8123,6 +8167,7 @@ typedef $$AppSettingsTableTableCreateCompanionBuilder
   Value<bool> groupByFeed,
   Value<bool> markReadOnScroll,
   Value<bool> hideReadFeeds,
+  Value<bool> hideReadArticles,
   Value<int> contentExpiryDays,
   Value<bool> notificationsEnabled,
   Value<bool> cacheImages,
@@ -8149,6 +8194,7 @@ typedef $$AppSettingsTableTableUpdateCompanionBuilder
   Value<bool> groupByFeed,
   Value<bool> markReadOnScroll,
   Value<bool> hideReadFeeds,
+  Value<bool> hideReadArticles,
   Value<int> contentExpiryDays,
   Value<bool> notificationsEnabled,
   Value<bool> cacheImages,
@@ -8218,6 +8264,10 @@ class $$AppSettingsTableTableFilterComposer
 
   ColumnFilters<bool> get hideReadFeeds => $composableBuilder(
       column: $table.hideReadFeeds, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hideReadArticles => $composableBuilder(
+      column: $table.hideReadArticles,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get contentExpiryDays => $composableBuilder(
       column: $table.contentExpiryDays,
@@ -8313,6 +8363,10 @@ class $$AppSettingsTableTableOrderingComposer
       column: $table.hideReadFeeds,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get hideReadArticles => $composableBuilder(
+      column: $table.hideReadArticles,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get contentExpiryDays => $composableBuilder(
       column: $table.contentExpiryDays,
       builder: (column) => ColumnOrderings(column));
@@ -8399,6 +8453,9 @@ class $$AppSettingsTableTableAnnotationComposer
   GeneratedColumn<bool> get hideReadFeeds => $composableBuilder(
       column: $table.hideReadFeeds, builder: (column) => column);
 
+  GeneratedColumn<bool> get hideReadArticles => $composableBuilder(
+      column: $table.hideReadArticles, builder: (column) => column);
+
   GeneratedColumn<int> get contentExpiryDays => $composableBuilder(
       column: $table.contentExpiryDays, builder: (column) => column);
 
@@ -8467,6 +8524,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             Value<bool> groupByFeed = const Value.absent(),
             Value<bool> markReadOnScroll = const Value.absent(),
             Value<bool> hideReadFeeds = const Value.absent(),
+            Value<bool> hideReadArticles = const Value.absent(),
             Value<int> contentExpiryDays = const Value.absent(),
             Value<bool> notificationsEnabled = const Value.absent(),
             Value<bool> cacheImages = const Value.absent(),
@@ -8492,6 +8550,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             groupByFeed: groupByFeed,
             markReadOnScroll: markReadOnScroll,
             hideReadFeeds: hideReadFeeds,
+            hideReadArticles: hideReadArticles,
             contentExpiryDays: contentExpiryDays,
             notificationsEnabled: notificationsEnabled,
             cacheImages: cacheImages,
@@ -8517,6 +8576,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             Value<bool> groupByFeed = const Value.absent(),
             Value<bool> markReadOnScroll = const Value.absent(),
             Value<bool> hideReadFeeds = const Value.absent(),
+            Value<bool> hideReadArticles = const Value.absent(),
             Value<int> contentExpiryDays = const Value.absent(),
             Value<bool> notificationsEnabled = const Value.absent(),
             Value<bool> cacheImages = const Value.absent(),
@@ -8542,6 +8602,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             groupByFeed: groupByFeed,
             markReadOnScroll: markReadOnScroll,
             hideReadFeeds: hideReadFeeds,
+            hideReadArticles: hideReadArticles,
             contentExpiryDays: contentExpiryDays,
             notificationsEnabled: notificationsEnabled,
             cacheImages: cacheImages,

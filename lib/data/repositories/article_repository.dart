@@ -48,9 +48,10 @@ class ArticleRepository {
     int feedId, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
-    return _localDs.getByFeedId(feedId, limit: limit, offset: offset, accountId: accountId);
+    return _localDs.getByFeedId(feedId, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
   }
 
   /// Gets articles by content type (for category timelines).
@@ -58,9 +59,10 @@ class ArticleRepository {
     ContentType type, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
-    return _localDs.getByContentType(type, limit: limit, offset: offset, accountId: accountId);
+    return _localDs.getByContentType(type, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
   }
 
   /// Gets articles for multiple feeds (for folder timelines).
@@ -68,9 +70,10 @@ class ArticleRepository {
     List<int> feedIds, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
-    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset, accountId: accountId);
+    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
   }
 
   /// Searches articles by title, optionally filtered by [accountId].

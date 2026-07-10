@@ -70,6 +70,7 @@ class ArticleLocalDataSource {
     int feedId, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
@@ -77,6 +78,9 @@ class ArticleLocalDataSource {
       ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
+    }
+    if (unreadOnly) {
+      query.where((t) => t.isRead.equals(false));
     }
     if (limit != null) query.limit(limit, offset: offset ?? 0);
     return query.get();
@@ -106,6 +110,7 @@ class ArticleLocalDataSource {
     ContentType type, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
@@ -113,6 +118,9 @@ class ArticleLocalDataSource {
       ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
+    }
+    if (unreadOnly) {
+      query.where((t) => t.isRead.equals(false));
     }
     if (limit != null) query.limit(limit, offset: offset ?? 0);
     return query.get();
@@ -123,6 +131,7 @@ class ArticleLocalDataSource {
     List<int> feedIds, {
     int? limit,
     int? offset,
+    bool unreadOnly = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
@@ -130,6 +139,9 @@ class ArticleLocalDataSource {
       ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
+    }
+    if (unreadOnly) {
+      query.where((t) => t.isRead.equals(false));
     }
     if (limit != null) query.limit(limit, offset: offset ?? 0);
     return query.get();

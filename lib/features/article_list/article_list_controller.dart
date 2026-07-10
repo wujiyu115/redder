@@ -11,6 +11,7 @@ import '../../data/repositories/tag_repository.dart';
 import '../../data/services/feed_refresh_service.dart';
 import '../../data/services/sync/sync_bridge.dart';
 import '../../shared/providers/account_provider.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../source_list/source_list_controller.dart';
 
@@ -156,6 +157,12 @@ class ArticleListController
     }
   }
 
+  /// Toggles the persisted "hide read articles" setting and reloads.
+  Future<void> toggleHideRead() async {
+    await _ref.read(settingsProvider.notifier).toggleHideReadArticles();
+    await _loadInitial();
+  }
+
   /// Loads items based on the timeline type, filtered by active account.
   Future<List<FeedItem>> _loadItems({
     required int offset,
@@ -163,8 +170,18 @@ class ArticleListController
   }) async {
     final accountId = _activeAccountId;
 
+    // Hide read articles when enabled, except for tag/filter timelines where
+    // read items are still meaningful (bookmarks, favorites, saved filters).
+    final unreadOnly =
+        _ref.read(settingsProvider).valueOrNull?.hideReadArticles ?? true;
+
     if (timelineId == 'all') {
-      return _articleRepo.getArticles(limit: limit, offset: offset, accountId: accountId);
+      return _articleRepo.getArticles(
+        limit: limit,
+        offset: offset,
+        unreadOnly: unreadOnly,
+        accountId: accountId,
+      );
     }
 
     if (timelineId == 'articles') {
@@ -172,6 +189,7 @@ class ArticleListController
         ContentType.article,
         limit: limit,
         offset: offset,
+        unreadOnly: unreadOnly,
         accountId: accountId,
       );
     }
@@ -181,6 +199,7 @@ class ArticleListController
         ContentType.audio,
         limit: limit,
         offset: offset,
+        unreadOnly: unreadOnly,
         accountId: accountId,
       );
     }
@@ -190,6 +209,7 @@ class ArticleListController
         ContentType.video,
         limit: limit,
         offset: offset,
+        unreadOnly: unreadOnly,
         accountId: accountId,
       );
     }
@@ -201,6 +221,7 @@ class ArticleListController
           feedId,
           limit: limit,
           offset: offset,
+          unreadOnly: unreadOnly,
           accountId: accountId,
         );
       }
@@ -215,6 +236,7 @@ class ArticleListController
           feedIds,
           limit: limit,
           offset: offset,
+          unreadOnly: unreadOnly,
           accountId: accountId,
         );
       }

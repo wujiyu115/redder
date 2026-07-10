@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_durations.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/providers/settings_provider.dart';
 import '../../../shared/providers/sync_provider.dart';
 import '../../../shared/widgets/reeder_popup_menu.dart';
 import '../article_list_controller.dart';
@@ -59,6 +60,8 @@ class TimelineControlButton extends ConsumerWidget {
       Offset(box.size.width, box.size.height),
     );
 
+    final hideRead = ref.read(hideReadArticlesProvider);
+
     final selected = await ReederPopupMenu.show(
       context: context,
       position: position,
@@ -70,6 +73,10 @@ class TimelineControlButton extends ConsumerWidget {
         const ReederPopupMenuItem(
           id: 'refresh',
           label: 'Refresh',
+        ),
+        ReederPopupMenuItem(
+          id: 'toggle_hide_read',
+          label: hideRead ? 'Show Read Articles' : 'Hide Read Articles',
         ),
         const ReederPopupMenuItem(
           id: 'scroll_top',
@@ -86,6 +93,11 @@ class TimelineControlButton extends ConsumerWidget {
     if (selected == null) return;
 
     switch (selected) {
+      case 'toggle_hide_read':
+        ref
+            .read(articleListControllerProvider(timelineId).notifier)
+            .toggleHideRead();
+        break;
       case 'refresh':
         onRefresh?.call();
         break;
