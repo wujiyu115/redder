@@ -9,6 +9,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
+import '../media/media_launcher.dart';
 
 /// Video player page supporting native playback and WebView fallback.
 ///
@@ -53,7 +54,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
 
   Future<void> _initializePlayer() async {
     // Determine playback mode
-    if (widget.videoUrl != null && !_isEmbedUrl(widget.videoUrl!)) {
+    if (widget.videoUrl != null && !isEmbedVideoUrl(widget.videoUrl!)) {
       // Native video playback
       await _initNativePlayer(widget.videoUrl!);
     } else {
@@ -63,16 +64,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         _isInitialized = true;
       });
     }
-  }
-
-  /// Checks if a URL is an embed/platform URL that needs WebView.
-  bool _isEmbedUrl(String url) {
-    final lower = url.toLowerCase();
-    return lower.contains('youtube.com') ||
-        lower.contains('youtu.be') ||
-        lower.contains('vimeo.com') ||
-        lower.contains('dailymotion.com') ||
-        lower.contains('twitch.tv');
   }
 
   Future<void> _initNativePlayer(String url) async {

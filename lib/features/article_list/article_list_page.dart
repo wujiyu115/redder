@@ -15,6 +15,7 @@ import '../../shared/widgets/error_state.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../data/services/scroll_position_service.dart';
+import '../media/media_launcher.dart';
 import '../source_list/source_list_controller.dart';
 import 'article_list_controller.dart';
 import 'widgets/article_list_item.dart';
@@ -186,21 +187,27 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         final item = state.items[index];
 
         // Wrap list items with swipe actions
+        void openItem() => launchMedia(
+              context,
+              ref,
+              item,
+              feedTitle: state.feedTitles[item.feedId],
+              openArticle: () => context.push(
+                '/timeline/${widget.timelineId}/article/${item.id}',
+              ),
+            );
+
         final listItemWidget = isCompact
             ? ArticleListItemCompact(
                 item: item,
                 feedTitle: state.feedTitles[item.feedId],
-                onTap: () => context.push(
-                  '/timeline/${widget.timelineId}/article/${item.id}',
-                ),
+                onTap: openItem,
               )
             : ArticleListItem(
                 item: item,
                 feedTitle: state.feedTitles[item.feedId],
                 feedIconUrl: state.feedIcons[item.feedId],
-                onTap: () => context.push(
-                  '/timeline/${widget.timelineId}/article/${item.id}',
-                ),
+                onTap: openItem,
               );
 
         return SwipeActionWidget(

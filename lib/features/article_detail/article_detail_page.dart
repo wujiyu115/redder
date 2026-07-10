@@ -12,6 +12,7 @@ import '../../shared/widgets/reeder_button.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../image_viewer/image_viewer_page.dart';
+import '../media/media_launcher.dart';
 import 'article_detail_controller.dart';
 import 'widgets/article_header.dart';
 import 'widgets/article_content_view.dart';
@@ -95,6 +96,28 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
             onBack: () => context.pop(),
             opacity: _navBarController.opacity,
             actions: [
+              // Play button for audio/video articles
+              if (() {
+                final a = detailState.valueOrNull?.article;
+                return a != null && resolveMediaKind(a) != MediaKind.article;
+              }())
+                ReederButton.icon(
+                  icon: Text(
+                    '▶',
+                    style: TextStyle(fontSize: 16, color: theme.accentColor),
+                  ),
+                  onPressed: () {
+                    final state = detailState.valueOrNull;
+                    if (state != null) {
+                      launchMedia(
+                        context,
+                        ref,
+                        state.article,
+                        feedTitle: state.feedTitle,
+                      );
+                    }
+                  },
+                ),
               // Mark as Unread button
               ReederButton.icon(
                 icon: const Text(

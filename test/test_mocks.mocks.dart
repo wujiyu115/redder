@@ -1703,6 +1703,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     int? feedId, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1712,6 +1713,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
@@ -1723,6 +1725,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     _i23.ContentType? type, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1732,6 +1735,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
@@ -1743,6 +1747,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     List<int>? feedIds, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1752,6 +1757,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
@@ -2216,6 +2222,24 @@ class MockSettingsRepository extends _i1.Mock
       ) as _i12.Future<bool>);
 
   @override
+  _i12.Future<bool> toggleHideReadFeeds() => (super.noSuchMethod(
+        Invocation.method(
+          #toggleHideReadFeeds,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
+
+  @override
+  _i12.Future<bool> toggleHideReadArticles() => (super.noSuchMethod(
+        Invocation.method(
+          #toggleHideReadArticles,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
+
+  @override
   _i12.Future<void> setContentExpiryDays(int? days) => (super.noSuchMethod(
         Invocation.method(
           #setContentExpiryDays,
@@ -2620,6 +2644,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     int? feedId, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2629,6 +2654,7 @@ class MockArticleLocalDataSource extends _i1.Mock
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
@@ -2661,6 +2687,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     _i23.ContentType? type, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2670,6 +2697,7 @@ class MockArticleLocalDataSource extends _i1.Mock
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
@@ -2681,6 +2709,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     List<int>? feedIds, {
     int? limit,
     int? offset,
+    bool? unreadOnly = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2690,6 +2719,7 @@ class MockArticleLocalDataSource extends _i1.Mock
           {
             #limit: limit,
             #offset: offset,
+            #unreadOnly: unreadOnly,
             #accountId: accountId,
           },
         ),
