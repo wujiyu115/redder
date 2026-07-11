@@ -119,41 +119,22 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                     }
                   },
                 ),
-              // Mark as Unread button
-              ReederButton.icon(
-                icon: const Text(
-                  '●',
-                  style: TextStyle(fontSize: 16),
-                ),
-                onPressed: () {
-                  ref
-                      .read(articleDetailControllerProvider(widget.articleId).notifier)
-                      .markAsUnread();
-                  if (context.mounted) context.pop();
-                },
-              ),
+              // Reader view toggle (active state reflected on the button)
               ReederButton.icon(
                 icon: Text(
                   '⊙',
-                  style: TextStyle(fontSize: 18, color: theme.accentColor),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: (detailState.valueOrNull?.isReaderView ?? false)
+                        ? theme.accentColor
+                        : theme.iconColor,
+                  ),
                 ),
                 onPressed: () {
                   ref
                       .read(articleDetailControllerProvider(widget.articleId)
                           .notifier)
                       .toggleReaderView();
-                },
-              ),
-              ReederButton.icon(
-                icon: Text(
-                  '↗',
-                  style: TextStyle(fontSize: 18, color: theme.accentColor),
-                ),
-                onPressed: () {
-                  final article = detailState.valueOrNull?.article;
-                  if (article != null) {
-                    context.push('/browser', extra: article.url);
-                  }
                 },
               ),
             ],
