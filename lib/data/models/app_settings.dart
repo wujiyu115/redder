@@ -15,6 +15,8 @@ class AppSettingsTable extends Table {
   IntColumn get lineHeightLevel => integer().withDefault(const Constant(2))();
   RealColumn get maxContentWidth => real().withDefault(const Constant(680.0))();
   BoolColumn get bionicReading => boolean().withDefault(const Constant(false))();
+  BoolColumn get defaultFullscreenReading =>
+      boolean().withDefault(const Constant(false))();
 
   // ─── Display ────────────────────────────────────────────
   BoolColumn get showAvatars => boolean().withDefault(const Constant(true))();

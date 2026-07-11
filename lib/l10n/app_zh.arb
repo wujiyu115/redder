@@ -19,6 +19,8 @@
   "fontSizeAndLineHeightDesc": "自定义阅读体验",
   "bionicReading": "仿生阅读",
   "bionicReadingDesc": "加粗单词开头以加快阅读速度",
+  "fullscreenReading": "全屏阅读",
+  "fullscreenReadingDesc": "默认以无干扰的全屏视图打开文章",
   "markAsReadOnScroll": "滚动时标记为已读",
   "markAsReadOnScrollDesc": "滚动经过文章时自动标记为已读",
   "hideReadArticles": "隐藏已读文章",

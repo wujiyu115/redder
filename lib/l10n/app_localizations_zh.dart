@@ -59,6 +59,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get bionicReadingDesc => '加粗单词开头以加快阅读速度';
 
   @override
+  String get fullscreenReading => '全屏阅读';
+
+  @override
+  String get fullscreenReadingDesc => '默认以无干扰的全屏视图打开文章';
+
+  @override
   String get markAsReadOnScroll => '滚动时标记为已读';
 
   @override

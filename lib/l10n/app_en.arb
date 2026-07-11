@@ -24,6 +24,8 @@
   "fontSizeAndLineHeightDesc": "Customize reading experience",
   "bionicReading": "Bionic Reading",
   "bionicReadingDesc": "Bold the beginning of words for faster reading",
+  "fullscreenReading": "Fullscreen Reading",
+  "fullscreenReadingDesc": "Open articles in a distraction-free fullscreen view by default",
   "markAsReadOnScroll": "Mark as Read on Scroll",
   "markAsReadOnScrollDesc": "Automatically mark articles as read when scrolled past",
   "hideReadArticles": "Hide Read Articles",

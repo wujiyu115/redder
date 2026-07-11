@@ -2167,6 +2167,15 @@ class MockSettingsRepository extends _i1.Mock
       ) as _i12.Future<bool>);
 
   @override
+  _i12.Future<bool> toggleDefaultFullscreenReading() => (super.noSuchMethod(
+        Invocation.method(
+          #toggleDefaultFullscreenReading,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
+
+  @override
   _i12.Future<bool> toggleCompactMode() => (super.noSuchMethod(
         Invocation.method(
           #toggleCompactMode,

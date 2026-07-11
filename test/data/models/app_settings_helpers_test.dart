@@ -15,6 +15,7 @@ AppSettingsTableData _settings({
     lineHeightLevel: lineHeightLevel,
     maxContentWidth: 680.0,
     bionicReading: false,
+    defaultFullscreenReading: false,
     showAvatars: true,
     avatarStyle: 'rounded',
     showFolderIcons: true,

@@ -71,6 +71,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Toggles default fullscreen reading mode.
+  Future<void> toggleDefaultFullscreenReading() async {
+    await _repository.toggleDefaultFullscreenReading();
+    await _loadSettings();
+  }
+
   /// Toggles compact mode.
   Future<void> toggleCompactMode() async {
     await _repository.toggleCompactMode();
@@ -190,4 +196,12 @@ final hideReadArticlesProvider = Provider<bool>((ref) {
           .watch(settingsProvider)
           .whenOrNull(data: (s) => s.hideReadArticles) ??
       true;
+});
+
+/// Whether articles open in fullscreen reading mode by default.
+final defaultFullscreenReadingProvider = Provider<bool>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.defaultFullscreenReading) ??
+      false;
 });

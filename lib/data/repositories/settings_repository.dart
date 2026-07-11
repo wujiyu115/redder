@@ -98,6 +98,16 @@ class SettingsRepository {
     return settings.bionicReading;
   }
 
+  /// Toggles whether articles open in fullscreen reading mode by default.
+  Future<bool> toggleDefaultFullscreenReading() async {
+    final settings = await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        defaultFullscreenReading: Value(!s.defaultFullscreenReading),
+      ),
+    );
+    return settings.defaultFullscreenReading;
+  }
+
   // ─── Display Settings ─────────────────────────────────────
 
   /// Toggles compact mode.

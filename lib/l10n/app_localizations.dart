@@ -194,6 +194,18 @@ abstract class AppLocalizations {
   /// **'Bold the beginning of words for faster reading'**
   String get bionicReadingDesc;
 
+  /// No description provided for @fullscreenReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fullscreen Reading'**
+  String get fullscreenReading;
+
+  /// No description provided for @fullscreenReadingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open articles in a distraction-free fullscreen view by default'**
+  String get fullscreenReadingDesc;
+
   /// No description provided for @markAsReadOnScroll.
   ///
   /// In en, this message translates to:

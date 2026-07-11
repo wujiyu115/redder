@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reeder/l10n/app_localizations.dart';
@@ -12,6 +13,7 @@ import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_button.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/shimmer_loading.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../image_viewer/image_viewer_page.dart';
 import '../media/media_launcher.dart';
 import 'article_detail_controller.dart';
@@ -50,6 +52,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   late final ReederNavBarController _navBarController;
   double _dragStartX = 0.0;
   bool _isDraggingFromEdge = false;
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -57,12 +60,16 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
     _navBarController = ReederNavBarController();
     _scrollController.addListener(_onScroll);
 
-    // Mark article as read when opened
+    // Start in fullscreen when the user made it the default.
+    _isFullscreen = ref.read(defaultFullscreenReadingProvider);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Mark article as read when opened
       ref
           .read(articleDetailControllerProvider(widget.articleId).notifier)
           .markAsRead();
+      if (_isFullscreen) _applyFullscreen(true);
     });
   }
 
@@ -71,7 +78,19 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _navBarController.dispose();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
+  }
+
+  void _applyFullscreen(bool on) {
+    SystemChrome.setEnabledSystemUIMode(
+      on ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+    );
+  }
+
+  void _toggleFullscreen() {
+    setState(() => _isFullscreen = !_isFullscreen);
+    _applyFullscreen(_isFullscreen);
   }
 
   void _onScroll() {
@@ -88,8 +107,13 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
       onHorizontalDragStart: _onHorizontalDragStart,
       onHorizontalDragUpdate: _onHorizontalDragUpdate,
       onHorizontalDragEnd: _onHorizontalDragEnd,
+      // In fullscreen, a tap on empty content area restores the chrome.
+      onTap: _isFullscreen ? _toggleFullscreen : null,
       child: ReederScaffold(
-        navBar: ListenableBuilder(
+        useSafeAreaTop: !_isFullscreen,
+        navBar: _isFullscreen
+            ? null
+            : ListenableBuilder(
           listenable: _navBarController,
           builder: (context, _) => ReederNavBar(
             title: '',
@@ -119,6 +143,14 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                     }
                   },
                 ),
+              // Enter fullscreen reading
+              ReederButton.icon(
+                icon: Text(
+                  '⛶',
+                  style: TextStyle(fontSize: 18, color: theme.iconColor),
+                ),
+                onPressed: _toggleFullscreen,
+              ),
               // Reader view toggle (active state reflected on the button)
               ReederButton.icon(
                 icon: Text(
@@ -214,7 +246,8 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           ),
         ),
 
-        // Bottom action bar
+        // Bottom action bar (hidden in fullscreen reading)
+        if (!_isFullscreen)
         ArticleActionBar(
           articleId: widget.articleId,
           isStarred: state.article.isStarred,

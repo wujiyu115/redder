@@ -60,6 +60,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bold the beginning of words for faster reading';
 
   @override
+  String get fullscreenReading => 'Fullscreen Reading';
+
+  @override
+  String get fullscreenReadingDesc =>
+      'Open articles in a distraction-free fullscreen view by default';
+
+  @override
   String get markAsReadOnScroll => 'Mark as Read on Scroll';
 
   @override

@@ -4089,6 +4089,17 @@ class $AppSettingsTableTable extends AppSettingsTable
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("bionic_reading" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _defaultFullscreenReadingMeta =
+      const VerificationMeta('defaultFullscreenReading');
+  @override
+  late final GeneratedColumn<bool> defaultFullscreenReading =
+      GeneratedColumn<bool>(
+          'default_fullscreen_reading', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("default_fullscreen_reading" IN (0, 1))'),
+          defaultValue: const Constant(false));
   static const VerificationMeta _showAvatarsMeta =
       const VerificationMeta('showAvatars');
   @override
@@ -4261,6 +4272,7 @@ class $AppSettingsTableTable extends AppSettingsTable
         lineHeightLevel,
         maxContentWidth,
         bionicReading,
+        defaultFullscreenReading,
         showAvatars,
         avatarStyle,
         showFolderIcons,
@@ -4323,6 +4335,13 @@ class $AppSettingsTableTable extends AppSettingsTable
           _bionicReadingMeta,
           bionicReading.isAcceptableOrUnknown(
               data['bionic_reading']!, _bionicReadingMeta));
+    }
+    if (data.containsKey('default_fullscreen_reading')) {
+      context.handle(
+          _defaultFullscreenReadingMeta,
+          defaultFullscreenReading.isAcceptableOrUnknown(
+              data['default_fullscreen_reading']!,
+              _defaultFullscreenReadingMeta));
     }
     if (data.containsKey('show_avatars')) {
       context.handle(
@@ -4452,6 +4471,9 @@ class $AppSettingsTableTable extends AppSettingsTable
           DriftSqlType.double, data['${effectivePrefix}max_content_width'])!,
       bionicReading: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}bionic_reading'])!,
+      defaultFullscreenReading: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool,
+          data['${effectivePrefix}default_fullscreen_reading'])!,
       showAvatars: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}show_avatars'])!,
       avatarStyle: attachedDatabase.typeMapping
@@ -4506,6 +4528,7 @@ class AppSettingsTableData extends DataClass
   final int lineHeightLevel;
   final double maxContentWidth;
   final bool bionicReading;
+  final bool defaultFullscreenReading;
   final bool showAvatars;
   final String avatarStyle;
   final bool showFolderIcons;
@@ -4531,6 +4554,7 @@ class AppSettingsTableData extends DataClass
       required this.lineHeightLevel,
       required this.maxContentWidth,
       required this.bionicReading,
+      required this.defaultFullscreenReading,
       required this.showAvatars,
       required this.avatarStyle,
       required this.showFolderIcons,
@@ -4558,6 +4582,8 @@ class AppSettingsTableData extends DataClass
     map['line_height_level'] = Variable<int>(lineHeightLevel);
     map['max_content_width'] = Variable<double>(maxContentWidth);
     map['bionic_reading'] = Variable<bool>(bionicReading);
+    map['default_fullscreen_reading'] =
+        Variable<bool>(defaultFullscreenReading);
     map['show_avatars'] = Variable<bool>(showAvatars);
     map['avatar_style'] = Variable<String>(avatarStyle);
     map['show_folder_icons'] = Variable<bool>(showFolderIcons);
@@ -4588,6 +4614,7 @@ class AppSettingsTableData extends DataClass
       lineHeightLevel: Value(lineHeightLevel),
       maxContentWidth: Value(maxContentWidth),
       bionicReading: Value(bionicReading),
+      defaultFullscreenReading: Value(defaultFullscreenReading),
       showAvatars: Value(showAvatars),
       avatarStyle: Value(avatarStyle),
       showFolderIcons: Value(showFolderIcons),
@@ -4619,6 +4646,8 @@ class AppSettingsTableData extends DataClass
       lineHeightLevel: serializer.fromJson<int>(json['lineHeightLevel']),
       maxContentWidth: serializer.fromJson<double>(json['maxContentWidth']),
       bionicReading: serializer.fromJson<bool>(json['bionicReading']),
+      defaultFullscreenReading:
+          serializer.fromJson<bool>(json['defaultFullscreenReading']),
       showAvatars: serializer.fromJson<bool>(json['showAvatars']),
       avatarStyle: serializer.fromJson<String>(json['avatarStyle']),
       showFolderIcons: serializer.fromJson<bool>(json['showFolderIcons']),
@@ -4652,6 +4681,8 @@ class AppSettingsTableData extends DataClass
       'lineHeightLevel': serializer.toJson<int>(lineHeightLevel),
       'maxContentWidth': serializer.toJson<double>(maxContentWidth),
       'bionicReading': serializer.toJson<bool>(bionicReading),
+      'defaultFullscreenReading':
+          serializer.toJson<bool>(defaultFullscreenReading),
       'showAvatars': serializer.toJson<bool>(showAvatars),
       'avatarStyle': serializer.toJson<String>(avatarStyle),
       'showFolderIcons': serializer.toJson<bool>(showFolderIcons),
@@ -4681,6 +4712,7 @@ class AppSettingsTableData extends DataClass
           int? lineHeightLevel,
           double? maxContentWidth,
           bool? bionicReading,
+          bool? defaultFullscreenReading,
           bool? showAvatars,
           String? avatarStyle,
           bool? showFolderIcons,
@@ -4706,6 +4738,8 @@ class AppSettingsTableData extends DataClass
         lineHeightLevel: lineHeightLevel ?? this.lineHeightLevel,
         maxContentWidth: maxContentWidth ?? this.maxContentWidth,
         bionicReading: bionicReading ?? this.bionicReading,
+        defaultFullscreenReading:
+            defaultFullscreenReading ?? this.defaultFullscreenReading,
         showAvatars: showAvatars ?? this.showAvatars,
         avatarStyle: avatarStyle ?? this.avatarStyle,
         showFolderIcons: showFolderIcons ?? this.showFolderIcons,
@@ -4744,6 +4778,9 @@ class AppSettingsTableData extends DataClass
       bionicReading: data.bionicReading.present
           ? data.bionicReading.value
           : this.bionicReading,
+      defaultFullscreenReading: data.defaultFullscreenReading.present
+          ? data.defaultFullscreenReading.value
+          : this.defaultFullscreenReading,
       showAvatars:
           data.showAvatars.present ? data.showAvatars.value : this.showAvatars,
       avatarStyle:
@@ -4803,6 +4840,7 @@ class AppSettingsTableData extends DataClass
           ..write('lineHeightLevel: $lineHeightLevel, ')
           ..write('maxContentWidth: $maxContentWidth, ')
           ..write('bionicReading: $bionicReading, ')
+          ..write('defaultFullscreenReading: $defaultFullscreenReading, ')
           ..write('showAvatars: $showAvatars, ')
           ..write('avatarStyle: $avatarStyle, ')
           ..write('showFolderIcons: $showFolderIcons, ')
@@ -4833,6 +4871,7 @@ class AppSettingsTableData extends DataClass
         lineHeightLevel,
         maxContentWidth,
         bionicReading,
+        defaultFullscreenReading,
         showAvatars,
         avatarStyle,
         showFolderIcons,
@@ -4862,6 +4901,7 @@ class AppSettingsTableData extends DataClass
           other.lineHeightLevel == this.lineHeightLevel &&
           other.maxContentWidth == this.maxContentWidth &&
           other.bionicReading == this.bionicReading &&
+          other.defaultFullscreenReading == this.defaultFullscreenReading &&
           other.showAvatars == this.showAvatars &&
           other.avatarStyle == this.avatarStyle &&
           other.showFolderIcons == this.showFolderIcons &&
@@ -4889,6 +4929,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
   final Value<int> lineHeightLevel;
   final Value<double> maxContentWidth;
   final Value<bool> bionicReading;
+  final Value<bool> defaultFullscreenReading;
   final Value<bool> showAvatars;
   final Value<String> avatarStyle;
   final Value<bool> showFolderIcons;
@@ -4914,6 +4955,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     this.lineHeightLevel = const Value.absent(),
     this.maxContentWidth = const Value.absent(),
     this.bionicReading = const Value.absent(),
+    this.defaultFullscreenReading = const Value.absent(),
     this.showAvatars = const Value.absent(),
     this.avatarStyle = const Value.absent(),
     this.showFolderIcons = const Value.absent(),
@@ -4940,6 +4982,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     this.lineHeightLevel = const Value.absent(),
     this.maxContentWidth = const Value.absent(),
     this.bionicReading = const Value.absent(),
+    this.defaultFullscreenReading = const Value.absent(),
     this.showAvatars = const Value.absent(),
     this.avatarStyle = const Value.absent(),
     this.showFolderIcons = const Value.absent(),
@@ -4966,6 +5009,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     Expression<int>? lineHeightLevel,
     Expression<double>? maxContentWidth,
     Expression<bool>? bionicReading,
+    Expression<bool>? defaultFullscreenReading,
     Expression<bool>? showAvatars,
     Expression<String>? avatarStyle,
     Expression<bool>? showFolderIcons,
@@ -4992,6 +5036,8 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       if (lineHeightLevel != null) 'line_height_level': lineHeightLevel,
       if (maxContentWidth != null) 'max_content_width': maxContentWidth,
       if (bionicReading != null) 'bionic_reading': bionicReading,
+      if (defaultFullscreenReading != null)
+        'default_fullscreen_reading': defaultFullscreenReading,
       if (showAvatars != null) 'show_avatars': showAvatars,
       if (avatarStyle != null) 'avatar_style': avatarStyle,
       if (showFolderIcons != null) 'show_folder_icons': showFolderIcons,
@@ -5024,6 +5070,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       Value<int>? lineHeightLevel,
       Value<double>? maxContentWidth,
       Value<bool>? bionicReading,
+      Value<bool>? defaultFullscreenReading,
       Value<bool>? showAvatars,
       Value<String>? avatarStyle,
       Value<bool>? showFolderIcons,
@@ -5049,6 +5096,8 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
       lineHeightLevel: lineHeightLevel ?? this.lineHeightLevel,
       maxContentWidth: maxContentWidth ?? this.maxContentWidth,
       bionicReading: bionicReading ?? this.bionicReading,
+      defaultFullscreenReading:
+          defaultFullscreenReading ?? this.defaultFullscreenReading,
       showAvatars: showAvatars ?? this.showAvatars,
       avatarStyle: avatarStyle ?? this.avatarStyle,
       showFolderIcons: showFolderIcons ?? this.showFolderIcons,
@@ -5091,6 +5140,10 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
     }
     if (bionicReading.present) {
       map['bionic_reading'] = Variable<bool>(bionicReading.value);
+    }
+    if (defaultFullscreenReading.present) {
+      map['default_fullscreen_reading'] =
+          Variable<bool>(defaultFullscreenReading.value);
     }
     if (showAvatars.present) {
       map['show_avatars'] = Variable<bool>(showAvatars.value);
@@ -5159,6 +5212,7 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingsTableData> {
           ..write('lineHeightLevel: $lineHeightLevel, ')
           ..write('maxContentWidth: $maxContentWidth, ')
           ..write('bionicReading: $bionicReading, ')
+          ..write('defaultFullscreenReading: $defaultFullscreenReading, ')
           ..write('showAvatars: $showAvatars, ')
           ..write('avatarStyle: $avatarStyle, ')
           ..write('showFolderIcons: $showFolderIcons, ')
@@ -8158,6 +8212,7 @@ typedef $$AppSettingsTableTableCreateCompanionBuilder
   Value<int> lineHeightLevel,
   Value<double> maxContentWidth,
   Value<bool> bionicReading,
+  Value<bool> defaultFullscreenReading,
   Value<bool> showAvatars,
   Value<String> avatarStyle,
   Value<bool> showFolderIcons,
@@ -8185,6 +8240,7 @@ typedef $$AppSettingsTableTableUpdateCompanionBuilder
   Value<int> lineHeightLevel,
   Value<double> maxContentWidth,
   Value<bool> bionicReading,
+  Value<bool> defaultFullscreenReading,
   Value<bool> showAvatars,
   Value<String> avatarStyle,
   Value<bool> showFolderIcons,
@@ -8234,6 +8290,10 @@ class $$AppSettingsTableTableFilterComposer
 
   ColumnFilters<bool> get bionicReading => $composableBuilder(
       column: $table.bionicReading, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get defaultFullscreenReading => $composableBuilder(
+      column: $table.defaultFullscreenReading,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get showAvatars => $composableBuilder(
       column: $table.showAvatars, builder: (column) => ColumnFilters(column));
@@ -8332,6 +8392,10 @@ class $$AppSettingsTableTableOrderingComposer
       column: $table.bionicReading,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get defaultFullscreenReading => $composableBuilder(
+      column: $table.defaultFullscreenReading,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get showAvatars => $composableBuilder(
       column: $table.showAvatars, builder: (column) => ColumnOrderings(column));
 
@@ -8426,6 +8490,9 @@ class $$AppSettingsTableTableAnnotationComposer
   GeneratedColumn<bool> get bionicReading => $composableBuilder(
       column: $table.bionicReading, builder: (column) => column);
 
+  GeneratedColumn<bool> get defaultFullscreenReading => $composableBuilder(
+      column: $table.defaultFullscreenReading, builder: (column) => column);
+
   GeneratedColumn<bool> get showAvatars => $composableBuilder(
       column: $table.showAvatars, builder: (column) => column);
 
@@ -8515,6 +8582,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             Value<int> lineHeightLevel = const Value.absent(),
             Value<double> maxContentWidth = const Value.absent(),
             Value<bool> bionicReading = const Value.absent(),
+            Value<bool> defaultFullscreenReading = const Value.absent(),
             Value<bool> showAvatars = const Value.absent(),
             Value<String> avatarStyle = const Value.absent(),
             Value<bool> showFolderIcons = const Value.absent(),
@@ -8541,6 +8609,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             lineHeightLevel: lineHeightLevel,
             maxContentWidth: maxContentWidth,
             bionicReading: bionicReading,
+            defaultFullscreenReading: defaultFullscreenReading,
             showAvatars: showAvatars,
             avatarStyle: avatarStyle,
             showFolderIcons: showFolderIcons,
@@ -8567,6 +8636,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             Value<int> lineHeightLevel = const Value.absent(),
             Value<double> maxContentWidth = const Value.absent(),
             Value<bool> bionicReading = const Value.absent(),
+            Value<bool> defaultFullscreenReading = const Value.absent(),
             Value<bool> showAvatars = const Value.absent(),
             Value<String> avatarStyle = const Value.absent(),
             Value<bool> showFolderIcons = const Value.absent(),
@@ -8593,6 +8663,7 @@ class $$AppSettingsTableTableTableManager extends RootTableManager<
             lineHeightLevel: lineHeightLevel,
             maxContentWidth: maxContentWidth,
             bionicReading: bionicReading,
+            defaultFullscreenReading: defaultFullscreenReading,
             showAvatars: showAvatars,
             avatarStyle: avatarStyle,
             showFolderIcons: showFolderIcons,

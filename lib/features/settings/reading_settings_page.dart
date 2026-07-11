@@ -9,6 +9,8 @@ import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_slider.dart';
 import '../../shared/widgets/reeder_section_header.dart';
+import '../../shared/widgets/reeder_list_tile.dart';
+import '../../shared/widgets/reeder_switch.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../core/database/app_database.dart';
 import '../../data/models/app_settings_helpers.dart';
@@ -145,6 +147,22 @@ class ReadingSettingsPage extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+
+        // ─── OPTIONS ────────────────────────────────────────
+        ReederSectionHeader(title: l10n.reading),
+
+        ReederListTile(
+          title: l10n.fullscreenReading,
+          subtitle: l10n.fullscreenReadingDesc,
+          trailing: ReederSwitch(
+            value: settings.defaultFullscreenReading,
+            onChanged: (_) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .toggleDefaultFullscreenReading();
+            },
           ),
         ),
 
