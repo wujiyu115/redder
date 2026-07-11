@@ -88,6 +88,7 @@ class ArticleHeader extends StatelessWidget {
       child: CachedNetworkImage(
         imageUrl: article.imageUrl!,
         fit: BoxFit.cover,
+        memCacheWidth: 1200,
         fadeInDuration: const Duration(milliseconds: 200),
         errorWidget: (_, __, ___) => Container(
           color: theme.secondaryBackgroundColor,

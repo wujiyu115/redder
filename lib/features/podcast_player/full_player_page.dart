@@ -36,7 +36,10 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
-    final playerState = ref.watch(podcastControllerProvider);
+    // Watch only isActive here so per-tick position updates don't rebuild
+    // the whole page; the progress slider watches position separately below.
+    final isActive =
+        ref.watch(podcastControllerProvider.select((s) => s.isActive));
     final mediaQuery = MediaQuery.of(context);
     final l10n = AppLocalizations.of(context)!;
 
@@ -46,8 +49,8 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
         showBackButton: true,
         onBack: () => context.pop(),
       ),
-      body: playerState.isActive
-          ? _buildPlayer(context, playerState, theme, mediaQuery, l10n)
+      body: isActive
+          ? _buildPlayer(context, theme, mediaQuery, l10n)
           : _buildEmpty(theme, l10n),
     );
   }
@@ -72,11 +75,21 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
 
   Widget _buildPlayer(
     BuildContext context,
-    PodcastPlayerState playerState,
     ReederThemeData theme,
     MediaQueryData mediaQuery,
     AppLocalizations l10n,
   ) {
+    // Fields read here change rarely (or on user action). Position/buffered
+    // update every tick and are isolated in the _ProgressSlider Consumer.
+    final artworkUrl =
+        ref.watch(podcastControllerProvider.select((s) => s.artworkUrl));
+    final episodeTitle =
+        ref.watch(podcastControllerProvider.select((s) => s.episodeTitle));
+    final feedTitle =
+        ref.watch(podcastControllerProvider.select((s) => s.feedTitle));
+    final chapters =
+        ref.watch(podcastControllerProvider.select((s) => s.chapters));
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.spacingXL,
@@ -87,7 +100,7 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
 
           // ─── Artwork ────────────────────────────────────
           _LargeArtwork(
-            artworkUrl: playerState.artworkUrl,
+            artworkUrl: artworkUrl,
             theme: theme,
           ),
 
@@ -95,7 +108,7 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
 
           // ─── Title Info ─────────────────────────────────
           Text(
-            playerState.episodeTitle ?? l10n.unknownEpisode,
+            episodeTitle ?? l10n.unknownEpisode,
             style: theme.typography.articleTitle.copyWith(
               color: theme.primaryTextColor,
             ),
@@ -105,7 +118,7 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
           ),
           const SizedBox(height: AppDimensions.spacingXS),
           Text(
-            playerState.feedTitle ?? '',
+            feedTitle ?? '',
             style: theme.typography.body.copyWith(
               color: theme.secondaryTextColor,
             ),
@@ -116,69 +129,97 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
 
           const SizedBox(height: AppDimensions.spacingXL),
 
-          // ─── Progress Slider ────────────────────────────
-          _ProgressSlider(
-            position: playerState.position,
-            duration: playerState.duration,
-            bufferedPosition: playerState.bufferedPosition,
-            onSeek: (position) {
-              ref.read(podcastControllerProvider.notifier).seekTo(position);
+          // ─── Progress Slider (isolated rebuild scope) ───
+          Consumer(
+            builder: (context, ref, _) {
+              final position = ref.watch(
+                  podcastControllerProvider.select((s) => s.position));
+              final duration = ref.watch(
+                  podcastControllerProvider.select((s) => s.duration));
+              final buffered = ref.watch(podcastControllerProvider
+                  .select((s) => s.bufferedPosition));
+              return _ProgressSlider(
+                position: position,
+                duration: duration,
+                bufferedPosition: buffered,
+                onSeek: (p) {
+                  ref.read(podcastControllerProvider.notifier).seekTo(p);
+                },
+                theme: theme,
+              );
             },
-            theme: theme,
           ),
 
           const SizedBox(height: AppDimensions.spacingXL),
 
-          // ─── Transport Controls ─────────────────────────
-          _TransportControls(
-            isPlaying: playerState.isPlaying,
-            isLoading: playerState.status == PlaybackStatus.loading,
-            onSkipBackward: () {
-              ref.read(podcastControllerProvider.notifier).skipBackward();
+          // ─── Transport Controls (isolated rebuild scope) ─
+          Consumer(
+            builder: (context, ref, _) {
+              final isPlaying = ref.watch(
+                  podcastControllerProvider.select((s) => s.isPlaying));
+              final isLoading = ref.watch(podcastControllerProvider
+                  .select((s) => s.status == PlaybackStatus.loading));
+              return _TransportControls(
+                isPlaying: isPlaying,
+                isLoading: isLoading,
+                onSkipBackward: () {
+                  ref.read(podcastControllerProvider.notifier).skipBackward();
+                },
+                onTogglePlayPause: () {
+                  ref
+                      .read(podcastControllerProvider.notifier)
+                      .togglePlayPause();
+                },
+                onSkipForward: () {
+                  ref.read(podcastControllerProvider.notifier).skipForward();
+                },
+                theme: theme,
+              );
             },
-            onTogglePlayPause: () {
-              ref.read(podcastControllerProvider.notifier).togglePlayPause();
-            },
-            onSkipForward: () {
-              ref.read(podcastControllerProvider.notifier).skipForward();
-            },
-            theme: theme,
           ),
 
           const SizedBox(height: AppDimensions.spacingXL),
 
-          // ─── Speed + Volume Row ─────────────────────────
+          // ─── Speed Button (isolated rebuild scope) ──────
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Speed button
-              GestureDetector(
-                onTap: () {
-                  ref.read(podcastControllerProvider.notifier).cycleSpeed();
-                },
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.spacingM,
-                    vertical: AppDimensions.spacingS,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.secondaryBackgroundColor,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  ),
-                  child: Text(
-                    '${playerState.speed}x',
-                    style: theme.typography.body.copyWith(
-                      color: theme.accentColor,
-                      fontWeight: FontWeight.w600,
+              Consumer(
+                builder: (context, ref, _) {
+                  final speed = ref.watch(
+                      podcastControllerProvider.select((s) => s.speed));
+                  return GestureDetector(
+                    onTap: () {
+                      ref
+                          .read(podcastControllerProvider.notifier)
+                          .cycleSpeed();
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppDimensions.spacingM,
+                        vertical: AppDimensions.spacingS,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.secondaryBackgroundColor,
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusM),
+                      ),
+                      child: Text(
+                        '${speed}x',
+                        style: theme.typography.body.copyWith(
+                          color: theme.accentColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),
 
-          // ─── Volume Slider ──────────────────────────────
+          // ─── Volume Slider (isolated rebuild scope) ─────
           const SizedBox(height: AppDimensions.spacing),
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -194,14 +235,20 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
                   ),
                 ),
                 Expanded(
-                  child: ReederSlider(
-                    value: playerState.volume,
-                    min: 0.0,
-                    max: 1.0,
-                    onChanged: (value) {
-                      ref
-                          .read(podcastControllerProvider.notifier)
-                          .setVolume(value);
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final volume = ref.watch(
+                          podcastControllerProvider.select((s) => s.volume));
+                      return ReederSlider(
+                        value: volume,
+                        min: 0.0,
+                        max: 1.0,
+                        onChanged: (value) {
+                          ref
+                              .read(podcastControllerProvider.notifier)
+                              .setVolume(value);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -217,7 +264,7 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
           ),
 
           // ─── Chapters ──────────────────────────────────
-          if (playerState.chapters.isNotEmpty) ...[
+          if (chapters.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spacingXL),
             GestureDetector(
               onTap: () => setState(() => _showChapters = !_showChapters),
@@ -242,15 +289,21 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
               ),
             ),
             if (_showChapters)
-              _ChapterList(
-                chapters: playerState.chapters,
-                currentIndex: playerState.currentChapterIndex,
-                onChapterTap: (index) {
-                  ref
-                      .read(podcastControllerProvider.notifier)
-                      .seekToChapter(index);
+              Consumer(
+                builder: (context, ref, _) {
+                  final currentIndex = ref.watch(podcastControllerProvider
+                      .select((s) => s.currentChapterIndex));
+                  return _ChapterList(
+                    chapters: chapters,
+                    currentIndex: currentIndex,
+                    onChapterTap: (index) {
+                      ref
+                          .read(podcastControllerProvider.notifier)
+                          .seekToChapter(index);
+                    },
+                    theme: theme,
+                  );
                 },
-                theme: theme,
               ),
           ],
 

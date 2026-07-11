@@ -147,9 +147,7 @@ class AboutPage extends StatelessWidget {
           ReederListTile(
             title: l10n.openSourceLicenses,
             showDisclosure: true,
-            onTap: () {
-              // Show licenses page
-            },
+            onTap: () => context.push('/settings/about/licenses'),
             showSeparator: false,
           ),
 

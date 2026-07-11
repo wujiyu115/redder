@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:reeder/l10n/app_localizations.dart';
 
-import '../../../core/constants/app_durations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/providers/settings_provider.dart';
 import '../../../shared/providers/sync_provider.dart';
@@ -24,10 +23,14 @@ class TimelineControlButton extends ConsumerWidget {
   /// Callback to trigger a refresh.
   final VoidCallback? onRefresh;
 
+  /// Callback to scroll the list back to the top.
+  final VoidCallback? onScrollToTop;
+
   const TimelineControlButton({
     super.key,
     required this.timelineId,
     this.onRefresh,
+    this.onScrollToTop,
   });
 
   @override
@@ -104,12 +107,7 @@ class TimelineControlButton extends ConsumerWidget {
         onRefresh?.call();
         break;
       case 'scroll_top':
-        final scrollable = Scrollable.maybeOf(context);
-        scrollable?.position.animateTo(
-          0,
-          duration: AppDurations.standard,
-          curve: Curves.easeInOut,
-        );
+        onScrollToTop?.call();
         break;
       case 'mark_all_read':
         // markAllAsRead now goes through SyncBridge for remote sync

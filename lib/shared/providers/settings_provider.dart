@@ -119,6 +119,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Toggles caching of article images for offline reading.
+  Future<void> toggleCacheImages() async {
+    await _repository.toggleCacheImages();
+    await _loadSettings();
+  }
+
   /// Sets content expiry days.
   Future<void> setContentExpiryDays(int days) async {
     await _repository.setContentExpiryDays(days);

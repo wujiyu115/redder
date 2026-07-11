@@ -10,6 +10,7 @@ import '../../features/settings/theme_settings_page.dart';
 import '../../features/settings/reading_settings_page.dart';
 import '../../features/settings/data_settings_page.dart';
 import '../../features/settings/about_page.dart';
+import '../../features/settings/licenses_page.dart';
 import '../../features/settings/timeline_settings_page.dart';
 import '../../features/settings/accounts_page.dart';
 import '../../features/settings/add_account_page.dart';
@@ -98,6 +99,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   key: state.pageKey,
                   child: const AboutPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'licenses',
+                    name: 'licenses',
+                    pageBuilder: (context, state) => ReederPage(
+                      key: state.pageKey,
+                      child: const LicensesPage(),
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'detail',
+                        name: 'licenseDetail',
+                        pageBuilder: (context, state) => ReederPage(
+                          key: state.pageKey,
+                          child: LicenseDetailPage(
+                            group: state.extra as LicenseGroup,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'timeline',

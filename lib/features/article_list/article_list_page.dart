@@ -49,6 +49,10 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   bool _isRefreshing = false;
   bool _hasRestoredPosition = false;
 
+  /// Item ids that have already played their entrance animation, so
+  /// scroll-recycling doesn't replay it.
+  final Set<int> _animatedItemIds = {};
+
   /// Cached reference to avoid using ref after dispose.
   late final ScrollPositionService _scrollService;
 
@@ -106,6 +110,15 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     );
   }
 
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   Future<void> _onRefresh() async {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
@@ -135,6 +148,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
           TimelineControlButton(
             timelineId: widget.timelineId,
             onRefresh: _onRefresh,
+            onScrollToTop: _scrollToTop,
           ),
         ],
       ),
@@ -208,6 +222,10 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               },
             );
 
+        // Set.add returns true only the first time this id is seen, so each
+        // item animates once and stays put through scroll-recycling.
+        final animate = _animatedItemIds.add(item.id);
+
         final listItemWidget = isCompact
             ? ArticleListItemCompact(
                 item: item,
@@ -219,6 +237,8 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
                 feedTitle: state.feedTitles[item.feedId],
                 feedIconUrl: state.feedIcons[item.feedId],
                 onTap: openItem,
+                index: index,
+                animate: animate,
               );
 
         return SwipeActionWidget(

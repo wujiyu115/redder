@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
@@ -11,8 +17,10 @@ import '../../shared/widgets/reeder_list_tile.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_switch.dart';
 import '../../shared/widgets/reeder_dialog.dart';
+import '../../shared/widgets/reeder_toast.dart';
 import '../../core/database/app_database.dart';
 import '../../shared/providers/settings_provider.dart';
+import '../source_list/source_list_controller.dart';
 
 /// Data & storage settings page.
 ///
@@ -93,7 +101,7 @@ class DataSettingsPage extends ConsumerWidget {
           trailing: ReederSwitch(
             value: settings.cacheImages,
             onChanged: (_) {
-              // Toggle cache images setting
+              ref.read(settingsProvider.notifier).toggleCacheImages();
             },
           ),
         ),
@@ -105,18 +113,14 @@ class DataSettingsPage extends ConsumerWidget {
           title: l10n.importOpml,
           subtitle: l10n.importOpmlDesc,
           showDisclosure: true,
-          onTap: () {
-            // Will be implemented in W3 subscription management
-          },
+          onTap: () => _importOpml(context, ref),
         ),
 
         ReederListTile(
           title: l10n.exportOpml,
           subtitle: l10n.exportOpmlDesc,
           showDisclosure: true,
-          onTap: () {
-            // Will be implemented in W3 subscription management
-          },
+          onTap: () => _exportOpml(context, ref),
         ),
 
         // ─── DANGER ZONE ────────────────────────────────────
@@ -138,6 +142,57 @@ class DataSettingsPage extends ConsumerWidget {
         const SizedBox(height: AppDimensions.spacingXXL),
       ],
     );
+  }
+
+  /// Picks an OPML file and imports its subscriptions.
+  Future<void> _importOpml(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['opml', 'xml'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final picked = result.files.first;
+      String? content;
+      if (picked.bytes != null) {
+        content = utf8.decode(picked.bytes!);
+      } else if (picked.path != null) {
+        content = await File(picked.path!).readAsString();
+      }
+      if (content == null) return;
+
+      final count = await ref
+          .read(sourceListControllerProvider.notifier)
+          .importOpml(content);
+      if (context.mounted) {
+        ReederToast.show(context, l10n.opmlImportSuccess(count));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ReederToast.show(context, l10n.opmlImportFailed, isError: true);
+      }
+    }
+  }
+
+  /// Exports all subscriptions as an OPML file and opens the share sheet.
+  Future<void> _exportOpml(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final opml = await ref
+          .read(sourceListControllerProvider.notifier)
+          .exportOpml();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/reeder_subscriptions.opml');
+      await file.writeAsString(opml);
+      await Share.shareXFiles([XFile(file.path)], subject: l10n.exportOpml);
+    } catch (_) {
+      if (context.mounted) {
+        ReederToast.show(context, l10n.opmlExportFailed, isError: true);
+      }
+    }
   }
 
   String _refreshIntervalLabel(int minutes, AppLocalizations l10n) {

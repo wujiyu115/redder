@@ -38,6 +38,10 @@ class ArticleListItem extends StatefulWidget {
   /// Index in the list, used for staggered animation delay.
   final int index;
 
+  /// Whether to play the entrance animation. Set false when the item has
+  /// already animated once, so scroll-recycling doesn't replay it.
+  final bool animate;
+
   const ArticleListItem({
     super.key,
     required this.item,
@@ -46,6 +50,7 @@ class ArticleListItem extends StatefulWidget {
     this.onTap,
     this.onLongPress,
     this.index = 0,
+    this.animate = true,
   });
 
   @override
@@ -76,13 +81,18 @@ class _ArticleListItemState extends State<ArticleListItem>
       CurvedAnimation(parent: _appearController, curve: Curves.easeOut),
     );
 
-    // Stagger the animation based on index (max 10 items staggered)
-    final delay = Duration(
-      milliseconds: (widget.index.clamp(0, 10)) * 30,
-    );
-    Future.delayed(delay, () {
-      if (mounted) _appearController.forward();
-    });
+    if (!widget.animate) {
+      // Already animated once; show immediately without replaying on recycle.
+      _appearController.value = 1.0;
+    } else {
+      // Stagger the animation based on index (max 10 items staggered)
+      final delay = Duration(
+        milliseconds: (widget.index.clamp(0, 10)) * 30,
+      );
+      Future.delayed(delay, () {
+        if (mounted) _appearController.forward();
+      });
+    }
   }
 
   @override
@@ -96,6 +106,7 @@ class _ArticleListItemState extends State<ArticleListItem>
     final theme = ReederTheme.of(context);
     final isRead = widget.item.isRead;
     final opacity = isRead ? 0.6 : 1.0;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
 
     return Semantics(
       label: '${widget.feedTitle ?? ""}, ${widget.item.title}, ${widget.item.summary ?? ""}, ${widget.item.publishedAt.timeAgoCompact}',
@@ -137,7 +148,7 @@ class _ArticleListItemState extends State<ArticleListItem>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Feed info row
-                          _buildFeedInfoRow(theme),
+                          _buildFeedInfoRow(theme, dpr),
                           const SizedBox(height: AppDimensions.spacingXS),
 
                           // Title
@@ -179,6 +190,8 @@ class _ArticleListItemState extends State<ArticleListItem>
                           width: AppDimensions.thumbnailWidth,
                           height: AppDimensions.thumbnailHeight,
                           fit: BoxFit.cover,
+                          memCacheWidth:
+                              (AppDimensions.thumbnailWidth * dpr).round(),
                           errorWidget: (_, __, ___) =>
                               const SizedBox.shrink(),
                         ),
@@ -209,7 +222,7 @@ class _ArticleListItemState extends State<ArticleListItem>
     );
   }
 
-  Widget _buildFeedInfoRow(ReederThemeData theme) {
+  Widget _buildFeedInfoRow(ReederThemeData theme, double dpr) {
     return Row(
       children: [
         // Feed icon
@@ -222,6 +235,7 @@ class _ArticleListItemState extends State<ArticleListItem>
               width: 14,
               height: 14,
               fit: BoxFit.cover,
+              memCacheWidth: (14 * dpr).round(),
               errorWidget: (_, __, ___) => const SizedBox(
                 width: 14,
                 height: 14,

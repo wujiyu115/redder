@@ -294,5 +294,8 @@
   "timelineTag": "标签",
   "timelineFilter": "过滤器",
   "refreshComplete": "刷新完成",
-  "refreshFailed": "刷新失败"
+  "refreshFailed": "刷新失败",
+  "opmlImportSuccess": "已导入 {count} 个订阅",
+  "opmlImportFailed": "导入失败",
+  "opmlExportFailed": "导出失败"
 }

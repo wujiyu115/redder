@@ -1711,6 +1711,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh failed'**
   String get refreshFailed;
+
+  /// No description provided for @opmlImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} feed(s)'**
+  String opmlImportSuccess(int count);
+
+  /// No description provided for @opmlImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed'**
+  String get opmlImportFailed;
+
+  /// No description provided for @opmlExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get opmlExportFailed;
 }
 
 class _AppLocalizationsDelegate

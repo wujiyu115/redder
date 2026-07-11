@@ -58,6 +58,10 @@ class SourceListPage extends ConsumerWidget {
         ),
         leading: const SizedBox.shrink(),
         actions: [
+          ReederButton.icon(
+            icon: const Text('🔍', style: TextStyle(fontSize: 18)),
+            onPressed: () => context.push('/search'),
+          ),
           // Sync button (spins while syncing/refreshing)
           SyncIconButton(
             externalActive:
@@ -93,9 +97,9 @@ class SourceListPage extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
+    // Assemble rows up-front, then feed ListView.builder so off-screen rows
+    // are not mounted/laid out (ListView(children:) builds them all eagerly).
+    final children = <Widget>[
         // ─── HOME Section ─────────────────────────────────
         ReederSectionHeader(title: l10n.home),
         SourceItem(
@@ -304,7 +308,12 @@ class SourceListPage extends ConsumerWidget {
 
         // Bottom padding
         const SizedBox(height: AppDimensions.spacingXXL),
-      ],
+    ];
+
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: children.length,
+      itemBuilder: (context, index) => children[index],
     );
   }
 

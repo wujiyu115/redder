@@ -890,4 +890,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get refreshFailed => 'Refresh failed';
+
+  @override
+  String opmlImportSuccess(int count) {
+    return 'Imported $count feed(s)';
+  }
+
+  @override
+  String get opmlImportFailed => 'Import failed';
+
+  @override
+  String get opmlExportFailed => 'Export failed';
 }

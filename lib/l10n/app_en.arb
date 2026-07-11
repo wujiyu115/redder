@@ -407,5 +407,13 @@
   "timelineTag": "Tag",
   "timelineFilter": "Filter",
   "refreshComplete": "Refresh complete",
-  "refreshFailed": "Refresh failed"
+  "refreshFailed": "Refresh failed",
+  "opmlImportSuccess": "Imported {count} feed(s)",
+  "@opmlImportSuccess": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "opmlImportFailed": "Import failed",
+  "opmlExportFailed": "Export failed"
 }

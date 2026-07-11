@@ -876,4 +876,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get refreshFailed => '刷新失败';
+
+  @override
+  String opmlImportSuccess(int count) {
+    return '已导入 $count 个订阅';
+  }
+
+  @override
+  String get opmlImportFailed => '导入失败';
+
+  @override
+  String get opmlExportFailed => '导出失败';
 }

@@ -12,7 +12,7 @@ import '../../../core/utils/bionic_reading.dart';
 /// including images, links, code blocks, blockquotes, tables, etc.
 ///
 /// Supports configurable font size, line height, and Bionic Reading mode.
-class ArticleContentView extends StatelessWidget {
+class ArticleContentView extends StatefulWidget {
   /// The HTML content to render.
   final String content;
 
@@ -42,10 +42,40 @@ class ArticleContentView extends StatelessWidget {
   });
 
   @override
+  State<ArticleContentView> createState() => _ArticleContentViewState();
+}
+
+class _ArticleContentViewState extends State<ArticleContentView> {
+  /// Cached transformed HTML. The Bionic Reading transform is regex-heavy;
+  /// recompute only when the source content or the toggle changes.
+  late String _displayContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayContent = _transform();
+  }
+
+  @override
+  void didUpdateWidget(ArticleContentView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.content != widget.content ||
+        oldWidget.bionicReading != widget.bionicReading) {
+      _displayContent = _transform();
+    }
+  }
+
+  String _transform() {
+    return widget.bionicReading
+        ? BionicReading.applyToHtml(widget.content)
+        : widget.content;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
 
-    if (content.isEmpty) {
+    if (widget.content.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(
           vertical: AppDimensions.spacingXL,
@@ -61,17 +91,15 @@ class ArticleContentView extends StatelessWidget {
       );
     }
 
-    // Apply Bionic Reading transformation if enabled
-    final displayContent =
-        bionicReading ? BionicReading.applyToHtml(content) : content;
+    final displayContent = _displayContent;
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: BoxConstraints(maxWidth: widget.maxWidth),
       child: HtmlWidget(
         displayContent,
         textStyle: TextStyle(
-          fontSize: fontSize,
-          height: lineHeight,
+          fontSize: widget.fontSize,
+          height: widget.lineHeight,
           color: theme.primaryTextColor,
         ),
         customStylesBuilder: (element) {
@@ -83,8 +111,8 @@ class ArticleContentView extends StatelessWidget {
         },
         onTapImage: (imageMetadata) {
           final src = imageMetadata.sources.firstOrNull?.url;
-          if (src != null && onImageTap != null) {
-            onImageTap!(src);
+          if (src != null && widget.onImageTap != null) {
+            widget.onImageTap!(src);
           }
         },
       ),
@@ -117,7 +145,7 @@ class ArticleContentView extends StatelessWidget {
           'background-color': _colorToHex(theme.secondaryBackgroundColor),
           'padding': '2px 6px',
           'border-radius': '4px',
-          'font-size': '${fontSize * 0.9}px',
+          'font-size': '${widget.fontSize * 0.9}px',
         };
       case 'pre':
         return {
@@ -125,7 +153,7 @@ class ArticleContentView extends StatelessWidget {
           'padding': '${AppDimensions.spacingM}px',
           'border-radius': '${AppDimensions.radiusM}px',
           'overflow-x': 'auto',
-          'font-size': '${fontSize * 0.85}px',
+          'font-size': '${widget.fontSize * 0.85}px',
         };
       case 'img':
         return {
@@ -135,21 +163,21 @@ class ArticleContentView extends StatelessWidget {
         };
       case 'h1':
         return {
-          'font-size': '${fontSize * 1.5}px',
+          'font-size': '${widget.fontSize * 1.5}px',
           'font-weight': '700',
           'margin-top': '${AppDimensions.spacingXL}px',
           'margin-bottom': '${AppDimensions.spacingS}px',
         };
       case 'h2':
         return {
-          'font-size': '${fontSize * 1.3}px',
+          'font-size': '${widget.fontSize * 1.3}px',
           'font-weight': '600',
           'margin-top': '${AppDimensions.spacingXL}px',
           'margin-bottom': '${AppDimensions.spacingS}px',
         };
       case 'h3':
         return {
-          'font-size': '${fontSize * 1.15}px',
+          'font-size': '${widget.fontSize * 1.15}px',
           'font-weight': '600',
           'margin-top': '${AppDimensions.spacing}px',
           'margin-bottom': '${AppDimensions.spacingXS}px',
@@ -161,7 +189,7 @@ class ArticleContentView extends StatelessWidget {
         };
       case 'figcaption':
         return {
-          'font-size': '${fontSize * 0.85}px',
+          'font-size': '${widget.fontSize * 0.85}px',
           'color': _colorToHex(theme.tertiaryTextColor),
           'text-align': 'center',
           'margin-top': '${AppDimensions.spacingXS}px',
