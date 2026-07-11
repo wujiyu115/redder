@@ -14,6 +14,7 @@ import '../../shared/providers/sync_provider.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_button.dart';
+import '../../shared/widgets/sync_icon_button.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_popup_menu.dart';
 import '../../shared/widgets/reeder_dialog.dart';
@@ -57,19 +58,14 @@ class SourceListPage extends ConsumerWidget {
         ),
         leading: const SizedBox.shrink(),
         actions: [
-          // Sync button
-          ReederButton.icon(
-            icon: syncStatus.when(
-              data: (status) => Text(
-                status == SyncStatus.syncing ? '⟳' : '↻',
-                style: const TextStyle(fontSize: 20),
-              ),
-              loading: () => const Text('↻', style: TextStyle(fontSize: 20)),
-              error: (_, __) => const Text('↻', style: TextStyle(fontSize: 20)),
-            ),
-            onPressed: () {
-              ref.read(sourceListControllerProvider.notifier).triggerSync();
-            },
+          // Sync button (spins while syncing/refreshing)
+          SyncIconButton(
+            externalActive:
+                syncStatus.valueOrNull == SyncStatus.syncing,
+            successMessage: l10n.refreshComplete,
+            errorMessage: l10n.refreshFailed,
+            onSync: () =>
+                ref.read(sourceListControllerProvider.notifier).triggerSync(),
           ),
           ReederButton.icon(
             icon: const Text('+', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w300)),

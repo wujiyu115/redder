@@ -870,4 +870,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timelineFilter => '过滤器';
+
+  @override
+  String get refreshComplete => '刷新完成';
+
+  @override
+  String get refreshFailed => '刷新失败';
 }

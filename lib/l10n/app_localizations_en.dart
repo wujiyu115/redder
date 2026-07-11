@@ -884,4 +884,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timelineFilter => 'Filter';
+
+  @override
+  String get refreshComplete => 'Refresh complete';
+
+  @override
+  String get refreshFailed => 'Refresh failed';
 }

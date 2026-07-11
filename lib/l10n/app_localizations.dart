@@ -1699,6 +1699,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter'**
   String get timelineFilter;
+
+  /// No description provided for @refreshComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh complete'**
+  String get refreshComplete;
+
+  /// No description provided for @refreshFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed'**
+  String get refreshFailed;
 }
 
 class _AppLocalizationsDelegate

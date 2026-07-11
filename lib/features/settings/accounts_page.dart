@@ -10,6 +10,7 @@ import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_list_tile.dart';
 import '../../shared/widgets/reeder_button.dart';
+import '../../shared/widgets/sync_icon_button.dart';
 import '../../shared/widgets/reeder_dialog.dart';
 import '../../shared/providers/account_provider.dart';
 import '../../shared/providers/sync_provider.dart';
@@ -184,7 +185,7 @@ class _AccountTile extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback? onLogout;
-  final VoidCallback? onSyncNow;
+  final Future<void> Function()? onSyncNow;
 
   const _AccountTile({
     required this.account,
@@ -235,24 +236,14 @@ class _AccountTile extends StatelessWidget {
               ),
             ),
           ),
-          // Sync Now button
+          // Sync Now button (spins while syncing)
           if (onSyncNow != null)
-            GestureDetector(
-              onTap: onSyncNow,
-              behavior: HitTestBehavior.opaque,
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: Center(
-                  child: Text(
-                    '↻',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: theme.accentColor,
-                    ),
-                  ),
-                ),
-              ),
+            SyncIconButton(
+              onSync: onSyncNow!,
+              size: 32,
+              fontSize: 18,
+              successMessage: l10n.refreshComplete,
+              errorMessage: l10n.refreshFailed,
             ),
           // Logout button
           if (onLogout != null)

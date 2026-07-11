@@ -405,5 +405,7 @@
   "timelineFeed": "Feed",
   "timelineFolder": "Folder",
   "timelineTag": "Tag",
-  "timelineFilter": "Filter"
+  "timelineFilter": "Filter",
+  "refreshComplete": "Refresh complete",
+  "refreshFailed": "Refresh failed"
 }

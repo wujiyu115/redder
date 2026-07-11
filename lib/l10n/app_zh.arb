@@ -292,5 +292,7 @@
   "timelineFeed": "订阅源",
   "timelineFolder": "文件夹",
   "timelineTag": "标签",
-  "timelineFilter": "过滤器"
+  "timelineFilter": "过滤器",
+  "refreshComplete": "刷新完成",
+  "refreshFailed": "刷新失败"
 }

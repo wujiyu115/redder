@@ -10,7 +10,6 @@ import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/services/feed_refresh_service.dart';
 import '../../data/services/sync/sync_bridge.dart';
-import '../../data/services/sync/sync_models.dart';
 import '../../shared/providers/account_provider.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
@@ -493,16 +492,22 @@ class SourceListController
     await _loadData();
   }
 
-  /// Triggers a manual sync with the remote service.
+  /// Triggers a manual sync/refresh.
   ///
-  /// Performs an incremental sync if the account has synced before,
-  /// otherwise performs a full sync. Reloads data after sync completes.
-  Future<SyncResult> triggerSync() async {
-    _log.info('triggerSync: starting full sync');
-    final result = await _syncBridge.triggerFullSync();
-    _log.info('triggerSync: completed — newFeeds=${result.newFeeds}, newArticles=${result.newArticles}');
+  /// With an active sync account, runs a full remote sync. Without one
+  /// (local-only RSS), falls back to fetching all feeds locally so the
+  /// refresh button still does something and surfaces new articles.
+  Future<void> triggerSync() async {
+    if (_activeAccountId != null) {
+      _log.info('triggerSync: starting remote full sync');
+      final result = await _syncBridge.triggerFullSync();
+      _log.info('triggerSync: completed — newFeeds=${result.newFeeds}, newArticles=${result.newArticles}');
+    } else {
+      _log.info('triggerSync: no account, refreshing feeds locally');
+      final result = await _refreshService.refreshAll();
+      _log.info('triggerSync: local refresh done — $result');
+    }
     await _loadData();
-    return result;
   }
 
   /// Reloads the source list data.
