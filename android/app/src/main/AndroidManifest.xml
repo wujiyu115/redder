@@ -3,6 +3,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Local notifications (flutter_local_notifications). POST_NOTIFICATIONS is
+         runtime-requested by the plugin on Android 13+; VIBRATE enables
+         notification vibration. Scheduled/exact-alarm permissions are omitted
+         because the app only fires immediate notifications during refresh. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <application
         android:label="reeder"
         android:name="${applicationName}"
