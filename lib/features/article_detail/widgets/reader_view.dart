@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/providers/settings_provider.dart';
 import 'article_content_view.dart';
 
 /// Reader View widget that displays cleaned-up article content.
@@ -11,7 +13,7 @@ import 'article_content_view.dart';
 /// - Using a clean, readable typography
 /// - Constraining content width for optimal readability
 /// - Supporting configurable font size and line height
-class ReaderView extends StatelessWidget {
+class ReaderView extends ConsumerWidget {
   /// The cleaned HTML content from ReaderViewService.
   final String content;
 
@@ -45,8 +47,9 @@ class ReaderView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = ReederTheme.of(context);
+    final maxContentWidth = ref.watch(maxContentWidthProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
@@ -55,8 +58,8 @@ class ReaderView extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: AppDimensions.maxContentWidth,
+          constraints: BoxConstraints(
+            maxWidth: maxContentWidth,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +128,7 @@ class ReaderView extends StatelessWidget {
                 content: content,
                 fontSize: fontSize,
                 lineHeight: lineHeight,
-                maxWidth: AppDimensions.maxContentWidth,
+                maxWidth: maxContentWidth,
                 onImageTap: onImageTap,
               ),
 

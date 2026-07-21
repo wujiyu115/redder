@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +122,35 @@ class AppDatabase extends _$AppDatabase {
           if (from < 6) {
             await customStatement(
                 'ALTER TABLE app_settings_table ADD COLUMN default_fullscreen_reading INTEGER NOT NULL DEFAULT 0');
+          }
+          if (from < 7) {
+            // Recreate scroll_positions with a UNIQUE constraint on timeline_id
+            // (matches the Drift table definition). Dedupe first, keeping the
+            // latest row per timeline_id (max id as a tiebreak-free proxy for
+            // recency), so the UNIQUE copy below does not fail.
+            await customStatement(
+              'DELETE FROM scroll_positions WHERE id NOT IN '
+              '(SELECT MAX(id) FROM scroll_positions GROUP BY timeline_id)',
+            );
+            await customStatement(
+              'CREATE TABLE scroll_positions_new '
+              '(id INTEGER PRIMARY KEY AUTOINCREMENT, '
+              'timeline_id TEXT NOT NULL UNIQUE, '
+              'account_id INTEGER, '
+              'last_item_id INTEGER, '
+              'scroll_offset REAL NOT NULL DEFAULT 0.0, '
+              'saved_at INTEGER NOT NULL)',
+            );
+            await customStatement(
+              'INSERT INTO scroll_positions_new '
+              '(id, timeline_id, account_id, last_item_id, scroll_offset, saved_at) '
+              'SELECT id, timeline_id, account_id, last_item_id, scroll_offset, saved_at '
+              'FROM scroll_positions',
+            );
+            await customStatement('DROP TABLE scroll_positions');
+            await customStatement(
+              'ALTER TABLE scroll_positions_new RENAME TO scroll_positions',
+            );
           }
         },
       );

@@ -80,12 +80,15 @@ class ScrollPositionService {
 
   /// Restores the scroll position for a timeline.
   ///
-  /// Returns null if no saved position exists.
+  /// Returns null if no saved position exists. Defensive against duplicate
+  /// rows: returns the first match instead of throwing.
   Future<ScrollPosition?> getPosition(String timelineId) async {
     try {
-      return await (_db.select(_db.scrollPositions)
-            ..where((t) => t.timelineId.equals(timelineId)))
-          .getSingleOrNull();
+      final result = await (_db.select(_db.scrollPositions)
+            ..where((t) => t.timelineId.equals(timelineId))
+            ..limit(1))
+          .get();
+      return result.isEmpty ? null : result.first;
     } catch (_) {
       return null;
     }

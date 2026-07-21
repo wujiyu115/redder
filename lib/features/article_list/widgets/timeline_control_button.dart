@@ -5,6 +5,8 @@ import 'package:reeder/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/providers/settings_provider.dart';
 import '../../../shared/providers/sync_provider.dart';
+import '../../../shared/widgets/reeder_dialog.dart';
+import '../../../shared/widgets/reeder_toast.dart';
 import '../../../shared/widgets/reeder_popup_menu.dart';
 import '../article_list_controller.dart';
 
@@ -95,7 +97,7 @@ class TimelineControlButton extends ConsumerWidget {
       ],
     );
 
-    if (selected == null) return;
+    if (selected == null || !context.mounted) return;
 
     switch (selected) {
       case 'toggle_hide_read':
@@ -110,10 +112,7 @@ class TimelineControlButton extends ConsumerWidget {
         onScrollToTop?.call();
         break;
       case 'mark_all_read':
-        // markAllAsRead now goes through SyncBridge for remote sync
-        ref
-            .read(articleListControllerProvider(timelineId).notifier)
-            .markAllAsRead();
+        _confirmMarkAllAsRead(context, ref, l10n);
         break;
       case 'sync':
         // Trigger incremental sync via SyncBridge
@@ -122,5 +121,37 @@ class TimelineControlButton extends ConsumerWidget {
         onRefresh?.call();
         break;
     }
+  }
+
+  void _confirmMarkAllAsRead(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
+    ReederDialog.show(
+      context: context,
+      builder: (ctx) => ReederDialog(
+        title: l10n.markAllAsRead,
+        actions: [
+          ReederDialogAction(label: l10n.cancel, isDefault: true),
+          ReederDialogAction(
+            label: l10n.markAllAsRead,
+            isDestructive: true,
+            onPressed: () async {
+              try {
+                await ref
+                    .read(articleListControllerProvider(timelineId).notifier)
+                    .markAllAsRead();
+                if (!context.mounted) return;
+                ReederToast.show(context, l10n.refreshComplete);
+              } catch (e) {
+                if (!context.mounted) return;
+                ReederToast.show(context, l10n.refreshFailed, isError: true);
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -164,6 +164,9 @@ class _SourceItemState extends State<SourceItem> {
           width: AppDimensions.feedIconSize,
           height: AppDimensions.feedIconSize,
           fit: BoxFit.cover,
+          memCacheWidth: (AppDimensions.feedIconSize *
+                  MediaQuery.devicePixelRatioOf(context))
+              .round(),
           errorWidget: (_, __, ___) => _defaultIcon(theme),
         ),
       );

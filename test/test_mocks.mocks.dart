@@ -1369,6 +1369,20 @@ class MockFeedRepository extends _i1.Mock implements _i19.FeedRepository {
       ) as _i12.Future<_i4.Feed?>);
 
   @override
+  _i12.Future<Map<int, _i4.Feed>> getFeedsByIds(
+    Set<int>? ids, {
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getFeedsByIds,
+          [ids],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<int, _i4.Feed>>.value(<int, _i4.Feed>{}),
+      ) as _i12.Future<Map<int, _i4.Feed>>);
+
+  @override
   _i12.Future<_i4.Feed?> getFeedByUrl(
     String? feedUrl, {
     int? accountId,
@@ -1682,6 +1696,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1692,6 +1707,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -1704,6 +1720,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1714,6 +1731,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -1726,6 +1744,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1736,6 +1755,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -1748,6 +1768,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -1758,6 +1779,7 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -1805,6 +1827,58 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
         ),
         returnValue: _i12.Future<int>.value(0),
       ) as _i12.Future<int>);
+
+  @override
+  _i12.Future<Map<int, int>> getUnreadCounts(
+    Set<int>? feedIds, {
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUnreadCounts,
+          [feedIds],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<int, int>>.value(<int, int>{}),
+      ) as _i12.Future<Map<int, int>>);
+
+  @override
+  _i12.Future<List<_i4.FeedItem>> getArticlesByIds(
+    List<int>? ids, {
+    int? offset = 0,
+    int? limit = 50,
+    required int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getArticlesByIds,
+          [ids],
+          {
+            #offset: offset,
+            #limit: limit,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<List<_i4.FeedItem>>.value(<_i4.FeedItem>[]),
+      ) as _i12.Future<List<_i4.FeedItem>>);
+
+  @override
+  _i12.Future<int?> getNextArticleId(
+    int? currentId, {
+    required String? timelineId,
+    required int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getNextArticleId,
+          [currentId],
+          {
+            #timelineId: timelineId,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<int?>.value(),
+      ) as _i12.Future<int?>);
 
   @override
   _i12.Future<List<_i4.FeedItem>> getStarredArticles({
@@ -1952,11 +2026,20 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
       ) as _i12.Future<void>);
 
   @override
-  _i12.Future<void> markAllAsRead({int? accountId}) => (super.noSuchMethod(
+  _i12.Future<void> markAllAsRead({
+    int? accountId,
+    List<int>? itemIds,
+    String? contentType,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
           #markAllAsRead,
           [],
-          {#accountId: accountId},
+          {
+            #accountId: accountId,
+            #itemIds: itemIds,
+            #contentType: contentType,
+          },
         ),
         returnValue: _i12.Future<void>.value(),
         returnValueForMissingStub: _i12.Future<void>.value(),
@@ -2654,6 +2737,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2664,6 +2748,7 @@ class MockArticleLocalDataSource extends _i1.Mock
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -2675,6 +2760,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2685,6 +2771,7 @@ class MockArticleLocalDataSource extends _i1.Mock
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -2697,6 +2784,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2707,6 +2795,7 @@ class MockArticleLocalDataSource extends _i1.Mock
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -2719,6 +2808,7 @@ class MockArticleLocalDataSource extends _i1.Mock
     int? limit,
     int? offset,
     bool? unreadOnly = false,
+    bool? oldestFirst = false,
     int? accountId,
   }) =>
       (super.noSuchMethod(
@@ -2729,6 +2819,7 @@ class MockArticleLocalDataSource extends _i1.Mock
             #limit: limit,
             #offset: offset,
             #unreadOnly: unreadOnly,
+            #oldestFirst: oldestFirst,
             #accountId: accountId,
           },
         ),
@@ -2776,6 +2867,40 @@ class MockArticleLocalDataSource extends _i1.Mock
         ),
         returnValue: _i12.Future<int>.value(0),
       ) as _i12.Future<int>);
+
+  @override
+  _i12.Future<Map<int, int>> unreadCountsForFeeds(
+    Set<int>? feedIds, {
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #unreadCountsForFeeds,
+          [feedIds],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<int, int>>.value(<int, int>{}),
+      ) as _i12.Future<Map<int, int>>);
+
+  @override
+  _i12.Future<List<_i4.FeedItem>> getByIds(
+    List<int>? ids, {
+    int? offset = 0,
+    int? limit = 50,
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getByIds,
+          [ids],
+          {
+            #offset: offset,
+            #limit: limit,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<List<_i4.FeedItem>>.value(<_i4.FeedItem>[]),
+      ) as _i12.Future<List<_i4.FeedItem>>);
 
   @override
   _i12.Future<void> markAsRead(int? id) => (super.noSuchMethod(
@@ -2853,15 +2978,42 @@ class MockArticleLocalDataSource extends _i1.Mock
       ) as _i12.Future<void>);
 
   @override
-  _i12.Future<void> markAllAsRead({int? accountId}) => (super.noSuchMethod(
+  _i12.Future<void> markAllAsRead({
+    int? accountId,
+    List<int>? itemIds,
+    String? contentType,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
           #markAllAsRead,
           [],
-          {#accountId: accountId},
+          {
+            #accountId: accountId,
+            #itemIds: itemIds,
+            #contentType: contentType,
+          },
         ),
         returnValue: _i12.Future<void>.value(),
         returnValueForMissingStub: _i12.Future<void>.value(),
       ) as _i12.Future<void>);
+
+  @override
+  _i12.Future<int?> getNextArticleId(
+    int? currentId, {
+    required String? timelineId,
+    required int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getNextArticleId,
+          [currentId],
+          {
+            #timelineId: timelineId,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<int?>.value(),
+      ) as _i12.Future<int?>);
 
   @override
   _i12.Future<void> toggleStarred(int? id) => (super.noSuchMethod(

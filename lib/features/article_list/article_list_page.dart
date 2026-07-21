@@ -12,9 +12,11 @@ import '../../shared/widgets/pull_to_refresh.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/error_state.dart';
+import '../../shared/widgets/sync_icon_button.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../data/services/scroll_position_service.dart';
+import '../../data/services/sync/sync_models.dart';
 import '../media/media_launcher.dart';
 import '../source_list/source_list_controller.dart';
 import 'article_list_controller.dart';
@@ -138,6 +140,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     final l10n = AppLocalizations.of(context)!;
     final listState = ref.watch(articleListControllerProvider(widget.timelineId));
     final isCompact = ref.watch(compactModeProvider);
+    final syncStatus = ref.watch(syncStatusProvider);
 
     return ReederScaffold(
       navBar: ReederNavBar(
@@ -145,6 +148,23 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         showBackButton: true,
         onBack: () => context.pop(),
         actions: [
+          // Sync button (spins while syncing/refreshing)
+          SyncIconButton(
+            externalActive: syncStatus.valueOrNull == SyncStatus.syncing,
+            successMessage: l10n.refreshComplete,
+            errorMessage: l10n.refreshFailed,
+            onSync: () async {
+              await ref
+                  .read(sourceListControllerProvider.notifier)
+                  .triggerSync();
+              if (mounted) {
+                ref
+                    .read(articleListControllerProvider(widget.timelineId)
+                        .notifier)
+                    .reload();
+              }
+            },
+          ),
           TimelineControlButton(
             timelineId: widget.timelineId,
             onRefresh: _onRefresh,
@@ -176,7 +196,9 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     final l10n = AppLocalizations.of(context)!;
 
     if (state.items.isEmpty) {
-      return const EmptyState.articles();
+      return EmptyState.articles(
+        onAction: () => context.push('/search'),
+      );
     }
 
     return ListView.builder(
@@ -258,7 +280,8 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               id: 'toggle_star',
               label: item.isStarred ? l10n.unstar : l10n.star,
               icon: item.isStarred ? '★' : '☆',
-              color: const Color(0xFFFFCC00),
+              // ponytail: no per-semantic warning token; using theme.warningColor.
+              color: theme.warningColor,
               onTriggered: () => _toggleStarred(item.id, item.isStarred),
             ),
           ],
@@ -267,14 +290,15 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               id: 'later',
               label: l10n.later,
               icon: '🕐',
-              color: const Color(0xFFFF9500),
+              // ponytail: no per-semantic "later" token; using accentColor.
+              color: theme.accentColor,
               onTriggered: () => _toggleLater(item.id),
             ),
             SwipeAction(
               id: 'toggle_read',
               label: item.isRead ? l10n.markUnread : l10n.markRead,
               icon: item.isRead ? '●' : '○',
-              color: const Color(0xFF007AFF),
+              color: theme.accentColor,
               onTriggered: () => _toggleReadState(item.id, item.isRead),
             ),
           ],
@@ -291,6 +315,9 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     if (laterTag != null) {
       await tagRepo.toggleTag(laterTag.id, itemId);
     }
+    if (mounted) {
+      ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
+    }
   }
 
   /// Toggles the read/unread state of an article (with remote sync).
@@ -302,8 +329,10 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       await syncBridge.markAsReadWithSync([itemId]);
     }
     // Reload list to reflect changes
-    ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
-    ref.read(sourceListControllerProvider.notifier).reload();
+    if (mounted) {
+      ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
+      ref.read(sourceListControllerProvider.notifier).reload();
+    }
   }
 
   /// Toggles the starred state of an article (with remote sync).
@@ -315,7 +344,9 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       await syncBridge.markAsStarredWithSync([itemId]);
     }
     // Reload list to reflect changes
-    ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
+    if (mounted) {
+      ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
+    }
   }
 
   String _resolveTitle(String timelineId, AppLocalizations l10n) {

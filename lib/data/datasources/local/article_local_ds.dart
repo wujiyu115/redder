@@ -71,11 +71,14 @@ class ArticleLocalDataSource {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.feedId.equals(feedId))
-      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([(t) => oldestFirst
+          ? OrderingTerm.asc(t.publishedAt)
+          : OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -91,10 +94,13 @@ class ArticleLocalDataSource {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
-      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([(t) => oldestFirst
+          ? OrderingTerm.asc(t.publishedAt)
+          : OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -111,11 +117,14 @@ class ArticleLocalDataSource {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.contentType.equalsValue(type))
-      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([(t) => oldestFirst
+          ? OrderingTerm.asc(t.publishedAt)
+          : OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -132,11 +141,14 @@ class ArticleLocalDataSource {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.feedId.isIn(feedIds))
-      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([(t) => oldestFirst
+          ? OrderingTerm.asc(t.publishedAt)
+          : OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -182,6 +194,47 @@ class ArticleLocalDataSource {
     }
     final result = await query.getSingle();
     return result.read(countExp)!;
+  }
+
+  /// Gets unread counts for multiple feeds in a single query.
+  ///
+  /// Returns a map of `feedId -> unread count` for feeds that have at least
+  /// one unread item. Feeds with zero unread items are omitted from the map.
+  /// Callers should treat a missing feedId as 0.
+  Future<Map<int, int>> unreadCountsForFeeds(Set<int> feedIds, {int? accountId}) async {
+    if (feedIds.isEmpty) return <int, int>{};
+    final feedIdCol = _db.feedItems.feedId;
+    final countExp = _db.feedItems.id.count();
+    final query = _db.selectOnly(_db.feedItems)
+      ..addColumns([feedIdCol, countExp])
+      ..where(_db.feedItems.feedId.isIn(feedIds))
+      ..where(_db.feedItems.isRead.equals(false))
+      ..groupBy([feedIdCol]);
+    if (accountId != null) {
+      query.where(_db.feedItems.accountId.equals(accountId));
+    }
+    final results = await query.get();
+    return {
+      for (final row in results) row.read(feedIdCol)!: row.read(countExp)!,
+    };
+  }
+
+  /// Gets multiple items by their IDs in a single query, ordered by publish
+  /// date descending. Avoids the N+1 pattern of calling [getById] in a loop.
+  Future<List<FeedItem>> getByIds(
+    List<int> ids, {
+    int offset = 0,
+    int limit = 50,
+    int? accountId,
+  }) {
+    final query = _db.select(_db.feedItems)
+      ..where((t) => t.id.isIn(ids))
+      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)])
+      ..limit(limit, offset: offset);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+    return query.get();
   }
 
   /// Marks an item as read.
@@ -237,13 +290,128 @@ class ArticleLocalDataSource {
   }
 
   /// Marks all items as read, optionally filtered by [accountId].
-  Future<void> markAllAsRead({int? accountId}) async {
+  ///
+  /// Scope filters (all optional and composable):
+  /// - [itemIds]: restrict to the given item IDs.
+  /// - [contentType]: restrict to a content type (timeline name or enum name,
+  ///   e.g. 'articles'/'article', 'podcasts'/'audio', 'videos'/'video',
+  ///   'images'/'image').
+  ///
+  /// With no scope filters, marks every unread item in [accountId] (or every
+  /// unread item across accounts when [accountId] is null), preserving the
+  /// original behavior.
+  Future<void> markAllAsRead({
+    int? accountId,
+    List<int>? itemIds,
+    String? contentType,
+  }) async {
+    final type = _resolveContentType(contentType);
     final updateQuery = _db.update(_db.feedItems)
       ..where((t) => t.isRead.equals(false));
     if (accountId != null) {
       updateQuery.where((t) => t.accountId.equals(accountId));
     }
+    if (itemIds != null && itemIds.isNotEmpty) {
+      updateQuery.where((t) => t.id.isIn(itemIds));
+    }
+    if (type != null) {
+      updateQuery.where((t) => t.contentType.equalsValue(type));
+    }
     await updateQuery.write(const FeedItemsCompanion(isRead: Value(true)));
+  }
+
+  /// Resolves a content-type string (timeline name or enum name) to a
+  /// [ContentType]. Returns null if [name] is null or unrecognized.
+  ContentType? _resolveContentType(String? name) {
+    if (name == null) return null;
+    switch (name) {
+      case 'articles':
+      case 'article':
+        return ContentType.article;
+      case 'podcasts':
+      case 'audio':
+        return ContentType.audio;
+      case 'videos':
+      case 'video':
+        return ContentType.video;
+      case 'images':
+      case 'image':
+        return ContentType.image;
+      default:
+        return null;
+    }
+  }
+
+  /// Resolves the next article id in a timeline, published BEFORE [currentId]
+  /// (i.e. the next older article), ordered by [publishedAt] descending.
+  ///
+  /// Supports [timelineId] prefixes:
+  /// - `all` (or any unknown prefix): all items in [accountId].
+  /// - `feed_<id>`: items for a specific feed.
+  /// - `folder_<id>`: items for any feed in the given folder.
+  /// - `tag_<id>`: items tagged with the given tag (via taggedItems join).
+  /// - `articles` / `podcasts` / `videos` / `images`: items of that content type.
+  /// - `filter_<id>`: filter scoping is not supported yet; returns the next
+  ///   item by publish time across the account.
+  ///
+  /// Returns null if [currentId] does not exist or there is no older item in
+  /// the timeline scope.
+  Future<int?> getNextArticleId(
+    int currentId, {
+    required String timelineId,
+    required int? accountId,
+  }) async {
+    final current = await getById(currentId, accountId: accountId);
+    if (current == null) return null;
+    final publishedAt = current.publishedAt;
+
+    final query = _db.select(_db.feedItems)
+      ..where((t) => t.publishedAt.isSmallerThanValue(publishedAt))
+      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)])
+      ..limit(1);
+    if (accountId != null) {
+      query.where((t) => t.accountId.equals(accountId));
+    }
+
+    // Timeline scoping.
+    if (timelineId == 'all' || timelineId.isEmpty) {
+      // No additional scope.
+    } else if (timelineId.startsWith('feed_')) {
+      final feedId = int.tryParse(timelineId.substring(5));
+      if (feedId != null) {
+        query.where((t) => t.feedId.equals(feedId));
+      }
+    } else if (timelineId.startsWith('folder_')) {
+      final folderId = int.tryParse(timelineId.substring(7));
+      if (folderId != null) {
+        final folderFeedIds = await (_db.select(_db.feeds)
+              ..where((f) => f.folderId.equals(folderId)))
+            .map((f) => f.id)
+            .get();
+        if (folderFeedIds.isEmpty) return null;
+        query.where((t) => t.feedId.isIn(folderFeedIds));
+      }
+    } else if (timelineId.startsWith('tag_')) {
+      final tagId = int.tryParse(timelineId.substring(4));
+      if (tagId != null) {
+        final taggedItemIds = await (_db.select(_db.taggedItems)
+              ..where((ti) => ti.tagId.equals(tagId)))
+            .map((ti) => ti.itemId)
+            .get();
+        if (taggedItemIds.isEmpty) return null;
+        query.where((t) => t.id.isIn(taggedItemIds));
+      }
+    } else if (timelineId.startsWith('filter_')) {
+      // Filter scoping deferred — fall back to account-wide ordering.
+    } else {
+      final type = _resolveContentType(timelineId);
+      if (type != null) {
+        query.where((t) => t.contentType.equalsValue(type));
+      }
+    }
+
+    final result = await query.get();
+    return result.isEmpty ? null : result.first.id;
   }
 
   /// Toggles the starred state of an item.

@@ -8,14 +8,18 @@ import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/services/reader_view_service.dart';
 import '../../data/services/sync/sync_bridge.dart';
+import '../../shared/providers/account_provider.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../source_list/source_list_controller.dart';
 
-/// Provider family for article detail controllers, keyed by article ID.
+/// Provider family for article detail controllers, keyed by
+/// `(articleId, timelineId)` — the timeline id lets [loadNextArticle] look
+/// up the already-loaded article list for the same timeline instead of
+/// querying the repo blind.
 final articleDetailControllerProvider = StateNotifierProvider.family<
-    ArticleDetailController, AsyncValue<ArticleDetailState>, int>(
-  (ref, articleId) => ArticleDetailController(ref, articleId),
+    ArticleDetailController, AsyncValue<ArticleDetailState>, (int, String)>(
+  (ref, key) => ArticleDetailController(ref, key.$1, key.$2),
 );
 
 /// Controller for the article detail page.
@@ -26,6 +30,7 @@ class ArticleDetailController
     extends StateNotifier<AsyncValue<ArticleDetailState>> {
   final Ref _ref;
   final int articleId;
+  final String timelineId;
 
   late final ArticleRepository _articleRepo;
   late final FeedRepository _feedRepo;
@@ -33,7 +38,7 @@ class ArticleDetailController
   late final ReaderViewService _readerViewService;
   late final SyncBridge _syncBridge;
 
-  ArticleDetailController(this._ref, this.articleId)
+  ArticleDetailController(this._ref, this.articleId, this.timelineId)
       : super(const AsyncValue.loading()) {
     _articleRepo = ArticleRepository();
     _feedRepo = _ref.read(feedRepositoryProvider);
@@ -218,22 +223,19 @@ class ArticleDetailController
 
   /// Loads the next article in the timeline.
   ///
-  /// Returns the next article's ID, or null if there is no next article.
+  /// Returns the next (older) article's ID, or null if there is none.
+  ///
+  /// Delegates to [ArticleRepository.getNextArticleId] which scopes the
+  /// query to [timelineId] (feed_/folder_/tag_/content-type/all) so the
+  /// next article comes from the same timeline the user is browsing,
+  /// not the whole account.
   Future<int?> loadNextArticle() async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return null;
-
-    // Get articles published before the current one
-    final articles = await _articleRepo.getArticles(limit: 2, offset: 0);
-
-    // Find the current article's index and return the next one
-    for (int i = 0; i < articles.length - 1; i++) {
-      if (articles[i].id == articleId) {
-        return articles[i + 1].id;
-      }
-    }
-
-    return null;
+    final accountId = _ref.read(accountSwitchProvider);
+    return _articleRepo.getNextArticleId(
+      articleId,
+      timelineId: timelineId,
+      accountId: accountId,
+    );
   }
 
   /// Reloads the article data.

@@ -3706,7 +3706,9 @@ class $ScrollPositionsTable extends ScrollPositions
   @override
   late final GeneratedColumn<String> timelineId = GeneratedColumn<String>(
       'timeline_id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
   static const VerificationMeta _accountIdMeta =
       const VerificationMeta('accountId');
   @override

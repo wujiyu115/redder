@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_durations.dart';
@@ -7,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/extensions/datetime_ext.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/feed_item.dart';
+import '../../../shared/providers/settings_provider.dart';
 
 /// Standard article list item widget.
 ///
@@ -19,7 +21,7 @@ import '../../../data/models/feed_item.dart';
 ///
 /// Includes a staggered appear animation: fade-in + slight upward
 /// slide over 200ms with easeOut curve.
-class ArticleListItem extends StatefulWidget {
+class ArticleListItem extends ConsumerStatefulWidget {
   /// The feed item data.
   final FeedItem item;
 
@@ -54,10 +56,10 @@ class ArticleListItem extends StatefulWidget {
   });
 
   @override
-  State<ArticleListItem> createState() => _ArticleListItemState();
+  ConsumerState<ArticleListItem> createState() => _ArticleListItemState();
 }
 
-class _ArticleListItemState extends State<ArticleListItem>
+class _ArticleListItemState extends ConsumerState<ArticleListItem>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
   late AnimationController _appearController;
@@ -104,6 +106,7 @@ class _ArticleListItemState extends State<ArticleListItem>
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
+    final showThumbnails = ref.watch(showThumbnailsProvider);
     final isRead = widget.item.isRead;
     final opacity = isRead ? 0.6 : 1.0;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -179,7 +182,7 @@ class _ArticleListItemState extends State<ArticleListItem>
                     ),
 
                     // Thumbnail
-                    if (widget.item.imageUrl != null) ...[
+                    if (showThumbnails && widget.item.imageUrl != null) ...[
                       const SizedBox(width: AppDimensions.spacingM),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(
@@ -223,10 +226,12 @@ class _ArticleListItemState extends State<ArticleListItem>
   }
 
   Widget _buildFeedInfoRow(ReederThemeData theme, double dpr) {
+    final showAvatars = ref.watch(showAvatarsProvider);
     return Row(
       children: [
         // Feed icon
-        if (widget.feedIconUrl != null &&
+        if (showAvatars &&
+            widget.feedIconUrl != null &&
             widget.feedIconUrl!.isNotEmpty) ...[
           ClipRRect(
             borderRadius: BorderRadius.circular(3),

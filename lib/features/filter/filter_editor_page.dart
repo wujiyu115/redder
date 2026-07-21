@@ -15,6 +15,7 @@ import '../../shared/widgets/reeder_switch.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_button.dart';
 import '../../shared/widgets/reeder_dialog.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 import 'filter_controller.dart';
 
 /// Page for creating or editing a content filter.
@@ -105,7 +106,7 @@ class _FilterEditorPageState extends ConsumerState<FilterEditorPage> {
         ],
       ),
       body: _isLoading
-          ? Center(child: Text(l10n.loading))
+          ? const ShimmerLoading()
           : _buildForm(theme, l10n),
     );
   }
@@ -299,14 +300,14 @@ class _FilterEditorPageState extends ConsumerState<FilterEditorPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                   border: Border.all(
-                    color: const Color(0xFFFF3B30),
+                    color: theme.destructiveColor,
                     width: 1,
                   ),
                 ),
                 child: Text(
                   l10n.deleteFilter,
                   style: theme.typography.button.copyWith(
-                    color: const Color(0xFFFF3B30),
+                    color: theme.destructiveColor,
                   ),
                 ),
               ),

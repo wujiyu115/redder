@@ -83,10 +83,17 @@ class SourceListController
 
   Future<void> _init() async {
     try {
-      // Initialize built-in tags for the current account
-      await _tagRepo.initializeBuiltInTags(accountId: _activeAccountId);
+      // accountSwitchProvider is async-initialized (starts null) and
+      // [_activeAccountId] reads it synchronously, so await the resolved
+      // account id here before any account-scoped work to avoid a null race.
+      await _ref.read(activeAccountIdProvider.future);
+      // Built-in tags (Later/Bookmarks/Favorites) are app-global, not per
+      // account — initialize without an accountId scope.
+      await _tagRepo.initializeBuiltInTags();
+      if (!mounted) return;
       await _loadData();
     } catch (e, st) {
+      if (!mounted) return;
       state = AsyncValue.error(e, st);
     }
   }
@@ -108,12 +115,16 @@ class SourceListController
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       // Recompute each feed's unread count live from articles so badges stay
-      // accurate even between refresh/sync cycles.
-      final feeds = <Feed>[];
-      for (final f in rawFeeds) {
-        final unread = await _articleRepo.getUnreadCount(f.id, accountId: accountId);
-        feeds.add(unread == f.unreadCount ? f : f.copyWith(unreadCount: unread));
-      }
+      // accurate even between refresh/sync cycles. Single batch query instead
+      // of a per-feed loop (missing feedIds are treated as 0).
+      final unreadMap = await _articleRepo.getUnreadCounts(
+        rawFeeds.map((f) => f.id).toSet(),
+        accountId: accountId,
+      );
+      final feeds = rawFeeds.map((f) {
+        final unread = unreadMap[f.id] ?? 0;
+        return unread == f.unreadCount ? f : f.copyWith(unreadCount: unread);
+      }).toList();
 
       // Load folders from Drift, filtered by accountId
       final folderQuery = _db.select(_db.folders)

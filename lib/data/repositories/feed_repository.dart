@@ -60,6 +60,16 @@ class FeedRepository {
     return _localDs.getById(id, accountId: accountId);
   }
 
+  /// Gets multiple feeds by ID in a single query.
+  ///
+  /// Returns a map of `id -> Feed` for the requested IDs that exist (and
+  /// match [accountId] when provided). Missing IDs are omitted.
+  Future<Map<int, Feed>> getFeedsByIds(Set<int> ids, {int? accountId}) async {
+    if (ids.isEmpty) return <int, Feed>{};
+    final feeds = await _localDs.getByIds(ids.toList(), accountId: accountId);
+    return {for (final f in feeds) f.id: f};
+  }
+
   /// Gets a feed by its URL, optionally scoped to [accountId].
   Future<Feed?> getFeedByUrl(String feedUrl, {int? accountId}) {
     return _localDs.getByUrl(feedUrl, accountId: accountId);

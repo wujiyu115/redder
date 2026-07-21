@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/feed_repository.dart';
+import '../../shared/providers/account_provider.dart';
 import '../source_list/source_list_controller.dart';
 
 /// Provider for the search controller.
@@ -81,7 +82,14 @@ class SearchController extends StateNotifier<SearchState> {
     );
 
     try {
-      final results = await _articleRepo.searchArticles(query, limit: 100);
+      // Scope the search to the active account — accountSwitchProvider is
+      // async-initialized so await the future instead of reading it sync.
+      final accountId = await _ref.read(activeAccountIdProvider.future);
+      final results = await _articleRepo.searchArticles(
+        query,
+        limit: 100,
+        accountId: accountId,
+      );
 
       // Load feed metadata
       final feedTitles = <int, String>{};

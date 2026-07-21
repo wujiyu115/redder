@@ -33,12 +33,14 @@ class ArticleRepository {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
     return _localDs.getAll(
       limit: limit,
       offset: offset,
       unreadOnly: unreadOnly,
+      oldestFirst: oldestFirst,
       accountId: accountId,
     );
   }
@@ -49,9 +51,10 @@ class ArticleRepository {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
-    return _localDs.getByFeedId(feedId, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
+    return _localDs.getByFeedId(feedId, limit: limit, offset: offset, unreadOnly: unreadOnly, oldestFirst: oldestFirst, accountId: accountId);
   }
 
   /// Gets articles by content type (for category timelines).
@@ -60,9 +63,10 @@ class ArticleRepository {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
-    return _localDs.getByContentType(type, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
+    return _localDs.getByContentType(type, limit: limit, offset: offset, unreadOnly: unreadOnly, oldestFirst: oldestFirst, accountId: accountId);
   }
 
   /// Gets articles for multiple feeds (for folder timelines).
@@ -71,9 +75,10 @@ class ArticleRepository {
     int? limit,
     int? offset,
     bool unreadOnly = false,
+    bool oldestFirst = false,
     int? accountId,
   }) {
-    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset, unreadOnly: unreadOnly, accountId: accountId);
+    return _localDs.getByFeedIds(feedIds, limit: limit, offset: offset, unreadOnly: unreadOnly, oldestFirst: oldestFirst, accountId: accountId);
   }
 
   /// Searches articles by title, optionally filtered by [accountId].
@@ -89,6 +94,40 @@ class ArticleRepository {
   /// Gets the unread count for a specific feed.
   Future<int> getUnreadCount(int feedId, {int? accountId}) {
     return _localDs.unreadCountForFeed(feedId, accountId: accountId);
+  }
+
+  /// Gets unread counts for multiple feeds in a single query.
+  ///
+  /// Returns a map of `feedId -> unread count` for feeds with at least one
+  /// unread item. Missing feedIds should be treated as 0.
+  Future<Map<int, int>> getUnreadCounts(Set<int> feedIds, {int? accountId}) {
+    return _localDs.unreadCountsForFeeds(feedIds, accountId: accountId);
+  }
+
+  /// Gets multiple articles by ID in a single query, ordered by publish date
+  /// descending.
+  Future<List<FeedItem>> getArticlesByIds(
+    List<int> ids, {
+    int offset = 0,
+    int limit = 50,
+    required int? accountId,
+  }) {
+    return _localDs.getByIds(ids, offset: offset, limit: limit, accountId: accountId);
+  }
+
+  /// Resolves the next (older) article id in the same timeline scope,
+  /// published before [currentId]. See [ArticleLocalDataSource.getNextArticleId]
+  /// for supported [timelineId] prefixes.
+  Future<int?> getNextArticleId(
+    int currentId, {
+    required String timelineId,
+    required int? accountId,
+  }) {
+    return _localDs.getNextArticleId(
+      currentId,
+      timelineId: timelineId,
+      accountId: accountId,
+    );
   }
 
   /// Gets all starred articles, optionally filtered by [accountId].
@@ -154,8 +193,21 @@ class ArticleRepository {
   }
 
   /// Marks all articles as read, optionally scoped to [accountId].
-  Future<void> markAllAsRead({int? accountId}) {
-    return _localDs.markAllAsRead(accountId: accountId);
+  ///
+  /// Pass [itemIds] to restrict to a specific set of articles, and/or
+  /// [contentType] (timeline name or enum name) to restrict by content type.
+  /// With no scope args, marks every unread item in the account (backward
+  /// compatible with the original no-arg call).
+  Future<void> markAllAsRead({
+    int? accountId,
+    List<int>? itemIds,
+    String? contentType,
+  }) {
+    return _localDs.markAllAsRead(
+      accountId: accountId,
+      itemIds: itemIds,
+      contentType: contentType,
+    );
   }
 
   /// Toggles the starred state of an article.

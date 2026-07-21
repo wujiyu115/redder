@@ -14,6 +14,8 @@ import '../../shared/providers/sync_provider.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_button.dart';
+import '../../shared/widgets/reeder_toast.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/sync_icon_button.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_popup_menu.dart';
@@ -83,7 +85,7 @@ class SourceListPage extends ConsumerWidget {
       ),
       body: sourceListState.when(
         data: (state) => _buildContent(context, ref, state, theme),
-        loading: () => Center(child: Text(l10n.loading)),
+        loading: () => const ShimmerLoading(compact: false),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage(e.toString()))),
       ),
     );
@@ -97,223 +99,273 @@ class SourceListPage extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    // Assemble rows up-front, then feed ListView.builder so off-screen rows
-    // are not mounted/laid out (ListView(children:) builds them all eagerly).
-    final children = <Widget>[
-        // ─── HOME Section ─────────────────────────────────
-        ReederSectionHeader(title: l10n.home),
-        SourceItem(
-          icon: const Text('📰', style: TextStyle(fontSize: 18)),
-          title: l10n.all,
-          count: state.totalUnreadCount,
-          onTap: () => context.push('/timeline/all'),
-        ),
-        SourceItem(
-          icon: const Text('📝', style: TextStyle(fontSize: 18)),
-          title: l10n.articles,
-          onTap: () => context.push('/timeline/articles'),
-        ),
-        SourceItem(
-          icon: const Text('🎙', style: TextStyle(fontSize: 18)),
-          title: l10n.podcasts,
-          onTap: () => context.push('/timeline/podcasts'),
-        ),
-        SourceItem(
-          icon: const Text('🎬', style: TextStyle(fontSize: 18)),
-          title: l10n.videos,
-          onTap: () => context.push('/timeline/videos'),
-        ),
+    // Build a flat, data-driven row list so the ListView.builder constructs
+    // row widgets lazily — off-screen rows are not built/mounted — instead of
+    // eagerly assembling the whole widget tree up front. Folder children stay
+    // eager (SourceSection owns its children list), but every top-level row,
+    // including off-screen folders, is now constructed on demand.
+    final rows = <_SourceRow>[
+      // ─── HOME Section ─────────────────────────────────
+      _SourceRow.header(title: l10n.home),
+      _SourceRow.home(
+        icon: const Text('📰', style: TextStyle(fontSize: 18)),
+        title: l10n.all,
+        count: state.totalUnreadCount,
+        onTap: () => context.push('/timeline/all'),
+      ),
+      _SourceRow.home(
+        icon: const Text('📝', style: TextStyle(fontSize: 18)),
+        title: l10n.articles,
+        onTap: () => context.push('/timeline/articles'),
+      ),
+      _SourceRow.home(
+        icon: const Text('🎙', style: TextStyle(fontSize: 18)),
+        title: l10n.podcasts,
+        onTap: () => context.push('/timeline/podcasts'),
+      ),
+      _SourceRow.home(
+        icon: const Text('🎬', style: TextStyle(fontSize: 18)),
+        title: l10n.videos,
+        onTap: () => context.push('/timeline/videos'),
+      ),
 
-        // ─── FEEDS Section ────────────────────────────────
-        ReederSectionHeader(
-          title: l10n.feeds,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Unread-only filter toggle
-              ReederButton.icon(
-                icon: Text(
-                  state.hideRead ? '◉' : '◎',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: state.hideRead
-                        ? theme.accentColor
-                        : theme.secondaryTextColor,
-                  ),
-                ),
-                onPressed: () => ref
-                    .read(sourceListControllerProvider.notifier)
-                    .toggleHideRead(),
-              ),
-              ReederButton.icon(
-                icon: const Text('+', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w300)),
-                onPressed: () => _showAddFeedDialog(context),
-              ),
-            ],
-          ),
-        ),
+      // ─── FEEDS Section ────────────────────────────────
+      const _SourceRow.feedsHeader(),
 
-        // Folders with long-press context menu
-        for (final folder in state.folders)
-          if (!state.hideRead || folder.unreadCount > 0)
-            SourceSection(
-              title: folder.name,
-              iconName: folder.iconName,
-              isExpanded: folder.isExpanded,
-              unreadCount: folder.unreadCount,
-              onTap: () => context.push('/timeline/folder_${folder.id}'),
-              onLongPress: () => _showFolderContextMenu(
-                context, ref, folder, theme,
-              ),
-              children: [
-                for (final feed in state.feedsByFolder[folder.id] ?? [])
-                  if (!state.hideRead || feed.unreadCount > 0)
-                    SourceItem(
-                      title: feed.title,
-                      iconUrl: feed.iconUrl,
-                      count: feed.unreadCount,
-                      dimWhenRead: true,
-                      onTap: () => context.push('/timeline/feed_${feed.id}'),
-                      onLongPress: () => _showFeedContextMenu(
-                        context, ref, feed, state.folders, theme,
-                      ),
-                    ),
-              ],
-            ),
-
-        // Root feeds (not in any folder) with long-press context menu
-        for (final feed in state.rootFeeds)
-          if (!state.hideRead || feed.unreadCount > 0)
-            SourceItem(
-              title: feed.title,
-              iconUrl: feed.iconUrl,
-              count: feed.unreadCount,
-              dimWhenRead: true,
-              onTap: () => context.push('/timeline/feed_${feed.id}'),
-              onLongPress: () => _showFeedContextMenu(
-                context, ref, feed, state.folders, theme,
-              ),
-            ),
-
-        // New Folder button
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.listItemPaddingH,
-            vertical: AppDimensions.spacingS,
-          ),
-          child: GestureDetector(
-            onTap: () => _showCreateFolderDialog(context, ref, theme),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Text(
-                  '📁',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(width: AppDimensions.spacingS),
-                Text(
-                  l10n.newFolder,
-                  style: theme.typography.body.copyWith(
-                    color: theme.accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ─── TAGS Section ─────────────────────────────────
-        ReederSectionHeader(title: l10n.tags),
-        for (final tag in state.tags)
-          SourceItem(
-            icon: Text(
-              _tagIcon(tag.iconName),
-              style: const TextStyle(fontSize: 18),
-            ),
-            title: _localizedTagName(tag, l10n),
-            count: tag.itemCount,
-            onTap: () => context.push('/timeline/tag_${tag.id}'),
-            onLongPress: tag.isBuiltIn
-                ? null
-                : () => _showTagContextMenu(context, ref, tag, theme),
+      // Folders with long-press context menu
+      for (final folder in state.folders)
+        if (!state.hideRead || folder.unreadCount > 0)
+          _SourceRow.folder(
+            folder: folder,
+            feeds: state.feedsByFolder[folder.id] ?? const [],
+            hideRead: state.hideRead,
           ),
 
-        // New Tag button
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.listItemPaddingH,
-            vertical: AppDimensions.spacingS,
-          ),
-          child: GestureDetector(
-            onTap: () => _showCreateTagDialog(context, ref, theme),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Text(
-                  '🏷',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(width: AppDimensions.spacingS),
-                Text(
-                  l10n.newTag,
-                  style: theme.typography.body.copyWith(
-                    color: theme.accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      // Root feeds (not in any folder) with long-press context menu
+      for (final feed in state.rootFeeds)
+        if (!state.hideRead || feed.unreadCount > 0)
+          _SourceRow.rootFeed(feed: feed),
+
+      // New Folder button
+      _SourceRow.newFolderButton(
+        onTap: () => _showCreateFolderDialog(context, ref, theme),
+      ),
+
+      // ─── TAGS Section ─────────────────────────────────
+      _SourceRow.header(title: l10n.tags),
+      for (final tag in state.tags)
+        _SourceRow.tag(
+          tag: tag,
+          title: _localizedTagName(tag, l10n),
+          tagIcon: _tagIcon(tag.iconName),
+          isBuiltIn: tag.isBuiltIn,
+          onTap: () => context.push('/timeline/tag_${tag.id}'),
+          onLongPress: tag.isBuiltIn
+              ? null
+              : () => _showTagContextMenu(context, ref, tag, theme),
         ),
 
-        // ─── FILTERS Section ──────────────────────────────
-        if (state.filters.isNotEmpty) ...[
-          ReederSectionHeader(title: l10n.filters),
-          for (final filter in state.filters)
-            SourceItem(
-              icon: const Text('⚡', style: TextStyle(fontSize: 18)),
-              title: filter.name,
-              onTap: () => context.push('/timeline/filter_${filter.id}'),
-              onLongPress: () => _showFilterContextMenu(
-                context, ref, filter, theme,
-              ),
-            ),
-        ],
+      // New Tag button
+      _SourceRow.newTagButton(
+        onTap: () => _showCreateTagDialog(context, ref, theme),
+      ),
 
-        // New Filter button
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.listItemPaddingH,
-            vertical: AppDimensions.spacingS,
+      // ─── FILTERS Section ──────────────────────────────
+      if (state.filters.isNotEmpty) ...[
+        _SourceRow.header(title: l10n.filters),
+        for (final filter in state.filters)
+          _SourceRow.filter(
+            filter: filter,
+            onTap: () => context.push('/timeline/filter_${filter.id}'),
+            onLongPress: () => _showFilterContextMenu(context, ref, filter, theme),
           ),
-          child: GestureDetector(
-            onTap: () => context.push('/filter/new'),
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                const Text(
-                  '⚡',
-                  style: TextStyle(fontSize: 16),
-                ),
-                const SizedBox(width: AppDimensions.spacingS),
-                Text(
-                  l10n.newFilter,
-                  style: theme.typography.body.copyWith(
-                    color: theme.accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      ],
 
-        // Bottom padding
-        const SizedBox(height: AppDimensions.spacingXXL),
+      // New Filter button
+      _SourceRow.newFilterButton(onTap: () => context.push('/filter/new')),
+
+      // Bottom padding
+      const _SourceRow.bottomPadding(),
     ];
 
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: children.length,
-      itemBuilder: (context, index) => children[index],
+      itemCount: rows.length,
+      itemBuilder: (context, index) =>
+          _buildRow(context, ref, rows[index], state, theme, l10n),
+    );
+  }
+
+  Widget _buildRow(
+    BuildContext context,
+    WidgetRef ref,
+    _SourceRow row,
+    SourceListState state,
+    ReederThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    switch (row.type) {
+      case _SourceRowType.header:
+        if (row.isFeedsHeader) {
+          // Feeds header carries the unread-only toggle + add-feed button.
+          return ReederSectionHeader(
+            title: l10n.feeds,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ReederButton.icon(
+                  icon: Text(
+                    state.hideRead ? '◉' : '◎',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: state.hideRead
+                          ? theme.accentColor
+                          : theme.secondaryTextColor,
+                    ),
+                  ),
+                  onPressed: () => ref
+                      .read(sourceListControllerProvider.notifier)
+                      .toggleHideRead(),
+                ),
+                ReederButton.icon(
+                  icon: const Text('+',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w300)),
+                  onPressed: () => _showAddFeedDialog(context),
+                ),
+              ],
+            ),
+          );
+        }
+        return ReederSectionHeader(title: row.title!);
+
+      case _SourceRowType.home:
+        return SourceItem(
+          icon: row.icon,
+          title: row.title!,
+          count: row.count,
+          onTap: row.onTap,
+        );
+
+      case _SourceRowType.folder:
+        return SourceSection(
+          title: row.folder!.name,
+          iconName: row.folder!.iconName,
+          isExpanded: row.folder!.isExpanded,
+          unreadCount: row.folder!.unreadCount,
+          onTap: () => context.push('/timeline/folder_${row.folder!.id}'),
+          onLongPress: () => _showFolderContextMenu(
+            context, ref, row.folder!, theme,
+          ),
+          children: [
+            for (final feed in row.feeds)
+              if (!row.hideRead || feed.unreadCount > 0)
+                SourceItem(
+                  title: feed.title,
+                  iconUrl: feed.iconUrl,
+                  count: feed.unreadCount,
+                  dimWhenRead: true,
+                  onTap: () => context.push('/timeline/feed_${feed.id}'),
+                  onLongPress: () => _showFeedContextMenu(
+                    context, ref, feed, state.folders, theme,
+                  ),
+                ),
+          ],
+        );
+
+      case _SourceRowType.rootFeed:
+        final feed = row.feed!;
+        return SourceItem(
+          title: feed.title,
+          iconUrl: feed.iconUrl,
+          count: feed.unreadCount,
+          dimWhenRead: true,
+          onTap: () => context.push('/timeline/feed_${feed.id}'),
+          onLongPress: () => _showFeedContextMenu(
+            context, ref, feed, state.folders, theme,
+          ),
+        );
+
+      case _SourceRowType.newFolderButton:
+        return _buildNewButton(
+          theme: theme,
+          l10n: l10n,
+          emoji: '📁',
+          label: l10n.newFolder,
+          onTap: row.onTap,
+        );
+
+      case _SourceRowType.tag:
+        return SourceItem(
+          icon: Text(row.tagIcon!, style: const TextStyle(fontSize: 18)),
+          title: row.title!,
+          count: row.tag!.itemCount,
+          onTap: row.onTap,
+          onLongPress: row.onLongPress,
+        );
+
+      case _SourceRowType.newTagButton:
+        return _buildNewButton(
+          theme: theme,
+          l10n: l10n,
+          emoji: '🏷',
+          label: l10n.newTag,
+          onTap: row.onTap,
+        );
+
+      case _SourceRowType.filter:
+        final filter = row.filter!;
+        return SourceItem(
+          icon: const Text('⚡', style: TextStyle(fontSize: 18)),
+          title: filter.name,
+          onTap: row.onTap,
+          onLongPress: row.onLongPress,
+        );
+
+      case _SourceRowType.newFilterButton:
+        return _buildNewButton(
+          theme: theme,
+          l10n: l10n,
+          emoji: '⚡',
+          label: l10n.newFilter,
+          onTap: row.onTap,
+        );
+
+      case _SourceRowType.bottomPadding:
+        return const SizedBox(height: AppDimensions.spacingXXL);
+    }
+  }
+
+  /// Builds the "New X" accent-colored tappable row used for new
+  /// folder / tag / filter buttons.
+  Widget _buildNewButton({
+    required ReederThemeData theme,
+    required AppLocalizations l10n,
+    required String emoji,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.listItemPaddingH,
+        vertical: AppDimensions.spacingS,
+      ),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: AppDimensions.spacingS),
+            Text(
+              label,
+              style: theme.typography.body.copyWith(
+                color: theme.accentColor,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -476,7 +528,10 @@ class SourceListPage extends ConsumerWidget {
         _showMoveFeedDialog(context, ref, feed, folders, theme);
         break;
       case 'refresh':
-        ref.read(sourceListControllerProvider.notifier).refreshFeed(feed.id);
+        await _runDestructive(
+          context, ref, l10n,
+          () => ref.read(sourceListControllerProvider.notifier).refreshFeed(feed.id),
+        );
         break;
       case 'unsubscribe':
         _showUnsubscribeConfirmation(context, ref, feed, theme);
@@ -506,10 +561,13 @@ class SourceListPage extends ConsumerWidget {
           ReederDialogAction(
             label: l10n.unsubscribe,
             isDestructive: true,
-            onPressed: () {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .deleteFeed(feed.id);
+            onPressed: () async {
+              await _runDestructive(
+                context, ref, l10n,
+                () => ref
+                    .read(sourceListControllerProvider.notifier)
+                    .deleteFeed(feed.id),
+              );
             },
           ),
         ],
@@ -572,38 +630,31 @@ class SourceListPage extends ConsumerWidget {
     ReederThemeData theme,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: feed.title);
+    final key = GlobalKey<_TextInputDialogContentState>();
+
+    void submit(String name) {
+      if (name.isEmpty) return;
+      ref.read(sourceListControllerProvider.notifier).renameFeed(feed.id, name);
+      Navigator.of(context).pop();
+    }
 
     ReederDialog.show(
       context: context,
       builder: (ctx) => ReederDialog(
         title: l10n.rename,
-        content: ReederTextField(
-          controller: controller,
+        content: _TextInputDialogContent(
+          key: key,
+          initialText: feed.title,
           placeholder: l10n.rename,
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .renameFeed(feed.id, value.trim());
-              Navigator.of(ctx).pop();
-            }
-          },
+          onSubmit: submit,
         ),
         actions: [
           ReederDialogAction(label: l10n.cancel),
           ReederDialogAction(
             label: l10n.save,
             isDefault: true,
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(sourceListControllerProvider.notifier)
-                    .renameFeed(feed.id, name);
-              }
-            },
+            dismissOnTap: false,
+            onPressed: () => submit(key.currentState?.value ?? ''),
           ),
         ],
       ),
@@ -669,38 +720,30 @@ class SourceListPage extends ConsumerWidget {
     ReederThemeData theme,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
+    final key = GlobalKey<_TextInputDialogContentState>();
+
+    void submit(String name) {
+      if (name.isEmpty) return;
+      ref.read(sourceListControllerProvider.notifier).createFolder(name);
+      Navigator.of(context).pop();
+    }
 
     ReederDialog.show(
       context: context,
       builder: (ctx) => ReederDialog(
         title: l10n.newFolder,
-        content: ReederTextField(
-          controller: controller,
+        content: _TextInputDialogContent(
+          key: key,
           placeholder: l10n.folderName,
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .createFolder(value.trim());
-              Navigator.of(ctx).pop();
-            }
-          },
+          onSubmit: submit,
         ),
         actions: [
           ReederDialogAction(label: l10n.cancel),
           ReederDialogAction(
             label: l10n.create,
             isDefault: true,
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(sourceListControllerProvider.notifier)
-                    .createFolder(name);
-              }
-            },
+            dismissOnTap: false,
+            onPressed: () => submit(key.currentState?.value ?? ''),
           ),
         ],
       ),
@@ -716,38 +759,31 @@ class SourceListPage extends ConsumerWidget {
     ReederThemeData theme,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: folder.name);
+    final key = GlobalKey<_TextInputDialogContentState>();
+
+    void submit(String name) {
+      if (name.isEmpty) return;
+      ref.read(sourceListControllerProvider.notifier).renameFolder(folder.id, name);
+      Navigator.of(context).pop();
+    }
 
     ReederDialog.show(
       context: context,
       builder: (ctx) => ReederDialog(
         title: l10n.renameFolder,
-        content: ReederTextField(
-          controller: controller,
+        content: _TextInputDialogContent(
+          key: key,
+          initialText: folder.name,
           placeholder: l10n.folderName,
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .renameFolder(folder.id, value.trim());
-              Navigator.of(ctx).pop();
-            }
-          },
+          onSubmit: submit,
         ),
         actions: [
           ReederDialogAction(label: l10n.cancel),
           ReederDialogAction(
             label: l10n.rename,
             isDefault: true,
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(sourceListControllerProvider.notifier)
-                    .renameFolder(folder.id, name);
-              }
-            },
+            dismissOnTap: false,
+            onPressed: () => submit(key.currentState?.value ?? ''),
           ),
         ],
       ),
@@ -776,10 +812,13 @@ class SourceListPage extends ConsumerWidget {
           ReederDialogAction(
             label: l10n.delete,
             isDestructive: true,
-            onPressed: () {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .deleteFolder(folder.id);
+            onPressed: () async {
+              await _runDestructive(
+                context, ref, l10n,
+                () => ref
+                    .read(sourceListControllerProvider.notifier)
+                    .deleteFolder(folder.id),
+              );
             },
           ),
         ],
@@ -832,38 +871,30 @@ class SourceListPage extends ConsumerWidget {
     ReederThemeData theme,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
+    final key = GlobalKey<_TextInputDialogContentState>();
+
+    void submit(String name) {
+      if (name.isEmpty) return;
+      ref.read(sourceListControllerProvider.notifier).createTag(name);
+      Navigator.of(context).pop();
+    }
 
     ReederDialog.show(
       context: context,
       builder: (ctx) => ReederDialog(
         title: l10n.newTag,
-        content: ReederTextField(
-          controller: controller,
+        content: _TextInputDialogContent(
+          key: key,
           placeholder: l10n.tagName,
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .createTag(value.trim());
-              Navigator.of(ctx).pop();
-            }
-          },
+          onSubmit: submit,
         ),
         actions: [
           ReederDialogAction(label: l10n.cancel),
           ReederDialogAction(
             label: l10n.create,
             isDefault: true,
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(sourceListControllerProvider.notifier)
-                    .createTag(name);
-              }
-            },
+            dismissOnTap: false,
+            onPressed: () => submit(key.currentState?.value ?? ''),
           ),
         ],
       ),
@@ -879,38 +910,31 @@ class SourceListPage extends ConsumerWidget {
     ReederThemeData theme,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: tag.name);
+    final key = GlobalKey<_TextInputDialogContentState>();
+
+    void submit(String name) {
+      if (name.isEmpty) return;
+      ref.read(sourceListControllerProvider.notifier).renameTag(tag.id, name);
+      Navigator.of(context).pop();
+    }
 
     ReederDialog.show(
       context: context,
       builder: (ctx) => ReederDialog(
         title: l10n.renameTag,
-        content: ReederTextField(
-          controller: controller,
+        content: _TextInputDialogContent(
+          key: key,
+          initialText: tag.name as String,
           placeholder: l10n.tagName,
-          autofocus: true,
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .renameTag(tag.id, value.trim());
-              Navigator.of(ctx).pop();
-            }
-          },
+          onSubmit: submit,
         ),
         actions: [
           ReederDialogAction(label: l10n.cancel),
           ReederDialogAction(
             label: l10n.rename,
             isDefault: true,
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(sourceListControllerProvider.notifier)
-                    .renameTag(tag.id, name);
-              }
-            },
+            dismissOnTap: false,
+            onPressed: () => submit(key.currentState?.value ?? ''),
           ),
         ],
       ),
@@ -939,19 +963,215 @@ class SourceListPage extends ConsumerWidget {
           ReederDialogAction(
             label: l10n.delete,
             isDestructive: true,
-            onPressed: () {
-              ref
-                  .read(sourceListControllerProvider.notifier)
-                  .deleteTag(tag.id);
+            onPressed: () async {
+              await _runDestructive(
+                context, ref, l10n,
+                () => ref
+                    .read(sourceListControllerProvider.notifier)
+                    .deleteTag(tag.id),
+              );
             },
           ),
         ],
       ),
     );
   }
+
+  /// Runs a destructive controller operation, surfacing a toast on
+  /// success or failure. The page [context] stays valid after the
+  /// confirm dialog auto-dismisses.
+  ///
+  // ponytail: no per-op success l10n key exists, so success reuses
+  // refreshComplete. Add a dedicated "deleted" key when i18n grows it.
+  Future<void> _runDestructive(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    Future<void> Function() op,
+  ) async {
+    try {
+      await op();
+      if (!context.mounted) return;
+      ReederToast.show(context, l10n.refreshComplete);
+    } catch (e) {
+      if (!context.mounted) return;
+      ReederToast.show(context, l10n.refreshFailed, isError: true);
+    }
+  }
 }
 
 // ─── Helper Widgets ─────────────────────────────────────────
+
+/// A single flat row of data for the source list, used by the lazy
+/// `ListView.builder` so row widgets are constructed on demand.
+class _SourceRow {
+  final _SourceRowType type;
+  final String? title;
+  final Widget? icon;
+  final int count;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final Folder? folder;
+  final List<Feed> feeds;
+  final bool hideRead;
+  final Feed? feed;
+  final Tag? tag;
+  final String? tagIcon;
+  final bool isBuiltIn;
+  final Filter? filter;
+  final bool isFeedsHeader;
+
+  const _SourceRow._({
+    required this.type,
+    this.title,
+    this.icon,
+    this.count = 0,
+    this.onTap,
+    this.onLongPress,
+    this.folder,
+    this.feeds = const [],
+    this.hideRead = false,
+    this.feed,
+    this.tag,
+    this.tagIcon,
+    this.isBuiltIn = false,
+    this.filter,
+    this.isFeedsHeader = false,
+  });
+
+  const _SourceRow.header({required String? title})
+      : this._(type: _SourceRowType.header, title: title);
+  const _SourceRow.feedsHeader()
+      : this._(type: _SourceRowType.header, isFeedsHeader: true);
+  const _SourceRow.home({
+    required Widget icon,
+    required String title,
+    int count = 0,
+    VoidCallback? onTap,
+  }) : this._(
+          type: _SourceRowType.home,
+          icon: icon,
+          title: title,
+          count: count,
+          onTap: onTap,
+        );
+  const _SourceRow.folder({
+    required Folder folder,
+    required List<Feed> feeds,
+    required bool hideRead,
+  }) : this._(
+          type: _SourceRowType.folder,
+          folder: folder,
+          feeds: feeds,
+          hideRead: hideRead,
+        );
+  const _SourceRow.rootFeed({required Feed feed})
+      : this._(type: _SourceRowType.rootFeed, feed: feed);
+  const _SourceRow.newFolderButton({VoidCallback? onTap})
+      : this._(type: _SourceRowType.newFolderButton, onTap: onTap);
+  const _SourceRow.tag({
+    required Tag tag,
+    required String title,
+    required String tagIcon,
+    required bool isBuiltIn,
+    VoidCallback? onTap,
+    VoidCallback? onLongPress,
+  }) : this._(
+          type: _SourceRowType.tag,
+          tag: tag,
+          title: title,
+          tagIcon: tagIcon,
+          isBuiltIn: isBuiltIn,
+          onTap: onTap,
+          onLongPress: onLongPress,
+        );
+  const _SourceRow.newTagButton({VoidCallback? onTap})
+      : this._(type: _SourceRowType.newTagButton, onTap: onTap);
+  const _SourceRow.filter({
+    required Filter filter,
+    VoidCallback? onTap,
+    VoidCallback? onLongPress,
+  }) : this._(
+          type: _SourceRowType.filter,
+          filter: filter,
+          onTap: onTap,
+          onLongPress: onLongPress,
+        );
+  const _SourceRow.newFilterButton({VoidCallback? onTap})
+      : this._(type: _SourceRowType.newFilterButton, onTap: onTap);
+  const _SourceRow.bottomPadding()
+      : this._(type: _SourceRowType.bottomPadding);
+}
+
+enum _SourceRowType {
+  header,
+  home,
+  folder,
+  rootFeed,
+  newFolderButton,
+  tag,
+  newTagButton,
+  filter,
+  newFilterButton,
+  bottomPadding,
+}
+
+/// A dialog content widget that owns and disposes its own
+/// [TextEditingController], fixing the controller leak that came from
+/// creating the controller in a dialog-show helper method.
+///
+/// The parent dialog reads the current trimmed value via a
+/// `GlobalKey<_TextInputDialogContentState>` for its Save action, and
+/// wires [onSubmit] so the keyboard's "enter" path shares that same save.
+class _TextInputDialogContent extends StatefulWidget {
+  final String initialText;
+  final String placeholder;
+  final ValueChanged<String>? onSubmit;
+
+  const _TextInputDialogContent({
+    super.key,
+    this.initialText = '',
+    required this.placeholder,
+    this.onSubmit,
+  });
+
+  @override
+  State<_TextInputDialogContent> createState() =>
+      _TextInputDialogContentState();
+}
+
+class _TextInputDialogContentState extends State<_TextInputDialogContent> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Current trimmed text, read by the dialog's Save action.
+  String get value => _controller.text.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    return ReederTextField(
+      controller: _controller,
+      placeholder: widget.placeholder,
+      autofocus: true,
+      onSubmitted: (v) {
+        final name = v.trim();
+        if (name.isNotEmpty) widget.onSubmit?.call(name);
+      },
+    );
+  }
+}
+
 
 /// A selectable folder option tile used in the move-to-folder dialog.
 class _FolderOptionTile extends StatelessWidget {

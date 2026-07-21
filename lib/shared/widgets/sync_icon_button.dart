@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'reeder_toast.dart';
@@ -112,7 +113,11 @@ class _SyncIconButtonState extends State<SyncIconButton>
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
-    return GestureDetector(
+    final l10n = AppLocalizations.of(context)!;
+    return Semantics(
+      button: true,
+      label: l10n.sync,
+      child: GestureDetector(
       onTap: _onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
@@ -130,6 +135,7 @@ class _SyncIconButtonState extends State<SyncIconButton>
             ),
           ),
         ),
+      ),
       ),
     );
   }

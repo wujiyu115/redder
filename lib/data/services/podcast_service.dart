@@ -1,9 +1,19 @@
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/providers/settings_provider.dart';
+
 /// Provider for the podcast service singleton.
+///
+/// Injects settings read-through callbacks so playback speed and skip
+/// durations track the persisted settings (updated live when the user
+/// changes them in Settings).
 final podcastServiceProvider = Provider<PodcastService>((ref) {
-  final service = PodcastService();
+  final service = PodcastService(
+    getPlaybackSpeed: () => ref.read(playbackSpeedProvider),
+    getSkipForwardSeconds: () => ref.read(skipForwardSecondsProvider),
+    getSkipBackwardSeconds: () => ref.read(skipBackwardSecondsProvider),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -169,7 +179,26 @@ class PodcastPlayerState {
 class PodcastService {
   final AudioPlayer _player = AudioPlayer();
 
+  /// Live-reads the persisted playback speed, applied at play/resume start.
+  final double Function()? _getPlaybackSpeed;
+
+  /// Live-reads the persisted skip-forward seconds.
+  final int Function()? _getSkipForwardSeconds;
+
+  /// Live-reads the persisted skip-backward seconds.
+  final int Function()? _getSkipBackwardSeconds;
+
   PodcastPlayerState _state = const PodcastPlayerState();
+
+  /// Creates the service. Injects settings read-through callbacks so the
+  /// player respects the persisted playback speed and skip durations.
+  PodcastService({
+    double Function()? getPlaybackSpeed,
+    int Function()? getSkipForwardSeconds,
+    int Function()? getSkipBackwardSeconds,
+  })  : _getPlaybackSpeed = getPlaybackSpeed,
+        _getSkipForwardSeconds = getSkipForwardSeconds,
+        _getSkipBackwardSeconds = getSkipBackwardSeconds;
 
   /// Stream of player state updates.
   Stream<PodcastPlayerState> get stateStream => _createStateStream();
@@ -249,6 +278,11 @@ class PodcastService {
         await _player.seek(startPosition);
       }
 
+      // Apply persisted playback speed before playback begins.
+      final speed = _getPlaybackSpeed?.call() ?? 1.0;
+      await _player.setSpeed(speed.clamp(0.5, 3.0));
+      _state = _state.copyWith(speed: speed.clamp(0.5, 3.0));
+
       await _player.play();
     } catch (e) {
       _state = _state.copyWith(
@@ -260,6 +294,13 @@ class PodcastService {
 
   /// Resumes playback.
   Future<void> resume() async {
+    // Re-apply persisted playback speed in case it changed while paused.
+    final speed = _getPlaybackSpeed?.call() ?? 1.0;
+    final clamped = speed.clamp(0.5, 3.0);
+    if (clamped != _player.speed) {
+      await _player.setSpeed(clamped);
+      _state = _state.copyWith(speed: clamped);
+    }
     await _player.play();
   }
 
@@ -294,14 +335,16 @@ class PodcastService {
     await _player.seek(clamped);
   }
 
-  /// Skips backward 15 seconds.
+  /// Skips backward by the persisted skip-backward duration (default 15s).
   Future<void> skipBackward() async {
-    await seekRelative(const Duration(seconds: -15));
+    final seconds = _getSkipBackwardSeconds?.call() ?? 15;
+    await seekRelative(Duration(seconds: -seconds));
   }
 
-  /// Skips forward 30 seconds.
+  /// Skips forward by the persisted skip-forward duration (default 30s).
   Future<void> skipForward() async {
-    await seekRelative(const Duration(seconds: 30));
+    final seconds = _getSkipForwardSeconds?.call() ?? 30;
+    await seekRelative(Duration(seconds: seconds));
   }
 
   /// Sets the playback speed.

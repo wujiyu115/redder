@@ -60,6 +60,7 @@ class _AddFeedDialogContentState
 
     try {
       final feeds = await _discoveryService.discover(url);
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         if (feeds.isEmpty) {
@@ -69,6 +70,7 @@ class _AddFeedDialogContentState
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = l10n.errorDiscoveringFeeds(e.toString());
@@ -91,6 +93,7 @@ class _AddFeedDialogContentState
         Navigator.of(context).pop();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _error = e.toString();

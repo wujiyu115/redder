@@ -67,7 +67,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
       if (!mounted) return;
       // Mark article as read when opened
       ref
-          .read(articleDetailControllerProvider(widget.articleId).notifier)
+          .read(articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
           .markAsRead();
       if (_isFullscreen) _applyFullscreen(true);
     });
@@ -101,7 +101,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
     final detailState =
-        ref.watch(articleDetailControllerProvider(widget.articleId));
+        ref.watch(articleDetailControllerProvider((widget.articleId, widget.timelineId)));
 
     return GestureDetector(
       onHorizontalDragStart: _onHorizontalDragStart,
@@ -164,7 +164,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                 ),
                 onPressed: () {
                   ref
-                      .read(articleDetailControllerProvider(widget.articleId)
+                      .read(articleDetailControllerProvider((widget.articleId, widget.timelineId))
                           .notifier)
                       .toggleReaderView();
                 },
@@ -179,7 +179,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
             message: AppLocalizations.of(context)!.failedToLoadArticle,
             details: '$e',
             onRetry: () => ref
-                .read(articleDetailControllerProvider(widget.articleId).notifier)
+                .read(articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
                 .reload(),
           ),
         ),
@@ -230,6 +230,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                             : state.displayContent,
                         fontSize: state.fontSize,
                         lineHeight: state.lineHeight,
+                        maxWidth: ref.watch(maxContentWidthProvider),
                         bionicReading: state.bionicReading,
                         onImageTap: (imageUrl) {
                           _openImageViewer(context, imageUrl, state);
@@ -255,21 +256,21 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           tagStates: state.tagStates,
           onToggleStar: () => ref
               .read(
-                  articleDetailControllerProvider(widget.articleId).notifier)
+                  articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
               .toggleStarred(),
           onToggleTag: (tagId) => ref
               .read(
-                  articleDetailControllerProvider(widget.articleId).notifier)
+                  articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
               .toggleTag(tagId),
           onMarkAsUnread: () {
             ref
                 .read(
-                    articleDetailControllerProvider(widget.articleId).notifier)
+                    articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
                 .markAsUnread();
           },
           onShare: () => ref
               .read(
-                  articleDetailControllerProvider(widget.articleId).notifier)
+                  articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
               .share(),
           onOpenInBrowser: () {
             context.push('/browser', extra: state.article.url);
@@ -359,7 +360,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
         velocity < -300) {
       // Left swipe from right edge → next article
       ref
-          .read(articleDetailControllerProvider(widget.articleId).notifier)
+          .read(articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
           .loadNextArticle()
           .then((nextId) {
         if (nextId != null && mounted) {

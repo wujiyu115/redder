@@ -63,16 +63,20 @@ void main() {
       expect(builtInTags[2].sortOrder, equals(2));
     });
 
-    test('should initialize built-in tags for specific account', () async {
+    test('built-in tags are app-global (accountId ignored)', () async {
       const accountId = 1;
+      // Built-in tags are app-global; the accountId arg is accepted for
+      // backward-compat but ignored — tags are created with null accountId.
       await tagRepository.initializeBuiltInTags(accountId: accountId);
 
-      final accountTags = await tagRepository.getAllTags(accountId: accountId);
-      expect(accountTags.length, equals(3));
+      // Global built-in tags exist regardless of account scoping.
+      final builtInTags = await tagRepository.getBuiltInTags();
+      expect(builtInTags.length, equals(3));
 
+      // getLaterTag resolves the global tag even when an accountId is passed.
       final laterTag = await tagRepository.getLaterTag(accountId: accountId);
       expect(laterTag, isNotNull);
-      expect(laterTag!.accountId, equals(accountId));
+      expect(laterTag!.accountId, isNull); // global, not account-scoped
     });
   });
 
@@ -348,21 +352,23 @@ void main() {
       expect(favoritesTag.iconName, equals('heart'));
     });
 
-    test('should get built-in tags for specific account', () async {
+    test('getLaterTag resolves the global built-in tag regardless of accountId', () async {
       const accountId = 1;
       await tagRepository.initializeBuiltInTags(accountId: accountId);
 
+      // Built-in tags are app-global; accountId is ignored and the tag
+      // resolves to the null-account global row.
       final laterTag = await tagRepository.getLaterTag(accountId: accountId);
       expect(laterTag, isNotNull);
-      expect(laterTag!.accountId, equals(accountId));
+      expect(laterTag!.accountId, isNull);
 
       final bookmarksTag = await tagRepository.getBookmarksTag(accountId: accountId);
       expect(bookmarksTag, isNotNull);
-      expect(bookmarksTag!.accountId, equals(accountId));
+      expect(bookmarksTag!.accountId, isNull);
 
       final favoritesTag = await tagRepository.getFavoritesTag(accountId: accountId);
       expect(favoritesTag, isNotNull);
-      expect(favoritesTag!.accountId, equals(accountId));
+      expect(favoritesTag!.accountId, isNull);
     });
 
     test('should return null when built-in tags not initialized', () async {
@@ -503,17 +509,24 @@ void main() {
       }
     });
 
-    test('should filter tags by account ID', () async {
+    test('built-in tags are global; custom tags filter by account', () async {
       const accountId = 1;
+      // accountId on initializeBuiltInTags is ignored — tags are global.
       await tagRepository.initializeBuiltInTags(accountId: accountId);
       await tagRepository.createTag(name: 'AccountCustom1', accountId: accountId);
       await tagRepository.createTag(name: 'AccountCustom2', accountId: accountId);
 
+      // getAllTags(accountId) returns only account-scoped custom tags;
+      // built-in tags are null-account so the account filter excludes them.
       final accountTags = await tagRepository.getAllTags(accountId: accountId);
-      expect(accountTags.length, equals(5));
+      expect(accountTags.length, equals(2));
 
       final accountBuiltIn = await tagRepository.getBuiltInTags(accountId: accountId);
-      expect(accountBuiltIn.length, equals(3));
+      expect(accountBuiltIn.length, equals(0));
+
+      // Unscoped getBuiltInTags returns the 3 global built-in tags.
+      final allBuiltIn = await tagRepository.getBuiltInTags();
+      expect(allBuiltIn.length, equals(3));
 
       final accountCustom = await tagRepository.getCustomTags(accountId: accountId);
       expect(accountCustom.length, equals(2));

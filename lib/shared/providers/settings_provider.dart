@@ -4,7 +4,14 @@ import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/app_settings_helpers.dart';
 import '../../data/repositories/settings_repository.dart';
+import '../../data/services/background_refresh_service.dart';
 import 'theme_provider.dart';
+
+/// Sort order for timelines.
+///
+/// Stored in settings as a lowercase string ('newest' / 'oldest');
+/// exposed to consumers as a typed enum via [sortOrderProvider].
+enum SortOrder { newest, oldest }
 
 /// Provider for the [SettingsRepository] singleton.
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
@@ -138,9 +145,18 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
   }
 
   /// Sets auto-refresh interval.
+  ///
+  /// Persists the value and applies it to the live background timer so
+  /// runtime changes take effect without an app restart.
   Future<void> setAutoRefreshInterval(int minutes) async {
     await _repository.setAutoRefreshInterval(minutes);
     await _loadSettings();
+    if (minutes > 0) {
+      BackgroundRefreshService.updateInterval(Duration(minutes: minutes));
+    } else {
+      // 0 = manual only: pause the periodic timer.
+      BackgroundRefreshService.pause();
+    }
   }
 
   /// Sets playback speed.
@@ -205,3 +221,81 @@ final defaultFullscreenReadingProvider = Provider<bool>((ref) {
           .whenOrNull(data: (s) => s.defaultFullscreenReading) ??
       false;
 });
+
+/// Typed timeline sort order. Consumer (article list controller) should read
+/// this instead of hardcoding `OrderingTerm.desc(t.publishedAt)`.
+final sortOrderProvider = Provider<SortOrder>((ref) {
+  final raw = ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.sortOrder) ??
+      'newest';
+  return raw == 'oldest' ? SortOrder.oldest : SortOrder.newest;
+});
+
+/// Max content width (px) for reading columns.
+final maxContentWidthProvider = Provider<double>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.maxContentWidth) ??
+      680.0;
+});
+
+/// Default podcast playback speed.
+final playbackSpeedProvider = Provider<double>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.playbackSpeed) ??
+      1.0;
+});
+
+/// Seconds skipped forward in podcast playback.
+final skipForwardSecondsProvider = Provider<int>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.skipForwardSeconds) ??
+      30;
+});
+
+/// Seconds skipped backward in podcast playback.
+final skipBackwardSecondsProvider = Provider<int>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.skipBackwardSeconds) ??
+      15;
+});
+
+/// Auto-refresh interval in minutes (0 = manual only).
+final autoRefreshIntervalMinutesProvider = Provider<int>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.autoRefreshIntervalMinutes) ??
+      30;
+});
+
+/// Content expiry in days (0 = never expire).
+final contentExpiryDaysProvider = Provider<int>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.contentExpiryDays) ??
+      0;
+});
+
+/// Whether article images should be cached for offline reading.
+///
+/// List-item image rendering (agent 3) should gate `CachedNetworkImage` on
+/// this: when false, fall back to `Image.network` / `FadeInImage.network`.
+/// TODO(agent-3): gate CachedNetworkImage on this provider.
+final cacheImagesProvider = Provider<bool>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.cacheImages) ??
+      true;
+});
+
+/// Max on-disk image cache size in MB.
+///
+/// TODO(deferred): enforce cap via a custom `cacheManager` integration
+/// (e.g. DefaultCacheManager with maxSize). Out of scope for this pass.
+final maxCacheSizeMBProvider = Provider<int>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.maxCacheSizeMB) ??
+      500;
+});
+
+// TODO(unimplemented): `notificationsEnabled` + per-feed `feed.notificationsEnabled`
+// require `flutter_local_notifications` (or equivalent) to surface OS-level
+// notifications on new items. Not wired; package deliberately not added.
+

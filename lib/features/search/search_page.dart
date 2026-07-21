@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_text_field.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 import 'search_controller.dart' as sc;
 
 /// Full-text search page.
@@ -99,14 +100,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   Widget _buildResults(sc.SearchState searchState, ReederThemeData theme, AppLocalizations l10n) {
     if (searchState.isLoading) {
-      return Center(
-        child: Text(
-          l10n.searching,
-          style: theme.typography.body.copyWith(
-            color: theme.secondaryTextColor,
-          ),
-        ),
-      );
+      return const ShimmerLoading(itemCount: 6);
     }
 
     if (searchState.error != null) {
@@ -116,7 +110,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           child: Text(
             l10n.searchError(searchState.error!),
             style: theme.typography.body.copyWith(
-              color: const Color(0xFFFF3B30),
+              color: theme.destructiveColor,
             ),
             textAlign: TextAlign.center,
           ),

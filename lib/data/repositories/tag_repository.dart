@@ -16,19 +16,18 @@ class TagRepository {
 
   // ─── Tag CRUD ─────────────────────────────────────────────
 
-  /// Initializes built-in tags if they don't exist.
+  /// Initializes built-in tags (Later, Bookmarks, Favorites) if missing.
   ///
-  /// When [accountId] is provided, initializes built-in tags for that account.
-  /// Should be called once at app startup and when a new account is added.
+  /// Built-in tags are app-GLOBAL: they are not scoped to any account
+  /// (Reader sync uses server-side tags for folders, not these). The
+  /// [accountId] parameter is accepted for API stability but ignored —
+  /// built-in tags are always queried un-scoped and inserted with
+  /// `accountId = null`. Call once at app startup.
   Future<void> initializeBuiltInTags({int? accountId}) async {
-    final query = _db.select(_db.tags)
-      ..where((t) => t.isBuiltIn.equals(true));
-    if (accountId != null) {
-      query.where((t) => t.accountId.equals(accountId));
-    } else {
-      query.where((t) => t.accountId.isNull());
-    }
-    final existing = await query.get();
+    // Built-in tags are global; ignore accountId and query/insert un-scoped.
+    final existing = await (_db.select(_db.tags)
+          ..where((t) => t.isBuiltIn.equals(true)))
+        .get();
     final existingNames = existing.map((t) => t.name).toSet();
 
     final builtInTags = [
@@ -49,7 +48,8 @@ class TagRepository {
               isBuiltIn: const Value(true),
               sortOrder: Value(order),
               createdAt: now,
-            ).copyWith(accountId: Value(accountId)),
+              // accountId intentionally null: built-in tags are global.
+            ),
           );
         }
       }
@@ -98,12 +98,16 @@ class TagRepository {
   }
 
   /// Gets a tag by its name, optionally scoped to [accountId].
-  Future<Tag?> getTagByName(String name, {int? accountId}) {
+  ///
+  /// Defensive against duplicate rows: returns the first match (if any)
+  /// rather than throwing when multiple rows share the same name.
+  Future<Tag?> getTagByName(String name, {int? accountId}) async {
     final query = _db.select(_db.tags)..where((t) => t.name.equals(name));
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
-    return query.getSingleOrNull();
+    final result = await (query..limit(1)).get();
+    return result.isEmpty ? null : result.first;
   }
 
   /// Creates a new custom tag, optionally associated with [accountId].
@@ -303,13 +307,19 @@ class TagRepository {
   }
 
   // ─── Built-in Tag Helpers ─────────────────────────────────
+  //
+  // Built-in tags (Later/Bookmarks/Favorites) are app-global — they are not
+  // scoped to a sync account (Reader sync uses server-side tags for folders,
+  // not these). The [accountId] param is accepted for backward-compat with
+  // callers that pass one, but is ignored; lookups are always unscoped so the
+  // tag resolves under any active account.
 
-  /// Gets the "Later" built-in tag, optionally scoped to [accountId].
-  Future<Tag?> getLaterTag({int? accountId}) => getTagByName(TagNames.laterName, accountId: accountId);
+  /// Gets the "Later" built-in tag (app-global; [accountId] ignored).
+  Future<Tag?> getLaterTag({int? accountId}) => getTagByName(TagNames.laterName);
 
-  /// Gets the "Bookmarks" built-in tag, optionally scoped to [accountId].
-  Future<Tag?> getBookmarksTag({int? accountId}) => getTagByName(TagNames.bookmarksName, accountId: accountId);
+  /// Gets the "Bookmarks" built-in tag (app-global; [accountId] ignored).
+  Future<Tag?> getBookmarksTag({int? accountId}) => getTagByName(TagNames.bookmarksName);
 
-  /// Gets the "Favorites" built-in tag, optionally scoped to [accountId].
-  Future<Tag?> getFavoritesTag({int? accountId}) => getTagByName(TagNames.favoritesName, accountId: accountId);
+  /// Gets the "Favorites" built-in tag (app-global; [accountId] ignored).
+  Future<Tag?> getFavoritesTag({int? accountId}) => getTagByName(TagNames.favoritesName);
 }

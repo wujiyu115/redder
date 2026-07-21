@@ -6,7 +6,7 @@ import 'package:drift/drift.dart';
 /// has its own independent scroll position.
 class ScrollPositions extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get timelineId => text()();
+  TextColumn get timelineId => text().unique()();
   IntColumn get accountId => integer().nullable()();
   IntColumn get lastItemId => integer().nullable()();
   RealColumn get scrollOffset => real().withDefault(const Constant(0.0))();

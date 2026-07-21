@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../data/models/feed.dart';
 import '../../data/models/filter_helpers.dart';
+import '../../shared/providers/account_provider.dart';
 import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/article_repository.dart';
 import '../source_list/source_list_controller.dart';
@@ -142,6 +143,11 @@ class FilterTimelineController
   int _currentOffset = 0;
   bool _isLoadingMore = false;
 
+  /// Per-account feed metadata cache so pagination doesn't re-fetch feeds
+  /// already seen this session. Keyed by accountId because feeds are
+  /// account-scoped.
+  final Map<int, Map<int, Feed>> _feedMetaCacheByAccount = {};
+
   FilterTimelineController(this._ref, this.filterId)
       : super(const AsyncValue.loading()) {
     _articleRepo = _ref.read(articleRepositoryProvider);
@@ -259,14 +265,21 @@ class FilterTimelineController
     final titles = <int, String>{};
     final icons = <int, String?>{};
     final feedIds = items.map((i) => i.feedId).toSet();
-
+    final accountId = _ref.read(accountSwitchProvider);
+    // Per-account session cache so pagination doesn't re-fetch feeds already
+    // seen. Keyed by accountId because feeds are account-scoped.
+    final cache = _feedMetaCacheByAccount
+        .putIfAbsent(accountId ?? 0, () => <int, Feed>{});
+    final missing = feedIds.where((id) => !cache.containsKey(id)).toSet();
+    if (missing.isNotEmpty) {
+      final fetched = await _feedRepo.getFeedsByIds(missing, accountId: accountId);
+      cache.addAll(fetched);
+    }
     for (final feedId in feedIds) {
-      if (!titles.containsKey(feedId)) {
-        final feed = await _feedRepo.getFeedById(feedId);
-        if (feed != null) {
-          titles[feedId] = feed.title;
-          icons[feedId] = feed.iconUrl;
-        }
+      final feed = cache[feedId];
+      if (feed != null) {
+        titles[feedId] = feed.title;
+        icons[feedId] = feed.iconUrl;
       }
     }
 

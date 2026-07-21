@@ -18,6 +18,7 @@ import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_switch.dart';
 import '../../shared/widgets/reeder_dialog.dart';
 import '../../shared/widgets/reeder_toast.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 import '../../core/database/app_database.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../source_list/source_list_controller.dart';
@@ -47,7 +48,7 @@ class DataSettingsPage extends ConsumerWidget {
       body: settingsState.when(
         data: (settings) =>
             _buildContent(context, ref, settings, theme),
-        loading: () => Center(child: Text(l10n.loading)),
+        loading: () => const ShimmerLoading(),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage(e.toString()))),
       ),
     );
@@ -292,13 +293,41 @@ class DataSettingsPage extends ConsumerWidget {
           ReederDialogAction(
             label: l10n.clearAll,
             isDestructive: true,
-            onPressed: () {
-              ref.read(settingsProvider.notifier).resetToDefaults();
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _clearAllData(context, ref);
             },
           ),
         ],
       ),
     );
+  }
+
+  /// Deletes all articles/feeds/folders/tags/filters, resets settings to
+  /// defaults, and refreshes the source list.
+  Future<void> _clearAllData(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      // clearAll() wipes every table including appSettingsTable; reset it
+      // to defaults so the app is left in a usable first-run state.
+      await AppDatabase.instance.clearAll();
+      await ref.read(settingsProvider.notifier).resetToDefaults();
+      ref.invalidate(sourceListControllerProvider);
+      if (context.mounted) {
+        // Reuse the confirm label as the success toast; a dedicated
+        // `clearAllDataSuccess` l10n key doesn't exist (l10n files are
+        // owned by another agent).
+        ReederToast.show(context, l10n.clearAllData);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ReederToast.show(
+          context,
+          l10n.errorWithMessage(e.toString()),
+          isError: true,
+        );
+      }
+    }
   }
 }
 

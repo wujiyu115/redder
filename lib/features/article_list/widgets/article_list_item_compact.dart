@@ -49,14 +49,20 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
     final isRead = widget.item.isRead;
     final opacity = isRead ? 0.6 : 1.0;
 
-    return GestureDetector(
+    return Semantics(
+      label: '${widget.feedTitle ?? ""}, ${widget.item.title}, ${widget.item.publishedAt.timeAgoCompact}',
+      button: true,
+      enabled: true,
+      onTap: widget.onTap,
+      child: GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onTap,
       onLongPress: widget.onLongPress,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
+      child: ExcludeSemantics(
+        child: AnimatedContainer(
         duration: AppDurations.micro,
         color: _isPressed
             ? theme.separatorColor.withOpacity(0.3)
@@ -174,6 +180,8 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
             ],
           ),
         ),
+      ),
+      ),
       ),
     );
   }

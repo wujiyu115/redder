@@ -42,6 +42,12 @@ class ArticleListController
   int _currentOffset = 0;
   bool _isLoadingMore = false;
 
+  /// Per-account feed metadata cache so pagination doesn't re-fetch feeds
+  /// already seen this session. Keyed by accountId because feeds are
+  /// account-scoped — a cross-account cache would serve stale metadata
+  /// after a switch.
+  final Map<int, Map<int, Feed>> _feedMetaCacheByAccount = {};
+
   ArticleListController(this._ref, this.timelineId)
       : super(const AsyncValue.loading()) {
     _articleRepo = ArticleRepository();
@@ -59,6 +65,10 @@ class ArticleListController
   Future<void> _loadInitial() async {
     _log.info('_loadInitial: timelineId=$timelineId');
     try {
+      // accountSwitchProvider is async-initialized (starts null); gate the
+      // initial load on the resolved account id so _loadItems sees a real
+      // account instead of null.
+      await _ref.read(activeAccountIdProvider.future);
       _currentOffset = 0;
       final items = await _loadItems(offset: 0, limit: _pageSize);
       final feedMeta = await _loadFeedMetadata(items);
@@ -150,15 +160,58 @@ class ArticleListController
             await _syncBridge.markFeedAsReadWithSync(feed.id, accountId: accountId);
           }
         }
-      } else {
-        // For category timelines, mark all as read
-        await _articleRepo.markAllAsRead(accountId: accountId);
+      } else if (timelineId == 'articles' ||
+          timelineId == 'podcasts' ||
+          timelineId == 'videos') {
+        // Scope mark-all-read to this content type only — the account-wide
+        // markAllAsRead(accountId:) would nuke unread state across every
+        // timeline. markAllAsRead accepts the timeline name directly.
+        // Local-only (no remote content-type sync); matches prior behavior.
+        await _articleRepo.markAllAsRead(
+          accountId: accountId,
+          contentType: timelineId,
+        );
+      } else if (timelineId.startsWith('tag_')) {
+        final tagId = int.tryParse(timelineId.substring(4));
+        if (tagId != null) {
+          final itemIds = await _tagRepo.getItemIdsByTag(tagId, accountId: accountId);
+          if (itemIds.isNotEmpty) {
+            await _syncBridge.markAsReadWithSync(itemIds, accountId: accountId);
+          }
+        }
+      } else if (timelineId.startsWith('filter_')) {
+        final filterId = int.tryParse(timelineId.substring(7));
+        if (filterId != null) {
+          final db = AppDatabase.instance;
+          final filter = await (db.select(db.filters)
+                ..where((t) => t.id.equals(filterId)))
+              .getSingleOrNull();
+          if (filter != null) {
+            final batch = await _articleRepo.getArticles(
+              offset: 0,
+              accountId: accountId,
+            );
+            final feeds = await _feedRepo.getAllFeeds(accountId: accountId);
+            final feedTypeMap = <int, FeedType>{
+              for (final f in feeds) f.id: f.type,
+            };
+            final matchedIds = batch
+                .where((i) =>
+                    filter.matches(i, feedTypeMap[i.feedId] ?? FeedType.blog))
+                .map((i) => i.id)
+                .toList();
+            if (matchedIds.isNotEmpty) {
+              await _syncBridge.markAsReadWithSync(matchedIds, accountId: accountId);
+            }
+          }
+        }
       }
       // Reload the list to reflect changes
       await _loadInitial();
       await _ref.read(sourceListControllerProvider.notifier).reload();
-    } catch (e) {
-      // Silently fail on mark-all-read errors
+    } catch (e, st) {
+      // Surface mark-all-read errors instead of swallowing them silently.
+      state = AsyncValue.error(e, st);
     }
   }
 
@@ -180,11 +233,15 @@ class ArticleListController
     final unreadOnly =
         _ref.read(settingsProvider).valueOrNull?.hideReadArticles ?? true;
 
+    // Honor the user's sort-order preference (newest-first vs oldest-first).
+    final oldestFirst = _ref.read(sortOrderProvider) == SortOrder.oldest;
+
     if (timelineId == 'all') {
       return _articleRepo.getArticles(
         limit: limit,
         offset: offset,
         unreadOnly: unreadOnly,
+        oldestFirst: oldestFirst,
         accountId: accountId,
       );
     }
@@ -195,6 +252,7 @@ class ArticleListController
         limit: limit,
         offset: offset,
         unreadOnly: unreadOnly,
+        oldestFirst: oldestFirst,
         accountId: accountId,
       );
     }
@@ -205,6 +263,7 @@ class ArticleListController
         limit: limit,
         offset: offset,
         unreadOnly: unreadOnly,
+        oldestFirst: oldestFirst,
         accountId: accountId,
       );
     }
@@ -215,6 +274,7 @@ class ArticleListController
         limit: limit,
         offset: offset,
         unreadOnly: unreadOnly,
+        oldestFirst: oldestFirst,
         accountId: accountId,
       );
     }
@@ -227,6 +287,7 @@ class ArticleListController
           limit: limit,
           offset: offset,
           unreadOnly: unreadOnly,
+          oldestFirst: oldestFirst,
           accountId: accountId,
         );
       }
@@ -242,6 +303,7 @@ class ArticleListController
           limit: limit,
           offset: offset,
           unreadOnly: unreadOnly,
+          oldestFirst: oldestFirst,
           accountId: accountId,
         );
       }
@@ -251,12 +313,17 @@ class ArticleListController
       final tagId = int.tryParse(timelineId.substring(4));
       if (tagId != null) {
         final itemIds = await _tagRepo.getItemIdsByTag(tagId, accountId: accountId);
-        final items = <FeedItem>[];
-        for (final id in itemIds) {
-          final item = await _articleRepo.getArticleById(id, accountId: accountId);
-          if (item != null) items.add(item);
-        }
-        items.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+        // Batch-fetch in one query, then sort by recency and paginate in
+        // Dart — getArticlesByIds doesn't preserve publishedAt ordering.
+        final items = await _articleRepo.getArticlesByIds(
+          itemIds,
+          offset: 0,
+          limit: itemIds.length,
+          accountId: accountId,
+        );
+        items.sort((a, b) => oldestFirst
+            ? a.publishedAt.compareTo(b.publishedAt)
+            : b.publishedAt.compareTo(a.publishedAt));
         return items.skip(offset).take(limit).toList();
       }
     }
@@ -274,6 +341,7 @@ class ArticleListController
           final allItems = await _articleRepo.getArticles(
             limit: batchSize,
             offset: 0,
+            oldestFirst: oldestFirst,
             accountId: accountId,
           );
 
@@ -297,7 +365,7 @@ class ArticleListController
       }
     }
 
-    return _articleRepo.getArticles(limit: limit, offset: offset, accountId: accountId);
+    return _articleRepo.getArticles(limit: limit, offset: offset, oldestFirst: oldestFirst, accountId: accountId);
   }
 
   /// Loads feed titles and icons for the given items.
@@ -305,14 +373,22 @@ class ArticleListController
     final titles = <int, String>{};
     final icons = <int, String?>{};
     final feedIds = items.map((i) => i.feedId).toSet();
-
+    final accountId = _activeAccountId;
+    // Per-account session cache so pagination doesn't re-fetch feeds already
+    // seen. Keyed by accountId because feeds are account-scoped — a
+    // cross-account cache would serve stale metadata after a switch.
+    final cache = _feedMetaCacheByAccount
+        .putIfAbsent(accountId ?? 0, () => <int, Feed>{});
+    final missing = feedIds.where((id) => !cache.containsKey(id)).toSet();
+    if (missing.isNotEmpty) {
+      final fetched = await _feedRepo.getFeedsByIds(missing, accountId: accountId);
+      cache.addAll(fetched);
+    }
     for (final feedId in feedIds) {
-      if (!titles.containsKey(feedId)) {
-        final feed = await _feedRepo.getFeedById(feedId);
-        if (feed != null) {
-          titles[feedId] = feed.title;
-          icons[feedId] = feed.iconUrl;
-        }
+      final feed = cache[feedId];
+      if (feed != null) {
+        titles[feedId] = feed.title;
+        icons[feedId] = feed.iconUrl;
       }
     }
 

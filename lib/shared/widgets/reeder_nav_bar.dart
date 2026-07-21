@@ -126,7 +126,11 @@ class _BackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // No `back` l10n key exists; use a literal label for semantics.
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
@@ -142,6 +146,7 @@ class _BackButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
