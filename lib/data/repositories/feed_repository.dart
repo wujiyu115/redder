@@ -159,6 +159,29 @@ class FeedRepository {
     }
   }
 
+  /// Enables/disables per-feed new-article notifications.
+  ///
+  /// Local-only: sync servers have no concept of a per-feed notification
+  /// preference, so this is not pushed to [SyncEngine].
+  /// TODO(sync): push as feed metadata if a sync account adds support.
+  Future<void> setNotificationsEnabled(
+    int feedId,
+    bool enabled, {
+    int? accountId,
+  }) async {
+    final feed = await _localDs.getById(feedId, accountId: accountId);
+    if (feed != null) {
+      await _localDs.upsert(FeedsCompanion(
+        id: Value(feed.id),
+        title: Value(feed.title),
+        feedUrl: Value(feed.feedUrl),
+        notificationsEnabled: Value(enabled),
+        updatedAt: Value(DateTime.now()),
+        createdAt: Value(feed.createdAt),
+      ), accountId: accountId);
+    }
+  }
+
   /// Deletes a feed and all its items.
   Future<void> deleteFeed(int feedId) async {
     await _localDs.delete(feedId);

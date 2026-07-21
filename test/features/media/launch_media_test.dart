@@ -120,7 +120,7 @@ void main() {
     await tester.pumpWidget(_harness(
       fake: fake,
       onPressed: (context, ref) =>
-          launchMedia(context, ref, item, feedTitle: 'Feed X'),
+          launchMedia(context, ref, item, timelineId: 'all', feedTitle: 'Feed X'),
     ));
 
     await tester.tap(find.text('go'));
@@ -142,7 +142,7 @@ void main() {
 
     await tester.pumpWidget(_harness(
       fake: fake,
-      onPressed: (context, ref) => launchMedia(context, ref, item),
+      onPressed: (context, ref) => launchMedia(context, ref, item, timelineId: 'all'),
     ));
 
     await tester.tap(find.text('go'));
@@ -163,6 +163,7 @@ void main() {
         context,
         ref,
         item,
+        timelineId: 'all',
         openArticle: () => opened = true,
       ),
     ));
@@ -183,7 +184,7 @@ void main() {
     await tester.pumpWidget(_harness(
       fake: fake,
       onPressed: (context, ref) =>
-          launchMedia(context, ref, item, openArticle: () => opened = true),
+          launchMedia(context, ref, item, timelineId: 'all', openArticle: () => opened = true),
     ));
 
     await tester.tap(find.text('go'));

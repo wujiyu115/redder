@@ -107,6 +107,22 @@ class DataSettingsPage extends ConsumerWidget {
           ),
         ),
 
+        // ─── NOTIFICATIONS ───────────────────────────────────
+        ReederSectionHeader(title: l10n.notifications),
+
+        ReederListTile(
+          title: l10n.notifications,
+          subtitle: l10n.notificationsDesc,
+          trailing: ReederSwitch(
+            value: settings.notificationsEnabled,
+            onChanged: (value) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .setNotificationsEnabled(value);
+            },
+          ),
+        ),
+
         // ─── IMPORT / EXPORT ────────────────────────────────
         ReederSectionHeader(title: l10n.importExport),
 

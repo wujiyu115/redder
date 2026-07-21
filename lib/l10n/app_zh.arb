@@ -299,5 +299,7 @@
   "refreshFailed": "刷新失败",
   "opmlImportSuccess": "已导入 {count} 个订阅",
   "opmlImportFailed": "导入失败",
-  "opmlExportFailed": "导出失败"
+  "opmlExportFailed": "导出失败",
+  "notifications": "通知",
+  "notificationsDesc": "有新文章时发送通知"
 }

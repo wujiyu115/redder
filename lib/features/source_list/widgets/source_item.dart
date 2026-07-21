@@ -1,9 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_durations.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/services/image_cache_manager.dart';
+import '../../../shared/providers/settings_provider.dart';
 
 /// A single item in the source list.
 ///
@@ -13,7 +16,7 @@ import '../../../core/theme/app_theme.dart';
 /// - Optional unread count badge
 ///
 /// Supports tap and long-press interactions.
-class SourceItem extends StatefulWidget {
+class SourceItem extends ConsumerStatefulWidget {
   /// Custom icon widget (takes priority over iconUrl).
   final Widget? icon;
 
@@ -52,10 +55,10 @@ class SourceItem extends StatefulWidget {
   });
 
   @override
-  State<SourceItem> createState() => _SourceItemState();
+  ConsumerState<SourceItem> createState() => _SourceItemState();
 }
 
-class _SourceItemState extends State<SourceItem> {
+class _SourceItemState extends ConsumerState<SourceItem> {
   bool _isPressed = false;
 
   void _handleTapDown(TapDownDetails details) {
@@ -157,18 +160,33 @@ class _SourceItemState extends State<SourceItem> {
 
     // Network image icon
     if (widget.iconUrl != null && widget.iconUrl!.isNotEmpty) {
+      final cacheImages = ref.watch(cacheImagesProvider);
       return ClipRRect(
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-        child: CachedNetworkImage(
-          imageUrl: widget.iconUrl!,
-          width: AppDimensions.feedIconSize,
-          height: AppDimensions.feedIconSize,
-          fit: BoxFit.cover,
-          memCacheWidth: (AppDimensions.feedIconSize *
-                  MediaQuery.devicePixelRatioOf(context))
-              .round(),
-          errorWidget: (_, __, ___) => _defaultIcon(theme),
-        ),
+        child: cacheImages
+            ? CachedNetworkImage(
+                imageUrl: widget.iconUrl!,
+                cacheManager: ref.read(reederImageCacheManagerProvider),
+                width: AppDimensions.feedIconSize,
+                height: AppDimensions.feedIconSize,
+                fit: BoxFit.cover,
+                memCacheWidth: (AppDimensions.feedIconSize *
+                        MediaQuery.devicePixelRatioOf(context))
+                    .round(),
+                errorWidget: (_, __, ___) => _defaultIcon(theme),
+              )
+            : Image.network(
+                widget.iconUrl!,
+                width: AppDimensions.feedIconSize,
+                height: AppDimensions.feedIconSize,
+                fit: BoxFit.cover,
+                cacheWidth: (AppDimensions.feedIconSize *
+                        MediaQuery.devicePixelRatioOf(context))
+                    .round(),
+                errorBuilder: (_, __, ___) => _defaultIcon(theme),
+                loadingBuilder: (context, child, progress) =>
+                    progress == null ? child : _defaultIcon(theme),
+              ),
       );
     }
 

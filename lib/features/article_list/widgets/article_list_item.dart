@@ -8,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/extensions/datetime_ext.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/feed_item.dart';
+import '../../../data/services/image_cache_manager.dart';
 import '../../../shared/providers/settings_provider.dart';
 
 /// Standard article list item widget.
@@ -107,6 +108,8 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
     final showThumbnails = ref.watch(showThumbnailsProvider);
+    final cacheImages = ref.watch(cacheImagesProvider);
+    final cacheManager = ref.read(reederImageCacheManagerProvider);
     final isRead = widget.item.isRead;
     final opacity = isRead ? 0.6 : 1.0;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -188,16 +191,34 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusM,
                         ),
-                        child: CachedNetworkImage(
-                          imageUrl: widget.item.imageUrl!,
-                          width: AppDimensions.thumbnailWidth,
-                          height: AppDimensions.thumbnailHeight,
-                          fit: BoxFit.cover,
-                          memCacheWidth:
-                              (AppDimensions.thumbnailWidth * dpr).round(),
-                          errorWidget: (_, __, ___) =>
-                              const SizedBox.shrink(),
-                        ),
+                        child: cacheImages
+                            ? CachedNetworkImage(
+                                imageUrl: widget.item.imageUrl!,
+                                cacheManager: cacheManager,
+                                width: AppDimensions.thumbnailWidth,
+                                height: AppDimensions.thumbnailHeight,
+                                fit: BoxFit.cover,
+                                memCacheWidth:
+                                    (AppDimensions.thumbnailWidth * dpr)
+                                        .round(),
+                                errorWidget: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              )
+                            : Image.network(
+                                widget.item.imageUrl!,
+                                width: AppDimensions.thumbnailWidth,
+                                height: AppDimensions.thumbnailHeight,
+                                fit: BoxFit.cover,
+                                cacheWidth:
+                                    (AppDimensions.thumbnailWidth * dpr)
+                                        .round(),
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                                loadingBuilder: (context, child, progress) =>
+                                    progress == null
+                                        ? child
+                                        : const SizedBox.shrink(),
+                              ),
                       ),
                     ],
                   ],
@@ -227,6 +248,8 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
 
   Widget _buildFeedInfoRow(ReederThemeData theme, double dpr) {
     final showAvatars = ref.watch(showAvatarsProvider);
+    final cacheImages = ref.watch(cacheImagesProvider);
+    final cacheManager = ref.read(reederImageCacheManagerProvider);
     return Row(
       children: [
         // Feed icon
@@ -235,17 +258,32 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
             widget.feedIconUrl!.isNotEmpty) ...[
           ClipRRect(
             borderRadius: BorderRadius.circular(3),
-            child: CachedNetworkImage(
-              imageUrl: widget.feedIconUrl!,
-              width: 14,
-              height: 14,
-              fit: BoxFit.cover,
-              memCacheWidth: (14 * dpr).round(),
-              errorWidget: (_, __, ___) => const SizedBox(
-                width: 14,
-                height: 14,
-              ),
-            ),
+            child: cacheImages
+                ? CachedNetworkImage(
+                    imageUrl: widget.feedIconUrl!,
+                    cacheManager: cacheManager,
+                    width: 14,
+                    height: 14,
+                    fit: BoxFit.cover,
+                    memCacheWidth: (14 * dpr).round(),
+                    errorWidget: (_, __, ___) => const SizedBox(
+                      width: 14,
+                      height: 14,
+                    ),
+                  )
+                : Image.network(
+                    widget.feedIconUrl!,
+                    width: 14,
+                    height: 14,
+                    fit: BoxFit.cover,
+                    cacheWidth: (14 * dpr).round(),
+                    errorBuilder: (_, __, ___) =>
+                        const SizedBox(width: 14, height: 14),
+                    loadingBuilder: (context, child, progress) =>
+                        progress == null
+                            ? child
+                            : const SizedBox(width: 14, height: 14),
+                  ),
           ),
           const SizedBox(width: AppDimensions.spacingXS),
         ],

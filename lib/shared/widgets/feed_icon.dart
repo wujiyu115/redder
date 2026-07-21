@@ -1,8 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/services/image_cache_manager.dart';
+import '../providers/settings_provider.dart';
 
 /// A widget that displays a feed's icon/favicon.
 ///
@@ -12,7 +15,7 @@ import '../../core/theme/app_theme.dart';
 /// Supports two sizes:
 /// - Default (20px) for list items
 /// - Large (32px) for detail views
-class FeedIcon extends StatelessWidget {
+class FeedIcon extends ConsumerWidget {
   /// URL of the feed icon.
   final String? iconUrl;
 
@@ -43,31 +46,55 @@ class FeedIcon extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = ReederTheme.of(context);
 
     if (iconUrl != null && iconUrl!.isNotEmpty) {
+      final cacheImages = ref.watch(cacheImagesProvider);
       return ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: CachedNetworkImage(
-          imageUrl: iconUrl!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          fadeInDuration: const Duration(milliseconds: 150),
-          errorWidget: (_, __, ___) => _FallbackIcon(
-            title: title,
-            size: size,
-            borderRadius: borderRadius,
-            theme: theme,
-          ),
-          placeholder: (_, __) => _FallbackIcon(
-            title: title,
-            size: size,
-            borderRadius: borderRadius,
-            theme: theme,
-          ),
-        ),
+        child: cacheImages
+            ? CachedNetworkImage(
+                imageUrl: iconUrl!,
+                cacheManager: ref.read(reederImageCacheManagerProvider),
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                fadeInDuration: const Duration(milliseconds: 150),
+                errorWidget: (_, __, ___) => _FallbackIcon(
+                  title: title,
+                  size: size,
+                  borderRadius: borderRadius,
+                  theme: theme,
+                ),
+                placeholder: (_, __) => _FallbackIcon(
+                  title: title,
+                  size: size,
+                  borderRadius: borderRadius,
+                  theme: theme,
+                ),
+              )
+            : Image.network(
+                iconUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _FallbackIcon(
+                  title: title,
+                  size: size,
+                  borderRadius: borderRadius,
+                  theme: theme,
+                ),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return _FallbackIcon(
+                    title: title,
+                    size: size,
+                    borderRadius: borderRadius,
+                    theme: theme,
+                  );
+                },
+              ),
       );
     }
 

@@ -37,10 +37,15 @@ class ArticleDetailPage extends ConsumerStatefulWidget {
   /// The timeline ID (for navigating to next/previous articles).
   final String timelineId;
 
+  /// When true, force reader view on initially (used when opening from
+  /// `ViewerType.reader` in [launchMedia]).
+  final bool forceReader;
+
   const ArticleDetailPage({
     super.key,
     required this.articleId,
     required this.timelineId,
+    this.forceReader = false,
   });
 
   @override
@@ -53,6 +58,9 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   double _dragStartX = 0.0;
   bool _isDraggingFromEdge = false;
   bool _isFullscreen = false;
+
+  /// Guards the force-reader toggle so it only fires once.
+  bool _forceReaderApplied = false;
 
   @override
   void initState() {
@@ -138,6 +146,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
                         context,
                         ref,
                         state.article,
+                        timelineId: widget.timelineId,
                         feedTitle: state.feedTitle,
                       );
                     }
@@ -173,7 +182,27 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           ),
         ),
         body: detailState.when(
-          data: (state) => _buildContent(context, state, theme),
+          data: (state) {
+            // Force reader view on entry when requested (e.g. opened from
+            // ViewerType.reader via media_launcher). Applied exactly once,
+            // deferred to a post-frame callback so we don't mutate state
+            // mid-build.
+            if (widget.forceReader &&
+                !_forceReaderApplied &&
+                !state.isReaderView) {
+              _forceReaderApplied = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ref
+                    .read(articleDetailControllerProvider(
+                        (widget.articleId, widget.timelineId)).notifier)
+                    .toggleReaderView();
+              });
+            } else if (widget.forceReader && !_forceReaderApplied) {
+              _forceReaderApplied = true;
+            }
+            return _buildContent(context, state, theme);
+          },
           loading: () => const ShimmerLoading(itemCount: 1),
           error: (e, _) => ErrorState(
             message: AppLocalizations.of(context)!.failedToLoadArticle,

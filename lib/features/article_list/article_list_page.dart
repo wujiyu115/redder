@@ -228,6 +228,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
               context,
               ref,
               item,
+              timelineId: widget.timelineId,
               feedTitle: state.feedTitles[item.feedId],
               openArticle: () async {
                 await context.push(

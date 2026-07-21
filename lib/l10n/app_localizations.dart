@@ -1741,6 +1741,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export failed'**
   String get opmlExportFailed;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @notificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show notifications for new articles'**
+  String get notificationsDesc;
 }
 
 class _AppLocalizationsDelegate

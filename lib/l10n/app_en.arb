@@ -417,5 +417,7 @@
     }
   },
   "opmlImportFailed": "Import failed",
-  "opmlExportFailed": "Export failed"
+  "opmlExportFailed": "Export failed",
+  "notifications": "Notifications",
+  "notificationsDesc": "Show notifications for new articles"
 }

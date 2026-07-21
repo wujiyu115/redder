@@ -1247,12 +1247,14 @@ class _FeedSettingsDialog extends ConsumerStatefulWidget {
 class _FeedSettingsDialogState extends ConsumerState<_FeedSettingsDialog> {
   late ViewerType _selectedViewer;
   late bool _autoReaderView;
+  late bool _notificationsEnabled;
 
   @override
   void initState() {
     super.initState();
     _selectedViewer = widget.feed.defaultViewer;
     _autoReaderView = widget.feed.autoReaderView;
+    _notificationsEnabled = widget.feed.notificationsEnabled;
   }
 
   @override
@@ -1329,6 +1331,25 @@ class _FeedSettingsDialogState extends ConsumerState<_FeedSettingsDialog> {
               ),
             ],
           ),
+
+          const SizedBox(height: AppDimensions.spacing),
+
+          // Per-feed notifications
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.notifications,
+                  style: theme.typography.body,
+                ),
+              ),
+              ReederSwitch(
+                value: _notificationsEnabled,
+                onChanged: (value) =>
+                    setState(() => _notificationsEnabled = value),
+              ),
+            ],
+          ),
         ],
       ),
       actions: [
@@ -1345,6 +1366,12 @@ class _FeedSettingsDialogState extends ConsumerState<_FeedSettingsDialog> {
             );
             if (_autoReaderView != widget.feed.autoReaderView) {
               controller.toggleFeedAutoReaderView(widget.feed.id);
+            }
+            if (_notificationsEnabled != widget.feed.notificationsEnabled) {
+              controller.setFeedNotificationsEnabled(
+                widget.feed.id,
+                _notificationsEnabled,
+              );
             }
           },
         ),

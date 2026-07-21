@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/app_settings_helpers.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/services/background_refresh_service.dart';
+import '../../data/services/image_cache_manager.dart';
 import 'theme_provider.dart';
 
 /// Sort order for timelines.
@@ -135,6 +136,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
   /// Toggles caching of article images for offline reading.
   Future<void> toggleCacheImages() async {
     await _repository.toggleCacheImages();
+    await _loadSettings();
+  }
+
+  /// Enables/disables the app-level master notifications toggle.
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _repository.setNotificationsEnabled(enabled);
     await _loadSettings();
   }
 
@@ -278,9 +285,9 @@ final contentExpiryDaysProvider = Provider<int>((ref) {
 
 /// Whether article images should be cached for offline reading.
 ///
-/// List-item image rendering (agent 3) should gate `CachedNetworkImage` on
-/// this: when false, fall back to `Image.network` / `FadeInImage.network`.
-/// TODO(agent-3): gate CachedNetworkImage on this provider.
+/// `CachedNetworkImage` call sites gate on this: when false they fall back
+/// to `Image.network` (no disk cache); when true they use `CachedNetworkImage`
+/// with [ReederImageCacheManager].
 final cacheImagesProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).whenOrNull(data: (s) => s.cacheImages) ??
       true;
@@ -288,14 +295,38 @@ final cacheImagesProvider = Provider<bool>((ref) {
 
 /// Max on-disk image cache size in MB.
 ///
-/// TODO(deferred): enforce cap via a custom `cacheManager` integration
-/// (e.g. DefaultCacheManager with maxSize). Out of scope for this pass.
+/// Enforced best-effort by [imageCacheSizeCapEnforcerProvider], which walks
+/// the cache directory and deletes oldest files until under the cap.
 final maxCacheSizeMBProvider = Provider<int>((ref) {
   return ref.watch(settingsProvider).whenOrNull(data: (s) => s.maxCacheSizeMB) ??
       500;
 });
 
-// TODO(unimplemented): `notificationsEnabled` + per-feed `feed.notificationsEnabled`
-// require `flutter_local_notifications` (or equivalent) to surface OS-level
-// notifications on new items. Not wired; package deliberately not added.
+/// Triggers image cache byte-cap enforcement whenever the cap changes.
+///
+/// Watched by the app root so it re-runs on settings reload and at startup.
+/// ponytail: fire-and-forget — [ReederImageCacheManager.enforceSizeCap] is
+/// best-effort and never throws up to here.
+final imageCacheSizeCapEnforcerProvider = Provider<void>((ref) {
+  final mb = ref.watch(maxCacheSizeMBProvider);
+  Future.microtask(
+    () => ref
+        .read(reederImageCacheManagerProvider)
+        .enforceSizeCap(mb * 1024 * 1024),
+  );
+});
+
+// ─── Notifications ─────────────────────────────────────────
+
+/// Whether the app-level master notifications toggle is on.
+///
+/// Surfaced as a switch on the Data & Storage settings page. Per-feed
+/// notifications (feed.notificationsEnabled) are gated on this AND the feed's
+/// own flag inside [FeedRefreshService]; see [NotificationService].
+final notificationsEnabledProvider = Provider<bool>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.notificationsEnabled) ??
+      false;
+});
 

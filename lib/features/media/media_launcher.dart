@@ -44,8 +44,7 @@ bool isEmbedVideoUrl(String url) {
 /// - video: pushes the video player page
 /// - article: honors the feed's `defaultViewer`:
 ///   - [ViewerType.browser] → in-app browser at `item.url`
-///   - [ViewerType.reader] → article detail (reader view is the detail
-///     page's default when reader content is available)
+///   - [ViewerType.reader] → article detail page with reader view forced ON
 ///   - [ViewerType.article] → [openArticle] callback (text detail view)
 ///
 /// Audio/video kinds still override the per-feed viewer: media items always
@@ -54,6 +53,7 @@ Future<void> launchMedia(
   BuildContext context,
   WidgetRef ref,
   FeedItem item, {
+  required String timelineId,
   String? feedTitle,
   VoidCallback? openArticle,
 }) async {
@@ -75,7 +75,13 @@ Future<void> launchMedia(
         },
       );
     case MediaKind.article:
-      await _openArticleByFeedViewer(context, ref, item, openArticle);
+      await _openArticleByFeedViewer(
+        context,
+        ref,
+        item,
+        timelineId: timelineId,
+        openArticle: openArticle,
+      );
   }
 }
 
@@ -83,9 +89,10 @@ Future<void> launchMedia(
 Future<void> _openArticleByFeedViewer(
   BuildContext context,
   WidgetRef ref,
-  FeedItem item,
+  FeedItem item, {
+  required String timelineId,
   VoidCallback? openArticle,
-) async {
+}) async {
   // Defaults to article view if the feed lookup fails for any reason,
   // so the user always lands somewhere usable.
   ViewerType viewer = ViewerType.article;
@@ -101,13 +108,13 @@ Future<void> _openArticleByFeedViewer(
     case ViewerType.browser:
       await context.push('/browser', extra: item.url);
     case ViewerType.reader:
-      // TODO(forcing-reader-view): article_detail_page does not yet accept a
-      // route param to force reader view on entry. For now, open the detail
-      // route via openArticle — the detail page already prefers
-      // `readerContent` when available, so reader-style content shows when
-      // the extraction succeeded. Wire a `forceReader` query/extra once the
-      // detail page (agent X) exposes it.
-      openArticle?.call();
+      // Open the article detail page with reader view forced ON so feeds
+      // marked `defaultViewer == reader` land in extracted reader content
+      // even when `autoReaderView` is off.
+      await context.push(
+        '/timeline/$timelineId/article/${item.id}',
+        extra: const {'forceReader': true},
+      );
     case ViewerType.article:
       openArticle?.call();
   }

@@ -893,4 +893,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get opmlExportFailed => '导出失败';
+
+  @override
+  String get notifications => '通知';
+
+  @override
+  String get notificationsDesc => '有新文章时发送通知';
 }

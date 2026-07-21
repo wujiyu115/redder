@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_durations.dart';
 import 'core/router/app_router.dart';
 import 'shared/providers/theme_provider.dart';
+import 'shared/providers/settings_provider.dart';
 import 'features/podcast_player/mini_player.dart';
 import 'features/podcast_player/full_player_page.dart';
 import 'features/podcast_player/podcast_controller.dart';
@@ -24,6 +25,9 @@ class ReederApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeModeProvider);
+    // Keeps imageCacheSizeCapEnforcerProvider alive so the on-disk image
+    // cache cap is re-enforced whenever settings load or the cap changes.
+    ref.watch(imageCacheSizeCapEnforcerProvider);
     final theme = ref.watch(currentThemeProvider);
     final playerState = ref.watch(podcastControllerProvider);
 

@@ -157,13 +157,16 @@ class _SourceSectionState extends State<SourceSection>
           ),
         ),
 
-        // Children (animated)
+        // Children (animated). Unmounted when fully collapsed so a
+        // collapsed folder with many feeds doesn't keep all of them built.
         SizeTransition(
           sizeFactor: _expandAnimation,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: widget.children,
-          ),
+          child: (_isExpanded || _controller.value > 0)
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.children,
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );

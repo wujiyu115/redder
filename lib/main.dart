@@ -10,6 +10,7 @@ import 'core/database/app_database.dart';
 import 'data/repositories/article_repository.dart';
 import 'data/repositories/settings_repository.dart';
 import 'data/services/background_refresh_service.dart';
+import 'data/services/notification_service.dart';
 
 void main() async {
   // Track cold start time
@@ -36,6 +37,14 @@ void main() async {
 
   // Initialize Drift (SQLite) database
   await AppDatabase.initialize();
+
+  // Initialize local notifications (iOS permission prompt + Android channel).
+  // Wrapped so a failure here never blocks app startup.
+  try {
+    await NotificationService.instance.initialize();
+  } catch (e) {
+    developer.log('Notification init failed: $e', name: 'Reeder.Startup');
+  }
 
   // Load persisted settings to drive background refresh + content expiry.
   final settings = await SettingsRepository().getSettings();

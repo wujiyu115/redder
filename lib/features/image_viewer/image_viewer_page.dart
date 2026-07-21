@@ -1,8 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_dimensions.dart';
+import '../../data/services/image_cache_manager.dart';
+import '../../shared/providers/settings_provider.dart';
 
 /// Full-screen image viewer with pinch-to-zoom and swipe navigation.
 ///
@@ -12,7 +16,7 @@ import '../../core/constants/app_dimensions.dart';
 /// - Left/right swipe to navigate between images
 /// - Tap to toggle UI visibility
 /// - Swipe down to dismiss
-class ImageViewerPage extends StatefulWidget {
+class ImageViewerPage extends ConsumerStatefulWidget {
   /// List of image URLs to display.
   final List<String> imageUrls;
 
@@ -30,10 +34,10 @@ class ImageViewerPage extends StatefulWidget {
   });
 
   @override
-  State<ImageViewerPage> createState() => _ImageViewerPageState();
+  ConsumerState<ImageViewerPage> createState() => _ImageViewerPageState();
 }
 
-class _ImageViewerPageState extends State<ImageViewerPage>
+class _ImageViewerPageState extends ConsumerState<ImageViewerPage>
     with SingleTickerProviderStateMixin {
   late PageController _pageController;
   late int _currentIndex;
@@ -128,6 +132,8 @@ class _ImageViewerPageState extends State<ImageViewerPage>
                       heroTag: index == widget.initialIndex
                           ? widget.heroTag
                           : null,
+                      cacheImages: ref.watch(cacheImagesProvider),
+                      cacheManager: ref.read(reederImageCacheManagerProvider),
                     );
                   },
                 ),
@@ -238,10 +244,14 @@ class _ImageViewerPageState extends State<ImageViewerPage>
 class _ZoomableImage extends StatelessWidget {
   final String imageUrl;
   final String? heroTag;
+  final bool cacheImages;
+  final CacheManager? cacheManager;
 
   const _ZoomableImage({
     required this.imageUrl,
     this.heroTag,
+    required this.cacheImages,
+    required this.cacheManager,
   });
 
   @override
@@ -250,32 +260,7 @@ class _ZoomableImage extends StatelessWidget {
       child: InteractiveViewer(
         minScale: 0.5,
         maxScale: 4.0,
-        child: CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.contain,
-          placeholder: (_, __) => const Center(
-            child: Text(
-              '⏳',
-              style: TextStyle(fontSize: 32),
-            ),
-          ),
-          errorWidget: (_, __, ___) => const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('❌', style: TextStyle(fontSize: 32)),
-                SizedBox(height: 8),
-                Text(
-                  'Failed to load image',
-                  style: TextStyle(
-                    color: Color(0x80FFFFFF),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: _buildImage(),
       ),
     );
 
@@ -294,5 +279,65 @@ class _ZoomableImage extends StatelessWidget {
     }
 
     return imageWidget;
+  }
+
+  Widget _buildImage() {
+    if (cacheImages) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        cacheManager: cacheManager,
+        fit: BoxFit.contain,
+        placeholder: (_, __) => const Center(
+          child: Text(
+            '⏳',
+            style: TextStyle(fontSize: 32),
+          ),
+        ),
+        errorWidget: (_, __, ___) => const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('❌', style: TextStyle(fontSize: 32)),
+              SizedBox(height: 8),
+              Text(
+                'Failed to load image',
+                style: TextStyle(
+                  color: Color(0x80FFFFFF),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.contain,
+      loadingBuilder: (context, child, progress) => progress == null
+          ? child
+          : const Center(
+              child: Text(
+                '⏳',
+                style: TextStyle(fontSize: 32),
+              ),
+            ),
+      errorBuilder: (_, __, ___) => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('❌', style: TextStyle(fontSize: 32)),
+            SizedBox(height: 8),
+            Text(
+              'Failed to load image',
+              style: TextStyle(
+                color: Color(0x80FFFFFF),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

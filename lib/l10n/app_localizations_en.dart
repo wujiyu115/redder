@@ -908,4 +908,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opmlExportFailed => 'Export failed';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notificationsDesc => 'Show notifications for new articles';
 }

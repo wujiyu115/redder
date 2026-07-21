@@ -257,6 +257,12 @@ class SourceListController
     await _loadData();
   }
 
+  /// Enables/disables per-feed new-article notifications.
+  Future<void> setFeedNotificationsEnabled(int feedId, bool value) async {
+    await _feedRepo.setNotificationsEnabled(feedId, value);
+    await _loadData();
+  }
+
   // ─── Folder Operations ────────────────────────────────────
 
   /// Creates a new folder (with remote sync).

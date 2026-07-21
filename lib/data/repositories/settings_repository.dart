@@ -211,6 +211,17 @@ class SettingsRepository {
     );
   }
 
+  // ─── Notification Settings ────────────────────────────────
+
+  /// Enables/disables the app-level master notifications toggle.
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        notificationsEnabled: Value(enabled),
+      ),
+    );
+  }
+
   /// Toggles image caching.
   Future<bool> toggleCacheImages() async {
     final settings = await _localDs.updateSettings(

@@ -50,13 +50,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'article/:articleId',
                 name: 'articleDetail',
-                pageBuilder: (context, state) => ReederPage(
-                  key: state.pageKey,
-                  child: ArticleDetailPage(
-                    articleId: int.tryParse(state.pathParameters['articleId'] ?? '') ?? 0,
-                    timelineId: state.pathParameters['id'] ?? 'all',
-                  ),
-                ),
+                pageBuilder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>? ?? {};
+                  return ReederPage(
+                    key: state.pageKey,
+                    child: ArticleDetailPage(
+                      articleId: int.tryParse(
+                            state.pathParameters['articleId'] ?? '',
+                          ) ??
+                          0,
+                      timelineId: state.pathParameters['id'] ?? 'all',
+                      forceReader: (extra['forceReader'] as bool?) ?? false,
+                    ),
+                  );
+                },
               ),
             ],
           ),
