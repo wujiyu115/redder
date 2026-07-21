@@ -96,7 +96,16 @@ class SourceListController
     try {
       final accountId = _activeAccountId;
       final rawFeeds = await _feedRepo.getAllFeeds(accountId: accountId);
-      final tags = await _tagRepo.getAllTags(accountId: accountId);
+      // Built-in tags (Later/Bookmarks/Favorites) are app-global, not per
+      // account — Reader sync uses server tags for folders, not these.
+      // Fetch them unscoped so the entry stays visible under any account;
+      // custom tags stay scoped to the active account.
+      // ponytail: multi-account users may see built-in tag rows from other
+      // accounts — merge is fine until per-account built-in tags are a real need.
+      final builtInTags = await _tagRepo.getBuiltInTags();
+      final customTags = await _tagRepo.getCustomTags(accountId: accountId);
+      final tags = [...builtInTags, ...customTags]
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       // Recompute each feed's unread count live from articles so badges stay
       // accurate even between refresh/sync cycles.

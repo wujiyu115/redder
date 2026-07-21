@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/local/sync_local_ds.dart';
 import '../../data/services/sync/sync_models.dart';
+import '../../features/source_list/source_list_controller.dart';
 import 'sync_provider.dart';
 
 /// Provider for the currently active account ID.
@@ -55,6 +56,7 @@ class AccountSwitchNotifier extends StateNotifier<int?> {
     _ref.invalidate(activeAccountIdProvider);
     _ref.invalidate(activeAccountInfoProvider);
     _ref.invalidate(activeSyncAccountProvider);
+    _ref.invalidate(sourceListControllerProvider);
   }
 
   /// Clears the active account (switches to local-only mode).
@@ -73,6 +75,7 @@ class AccountSwitchNotifier extends StateNotifier<int?> {
     _ref.invalidate(activeAccountIdProvider);
     _ref.invalidate(activeAccountInfoProvider);
     _ref.invalidate(activeSyncAccountProvider);
+    _ref.invalidate(sourceListControllerProvider);
   }
 }
 

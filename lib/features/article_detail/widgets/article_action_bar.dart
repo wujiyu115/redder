@@ -97,7 +97,8 @@ class ArticleActionBar extends StatelessWidget {
 
           // Bookmark
           _ActionButton(
-            icon: '🔖',
+            icon: '🏷',
+            activeIcon: '🔖',
             label: l10n.bookmark,
             isActive: bookmarksTagId != null &&
                 (tagStates[bookmarksTagId] ?? false),
@@ -110,7 +111,8 @@ class ArticleActionBar extends StatelessWidget {
 
           // Favorite (uses isStarred on FeedItem directly)
           _ActionButton(
-            icon: '❤',
+            icon: '♡',
+            activeIcon: '❤',
             label: l10n.favorite,
             isActive: isStarred,
             activeColor: const Color(0xFFFF3B30),
@@ -120,7 +122,8 @@ class ArticleActionBar extends StatelessWidget {
 
           // Mark as Unread
           _ActionButton(
-            icon: '●',
+            icon: '◯',
+            activeIcon: '●',
             label: l10n.markUnread,
             isActive: !isRead,
             activeColor: const Color(0xFF007AFF),
@@ -156,6 +159,7 @@ class ArticleActionBar extends StatelessWidget {
 /// A single action button in the action bar.
 class _ActionButton extends StatefulWidget {
   final String icon;
+  final String? activeIcon;
   final String label;
   final bool isActive;
   final Color activeColor;
@@ -168,6 +172,7 @@ class _ActionButton extends StatefulWidget {
     required this.isActive,
     required this.activeColor,
     required this.inactiveColor,
+    this.activeIcon,
     this.onTap,
   });
 
@@ -183,6 +188,7 @@ class _ActionButtonState extends State<_ActionButton>
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.isActive ? widget.activeColor : widget.inactiveColor;
     return GestureDetector(
       onTapDown: _isEnabled ? (_) => setState(() => _isPressed = true) : null,
       onTapUp: _isEnabled ? (_) => setState(() => _isPressed = false) : null,
@@ -190,24 +196,49 @@ class _ActionButtonState extends State<_ActionButton>
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: _isPressed ? 0.85 : 1.0,
+        scale: _isPressed ? 0.88 : 1.0,
         duration: AppDurations.micro,
-        child: Opacity(
-          opacity: _isEnabled ? 1.0 : 0.3,
+        child: AnimatedOpacity(
+          duration: AppDurations.micro,
+          opacity: !_isEnabled
+              ? 0.3
+              : _isPressed
+                  ? 0.6
+                  : 1.0,
           child: SizedBox(
-            width: 56,
+            width: 64,
             height: AppDimensions.bottomBarHeight,
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: AppDurations.micro,
-                style: TextStyle(
-                  fontSize: 22,
-                  color: widget.isActive
-                      ? widget.activeColor
-                      : widget.inactiveColor,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: AppDurations.micro,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: color,
+                  ),
+                  child: Text(
+                    widget.isActive && widget.activeIcon != null
+                        ? widget.activeIcon!
+                        : widget.icon,
+                  ),
                 ),
-                child: Text(widget.icon),
-              ),
+                const SizedBox(height: 2),
+                AnimatedDefaultTextStyle(
+                  duration: AppDurations.micro,
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.0,
+                    color: color,
+                  ),
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
