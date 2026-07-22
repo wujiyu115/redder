@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,6 +151,14 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               'ALTER TABLE scroll_positions_new RENAME TO scroll_positions',
             );
+          }
+          if (from < 8) {
+            // Per-feed + app-level notifications toggles (commit 03bc53b added
+            // the Drift columns but no migration; existing DBs lack them).
+            await customStatement(
+                'ALTER TABLE feeds ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
+            await customStatement(
+                'ALTER TABLE app_settings_table ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
           }
         },
       );
