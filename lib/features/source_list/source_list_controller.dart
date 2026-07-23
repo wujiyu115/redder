@@ -83,10 +83,13 @@ class SourceListController
 
   Future<void> _init() async {
     try {
-      // accountSwitchProvider is async-initialized (starts null) and
-      // [_activeAccountId] reads it synchronously, so await the resolved
-      // account id here before any account-scoped work to avoid a null race.
-      await _ref.read(activeAccountIdProvider.future);
+      // Resolve the active account directly from the repository before any
+      // account-scoped work. We deliberately avoid awaiting
+      // `activeAccountIdProvider.future`: that FutureProvider watches
+      // syncAccountsProvider, which flips loading→data during startup and
+      // invalidates it. With no persistent listener, awaiting its `.future`
+      // can hang forever, leaving the source list stuck on its loading state.
+      await _ref.read(syncRepositoryProvider).getActiveAccount();
       // Built-in tags (Later/Bookmarks/Favorites) are app-global, not per
       // account — initialize without an accountId scope.
       await _tagRepo.initializeBuiltInTags();

@@ -38,10 +38,14 @@ void main() async {
   // Initialize Drift (SQLite) database
   await AppDatabase.initialize();
 
-  // Initialize local notifications (iOS permission prompt + Android channel).
+  // Initialize local notifications (Android channel + plugin setup).
   // Wrapped so a failure here never blocks app startup.
   try {
     await NotificationService.instance.initialize();
+    // Request OS permissions non-blocking: on iOS this awaits the system
+    // dialog, which must not gate the first frame. The prompt appears over
+    // the already-rendered UI.
+    unawaited(NotificationService.instance.requestPermissions());
   } catch (e) {
     developer.log('Notification init failed: $e', name: 'Reeder.Startup');
   }

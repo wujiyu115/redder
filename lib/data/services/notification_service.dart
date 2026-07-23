@@ -35,10 +35,13 @@ class NotificationService {
 
     try {
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      // Do NOT request permissions during initialize(): on iOS that suspends
+      // on the system permission dialog. Permissions are requested separately
+      // via [requestPermissions] so app startup is never blocked.
       const iosInit = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
       );
       const settings = InitializationSettings(
         android: androidInit,
@@ -53,16 +56,6 @@ class NotificationService {
       if (ok == null || !ok) {
         _log.warning('initialize: plugin reported not-initialized (ok=$ok)');
       }
-
-      // Request iOS/macOS permissions explicitly (no-op on Android).
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
-      await _plugin
-          .resolvePlatformSpecificImplementation<
-              MacOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
 
       // Create the Android channel (API 26+). No-op on older versions / iOS.
       await _plugin
@@ -80,6 +73,27 @@ class NotificationService {
     } catch (e, st) {
       _log.error('initialize: failed', error: e, stackTrace: st);
       // Leave _initialized false so a later retry is possible, but never throw.
+    }
+  }
+
+  /// Requests OS notification permissions (iOS/macOS).
+  ///
+  /// On iOS/macOS this suspends until the user answers the system permission
+  /// dialog, so it MUST NOT be awaited on the app-startup path (doing so
+  /// before `runApp` blocks the first frame behind the dialog). Call it
+  /// fire-and-forget so the UI renders while the prompt is shown.
+  Future<void> requestPermissions() async {
+    try {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    } catch (e, st) {
+      _log.error('requestPermissions: failed', error: e, stackTrace: st);
     }
   }
 

@@ -37,7 +37,8 @@ class GoogleReaderApi {
   Future<String> clientLogin(String email, String password) async {
     try {
       _log.info('clientLogin: email=$email');
-      final loginData = 'Email=$email&Passwd=$password';
+      final loginData =
+          'Email=${Uri.encodeQueryComponent(email)}&Passwd=${Uri.encodeQueryComponent(password)}';
       var url = _apiUrl('/accounts/ClientLogin');
 
       // Manually follow redirects for POST requests because Dio's
