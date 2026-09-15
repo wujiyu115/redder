@@ -76,6 +76,7 @@ dependency_overrides:
   intl: ^0.20.2
 
 dev_dependencies:
+  sqlite3: ^2.4.0
   flutter_test:
     sdk: flutter
   integration_test:

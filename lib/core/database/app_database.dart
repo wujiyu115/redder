@@ -153,18 +153,33 @@ class AppDatabase extends _$AppDatabase {
             );
           }
           if (from < 8) {
-            // Per-feed + app-level notifications toggles (commit 03bc53b added
-            // the Drift columns but no migration; existing DBs lack them).
-            await customStatement(
-                'ALTER TABLE feeds ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
-            await customStatement(
-                'ALTER TABLE app_settings_table ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
+            // Per-feed + app-level notifications toggles. Commit 03bc53b added
+            // the Drift columns without bumping the schema version, so
+            // databases created on that build (recorded as version 7) already
+            // have them — guard each ALTER or startup fails with
+            // "duplicate column name".
+            Future<bool> hasColumn(String table) async {
+              final info = await customSelect('PRAGMA table_info($table)').get();
+              return info.any((row) => row.read<String>('name') == 'notifications_enabled');
+            }
+            if (!await hasColumn('feeds')) {
+              await customStatement(
+                  'ALTER TABLE feeds ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
+            }
+            if (!await hasColumn('app_settings_table')) {
+              await customStatement(
+                  'ALTER TABLE app_settings_table ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
+            }
           }
         },
       );
 
   /// Creates an in-memory database for testing.
   AppDatabase.forTesting() : super(NativeDatabase.memory());
+
+  /// Creates a database over [executor] for tests needing a file-backed
+  /// fixture (e.g. migration regressions).
+  AppDatabase.forTestingOn(super.executor);
 
   /// Initializes the database with an in-memory backend for testing.
   ///
