@@ -20,17 +20,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS app (unsigned)
-        # flutter build ipa --no-codesign archives fine but fails at the
-        # export step demanding a Development Team; build the .app and
-        # package the IPA manually below instead.
-        run: flutter build ios --release --no-codesign
+      - name: Build iOS archive (no-codesign)
+        run: flutter build ipa --release --no-codesign
 
       - name: Package IPA
         run: |
-          mkdir -p build/ios/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/Payload/
-          cd build/ios && zip -r Reeder.ipa Payload
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa && zip -r ../Reeder.ipa Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4

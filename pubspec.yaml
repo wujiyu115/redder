@@ -42,7 +42,8 @@ dependencies:
 
   # Video
   video_player: ^2.8.2
-  chewie: ^1.7.4
+  # <1.17.0: chewie 1.17.x (2026-09-14) breaks the iOS release build on CI.
+  chewie: '>=1.7.4 <1.17.0'
 
   # Image
   cached_network_image: ^3.3.1
