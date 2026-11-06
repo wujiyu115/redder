@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
+import '../../core/database/app_database.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
@@ -15,6 +16,7 @@ import '../../shared/widgets/shimmer_loading.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/error_state.dart';
 import '../../shared/widgets/sync_icon_button.dart';
+import '../../shared/widgets/reeder_popup_menu.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../data/services/scroll_position_service.dart';
@@ -22,11 +24,12 @@ import '../../data/services/sync/sync_models.dart';
 import '../media/media_launcher.dart';
 import '../source_list/source_list_controller.dart';
 import 'article_list_controller.dart';
+import '../../shared/widgets/feed_icon.dart';
+import 'grouped_items.dart';
 import 'widgets/article_list_item.dart';
 import 'widgets/article_list_item_compact.dart';
 import 'widgets/timeline_control_button.dart';
 import 'widgets/scroll_past_probe.dart';
-import 'widgets/swipe_action_widget.dart';
 
 /// The article list page displaying a timeline of feed items.
 ///
@@ -265,30 +268,128 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       );
     }
 
+    // "Group by feed" reshapes the loaded window into feed sections. The
+    // grouping is computed per build (O(n) over the loaded window) and keeps
+    // the incoming sort order, so it never re-sorts behind the user's back.
+    final groupedRows =
+        ref.watch(groupByFeedProvider) ? groupItemsByFeed(state.items) : null;
+    final bodyRowCount = groupedRows?.length ?? state.items.length;
+
     return ListView.builder(
       controller: _scrollController,
       padding: EdgeInsets.zero,
-      itemCount: state.items.length + (state.hasMore ? 1 : 0),
+      itemCount: bodyRowCount + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index >= state.items.length) {
-          // Loading indicator at bottom
-          return Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacing),
-            child: Center(
-              child: Text(
-                l10n.loadingMore,
-                style: theme.typography.caption.copyWith(
-                  color: theme.secondaryTextColor,
-                ),
-              ),
-            ),
-          );
+        if (index >= bodyRowCount) return _buildLoadingMore(theme, l10n);
+
+        if (groupedRows != null) {
+          switch (groupedRows[index]) {
+            case FeedGroupHeader(:final feedId, :final itemCount):
+              return _buildGroupHeader(
+                state,
+                feedId,
+                itemCount,
+                theme,
+                isCompact,
+              );
+            case GroupedArticle(:final item):
+              return _buildItemRow(
+                context,
+                state,
+                item,
+                theme,
+                isCompact,
+                markReadOnScroll,
+                index,
+              );
+          }
         }
 
-        final item = state.items[index];
+        return _buildItemRow(
+          context,
+          state,
+          state.items[index],
+          theme,
+          isCompact,
+          markReadOnScroll,
+          index,
+        );
+      },
+    );
+  }
 
-        // Wrap list items with swipe actions
-        void openItem() => launchMedia(
+  /// Bottom "loading more" row.
+  Widget _buildLoadingMore(ReederThemeData theme, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.spacing),
+      child: Center(
+        child: Text(
+          l10n.loadingMore,
+          style: theme.typography.caption.copyWith(
+            color: theme.secondaryTextColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Per-feed separator shown when "Group by Feed" is enabled.
+  Widget _buildGroupHeader(
+    ArticleListState state,
+    int feedId,
+    int itemCount,
+    ReederThemeData theme,
+    bool isCompact,
+  ) {
+    final title = state.feedTitles[feedId] ?? '';
+    return Container(
+      color: theme.secondaryBackgroundColor,
+      padding: const EdgeInsets.only(
+        left: AppDimensions.listItemPaddingH,
+        right: AppDimensions.listItemPaddingH,
+        top: AppDimensions.spacingS,
+        bottom: AppDimensions.spacingXS,
+      ),
+      child: Row(
+        children: [
+          FeedIcon(
+            iconUrl: state.feedIcons[feedId],
+            title: title,
+            size: 16,
+          ),
+          const SizedBox(width: AppDimensions.spacingS),
+          Expanded(
+            child: Text(
+              title,
+              style: theme.typography.sectionHeader.copyWith(
+                color: theme.secondaryTextColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            '$itemCount',
+            style: theme.typography.caption.copyWith(
+              color: theme.tertiaryTextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single article row (tap, long-press menu, scroll-read probe).
+  Widget _buildItemRow(
+    BuildContext context,
+    ArticleListState state,
+    FeedItem item,
+    ReederThemeData theme,
+    bool isCompact,
+    bool markReadOnScroll,
+    int index,
+  ) {
+    void openItem() => launchMedia(
               context,
               ref,
               item,
@@ -315,75 +416,97 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         final animate = index < _animatedItemLimit &&
             _animatedItemIds.add(item.id);
 
-        final listItemWidget = isCompact
+        // Long-press opens the action menu under the finger. The row keeps
+        // tap-to-open; horizontal swipes are left to the back gesture and to
+        // horizontal scrolling instead of stealing them for actions.
+        void onLongPressAt(Offset position) =>
+            _showItemActions(context, position, item);
+
+        final row = isCompact
             ? ArticleListItemCompact(
                 item: item,
                 feedTitle: state.feedTitles[item.feedId],
                 onTap: openItem,
+                onLongPressAt: onLongPressAt,
               )
             : ArticleListItem(
                 item: item,
                 feedTitle: state.feedTitles[item.feedId],
                 feedIconUrl: state.feedIcons[item.feedId],
                 onTap: openItem,
+                onLongPressAt: onLongPressAt,
                 index: index,
                 animate: animate,
               );
 
-        final row = SwipeActionWidget(
-          leftSwipeActions: [
-            SwipeAction(
-              id: 'share',
-              label: l10n.share,
-              icon: '↗',
-              color: theme.accentColor,
-              onTriggered: () {
-                if (item.url.isNotEmpty) {
-                  Share.share(item.url);
-                }
-              },
-            ),
-            SwipeAction(
-              id: 'toggle_star',
-              label: item.isStarred ? l10n.unstar : l10n.star,
-              icon: item.isStarred ? '★' : '☆',
-              // ponytail: no per-semantic warning token; using theme.warningColor.
-              color: theme.warningColor,
-              onTriggered: () => _toggleStarred(item.id, item.isStarred),
-            ),
-          ],
-          rightSwipeActions: [
-            SwipeAction(
-              id: 'later',
-              label: l10n.later,
-              icon: '🕐',
-              // ponytail: no per-semantic "later" token; using accentColor.
-              color: theme.accentColor,
-              onTriggered: () => _toggleLater(item.id),
-            ),
-            SwipeAction(
-              id: 'toggle_read',
-              label: item.isRead ? l10n.markUnread : l10n.markRead,
-              icon: item.isRead ? '●' : '○',
-              color: theme.accentColor,
-              onTriggered: () => _toggleReadState(item.id, item.isRead),
-            ),
-          ],
-          child: listItemWidget,
-        );
-
         // Report the row's position so "mark as read on scroll" knows when it
         // has left the viewport. Only wrapped when the setting is on, so the
         // default path costs nothing.
-        return markReadOnScroll
-            ? ScrollPastProbe(
-                itemId: item.id,
-                reporter: _scrollPast,
-                child: row,
-              )
-            : row;
-      },
+    return markReadOnScroll
+        ? ScrollPastProbe(
+            itemId: item.id,
+            reporter: _scrollPast,
+            child: row,
+          )
+        : row;
+  }
+
+  /// Opens the long-press action menu for [item] at [position].
+  Future<void> _showItemActions(
+    BuildContext context,
+    Offset position,
+    FeedItem item,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = await ReederPopupMenu.show(
+      context: context,
+      position: position,
+      items: [
+        ReederPopupMenuItem(
+          id: 'share',
+          label: l10n.share,
+          icon: const Text('↗', style: TextStyle(fontSize: 16)),
+        ),
+        ReederPopupMenuItem(
+          id: 'toggle_star',
+          label: item.isStarred ? l10n.unstar : l10n.star,
+          icon: Text(
+            item.isStarred ? '★' : '☆',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        ReederPopupMenuItem(
+          id: 'later',
+          label: l10n.later,
+          icon: const Text('🕐', style: TextStyle(fontSize: 16)),
+        ),
+        ReederPopupMenuItem(
+          id: 'toggle_read',
+          label: item.isRead ? l10n.markUnread : l10n.markRead,
+          icon: Text(
+            item.isRead ? '●' : '○',
+            style: const TextStyle(fontSize: 16),
+          ),
+          showSeparatorAfter: false,
+        ),
+      ],
     );
+
+    if (selected == null || !mounted) return;
+    switch (selected) {
+      case 'share':
+        if (item.url.isNotEmpty) await Share.share(item.url);
+        break;
+      case 'toggle_star':
+        await _toggleStarred(item.id, item.isStarred);
+        break;
+      case 'later':
+        await _toggleLater(item.id);
+        break;
+      case 'toggle_read':
+        await _toggleReadState(item.id, item.isRead);
+        break;
+    }
   }
 
   /// Toggles the "Later" tag on an article.

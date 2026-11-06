@@ -58,4 +58,31 @@ void main() {
       expect('example.com'.isValidUrl, isFalse);
     });
   });
+
+  group('StringExt.plainText', () {
+    test('drops tags but keeps their text', () {
+      expect('<p>Hello <b>world</b></p>'.plainText, 'Hello world');
+    });
+
+    test('decodes named entities', () {
+      expect('a&nbsp;b &amp; c&hellip;'.plainText, 'a b & c…');
+    });
+
+    test('decodes numeric entities', () {
+      expect('&#65;&#x42;'.plainText, 'AB');
+    });
+
+    test('leaves unknown entities alone', () {
+      expect('&notarealentity;'.plainText, '&notarealentity;');
+    });
+
+    test('collapses whitespace and trims', () {
+      final nl = String.fromCharCode(10);
+      expect('  <div>a$nl$nl  b</div>  '.plainText, 'a b');
+    });
+
+    test('returns empty string for empty input', () {
+      expect(''.plainText, '');
+    });
+  });
 }

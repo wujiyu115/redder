@@ -58,6 +58,48 @@ extension StringExt on String {
     return replaceAll(_htmlTag, '');
   }
 
+  /// Named HTML entities worth decoding in feed summaries.
+  static const Map<String, String> _namedEntities = {
+    'nbsp': ' ',
+    'amp': '&',
+    'lt': '<',
+    'gt': '>',
+    'quot': '"',
+    'apos': "'",
+    'ldquo': '“',
+    'rdquo': '”',
+    'lsquo': '‘',
+    'rsquo': '’',
+    'ndash': '–',
+    'mdash': '—',
+    'hellip': '…',
+  };
+
+  static final RegExp _entity = RegExp(r'&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);');
+
+  /// Renders feed HTML as plain text: drops tags, decodes entities, and
+  /// collapses the whitespace left behind.
+  ///
+  /// Feed summaries arrive as HTML fragments (`&lt;p&gt;…&lt;/p&gt;`,
+  /// `&lt;a href="…"&gt;查看全文&lt;/a&gt;`, `&amp;nbsp;`). Rendering them raw shows the markup
+  /// to the user, which is what the list rows used to do.
+  String get plainText {
+    if (isEmpty) return this;
+    final decoded = replaceAll(_htmlTag, ' ').replaceAllMapped(_entity, (m) {
+      final key = m.group(1)!;
+      if (key.startsWith('#x') || key.startsWith('#X')) {
+        final code = int.tryParse(key.substring(2), radix: 16);
+        return code == null ? m.group(0)! : String.fromCharCode(code);
+      }
+      if (key.startsWith('#')) {
+        final code = int.tryParse(key.substring(1));
+        return code == null ? m.group(0)! : String.fromCharCode(code);
+      }
+      return _namedEntities[key] ?? m.group(0)!;
+    });
+    return decoded.normalizeWhitespace;
+  }
+
   /// Returns null if the string is empty, otherwise returns the string.
   String? get nullIfEmpty {
     return isEmpty ? null : this;

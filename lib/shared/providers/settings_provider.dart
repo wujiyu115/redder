@@ -236,6 +236,12 @@ final hideReadArticlesProvider = Provider<bool>((ref) {
 });
 
 /// Whether articles are marked as read when they scroll past the viewport.
+/// Whether timelines group articles under per-feed headers.
+final groupByFeedProvider = Provider<bool>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.groupByFeed) ??
+      false;
+});
+
 final markReadOnScrollProvider = Provider<bool>((ref) {
   return ref
           .watch(settingsProvider)

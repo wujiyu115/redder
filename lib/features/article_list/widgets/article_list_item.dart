@@ -6,6 +6,7 @@ import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_durations.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/extensions/datetime_ext.dart';
+import '../../../core/extensions/string_ext.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/feed_item.dart';
 import '../../../data/services/image_cache_manager.dart';
@@ -35,8 +36,9 @@ class ArticleListItem extends ConsumerStatefulWidget {
   /// Callback when tapped.
   final VoidCallback? onTap;
 
-  /// Callback when long-pressed.
-  final VoidCallback? onLongPress;
+  /// Callback when long-pressed, carrying the global press position so the
+  /// action menu opens under the finger.
+  final ValueChanged<Offset>? onLongPressAt;
 
   /// Index in the list, used for staggered animation delay.
   final int index;
@@ -51,7 +53,7 @@ class ArticleListItem extends ConsumerStatefulWidget {
     this.feedTitle,
     this.feedIconUrl,
     this.onTap,
-    this.onLongPress,
+    this.onLongPressAt,
     this.index = 0,
     this.animate = true,
   });
@@ -130,9 +132,13 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
     final cacheManager = ref.read(reederImageCacheManagerProvider);
     final readAlpha = _readAlpha;
     final dpr = MediaQuery.devicePixelRatioOf(context);
+    // Feed summaries arrive as HTML; render them as plain text so markup such
+    // as `<p>` / `<a href="…">查看全文</a>` / `&nbsp;` never leaks into the row.
+    final summary = widget.item.summary?.plainText ?? '';
 
     return Semantics(
-      label: '${widget.feedTitle ?? ""}, ${widget.item.title}, ${widget.item.summary ?? ""}, ${widget.item.publishedAt.timeAgoCompact}',
+      label:
+          '${widget.feedTitle ?? ""}, ${widget.item.title}, $summary, ${widget.item.publishedAt.timeAgoCompact}',
       button: true,
       enabled: true,
       onTap: widget.onTap,
@@ -145,7 +151,9 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
+      onLongPressStart: widget.onLongPressAt == null
+          ? null
+          : (details) => widget.onLongPressAt!(details.globalPosition),
       behavior: HitTestBehavior.opaque,
       child: ExcludeSemantics(
         child: AnimatedContainer(
@@ -183,11 +191,10 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                           ),
 
                           // Summary
-                          if (widget.item.summary != null &&
-                              widget.item.summary!.isNotEmpty) ...[
+                          if (summary.isNotEmpty) ...[
                             const SizedBox(height: AppDimensions.spacingXS),
                             Text(
-                              widget.item.summary!,
+                              summary,
                               style: theme.typography.summary.copyWith(
                                 color: _fade(theme.secondaryTextColor),
                               ),

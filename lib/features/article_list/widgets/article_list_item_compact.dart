@@ -24,15 +24,16 @@ class ArticleListItemCompact extends StatefulWidget {
   /// Callback when tapped.
   final VoidCallback? onTap;
 
-  /// Callback when long-pressed.
-  final VoidCallback? onLongPress;
+  /// Callback when long-pressed, carrying the global press position so the
+  /// action menu opens under the finger.
+  final ValueChanged<Offset>? onLongPressAt;
 
   const ArticleListItemCompact({
     super.key,
     required this.item,
     this.feedTitle,
     this.onTap,
-    this.onLongPress,
+    this.onLongPressAt,
   });
 
   @override
@@ -68,7 +69,9 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
+      onLongPressStart: widget.onLongPressAt == null
+          ? null
+          : (details) => widget.onLongPressAt!(details.globalPosition),
       behavior: HitTestBehavior.opaque,
       child: ExcludeSemantics(
         child: AnimatedContainer(
