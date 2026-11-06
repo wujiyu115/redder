@@ -86,10 +86,6 @@ class _ReederBootstrapState extends State<ReederBootstrap> {
     BootProgress.mark('notifications');
     try {
       await NotificationService.instance.initialize();
-      // Request OS permissions non-blocking: on iOS this awaits the system
-      // dialog, which must not gate the first frame. The prompt appears over
-      // the already-rendered UI.
-      unawaited(NotificationService.instance.requestPermissions());
     } catch (e) {
       developer.log('Notification init failed: $e', name: 'Reeder.Startup');
     }
@@ -97,6 +93,14 @@ class _ReederBootstrapState extends State<ReederBootstrap> {
     // Load persisted settings to drive background refresh + content expiry.
     BootProgress.mark('settings');
     final settings = await SettingsRepository().getSettings();
+
+    // Only ask for the OS notification permission after the user turned
+    // notifications on — prompting every first launch (the setting defaults to
+    // off) is noise. Fire-and-forget so the system dialog never gates the
+    // first frame; the setting toggle path asks again on demand.
+    if (settings.notificationsEnabled) {
+      unawaited(NotificationService.instance.requestPermissions());
+    }
 
     // Initialize background refresh with the persisted interval.
     // 0 = manual only: skip auto-start (service stays inert until a non-zero

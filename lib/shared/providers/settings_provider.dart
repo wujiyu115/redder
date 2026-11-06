@@ -7,6 +7,7 @@ import '../../data/repositories/settings_repository.dart';
 import '../../data/services/background_refresh_service.dart';
 import '../../data/services/content_expiry_service.dart';
 import '../../data/services/image_cache_manager.dart';
+import '../../data/services/notification_service.dart';
 import 'theme_provider.dart';
 
 /// Sort order for timelines.
@@ -162,6 +163,11 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
   Future<void> setNotificationsEnabled(bool enabled) async {
     await _repository.setNotificationsEnabled(enabled);
     await _loadSettings();
+    if (enabled) {
+      // Android 13+ needs the runtime permission; without it every local
+      // notification is dropped even though the toggle reads "on".
+      await NotificationService.instance.requestPermissions();
+    }
   }
 
   /// Sets content expiry days.

@@ -82,18 +82,29 @@ class NotificationService {
   /// dialog, so it MUST NOT be awaited on the app-startup path (doing so
   /// before `runApp` blocks the first frame behind the dialog). Call it
   /// fire-and-forget so the UI renders while the prompt is shown.
-  Future<void> requestPermissions() async {
+  ///
+  /// Android 13+ (API 33) gates notifications behind the POST_NOTIFICATIONS
+  /// runtime permission. The manifest declares it, but nothing requested it, so
+  /// every notification was silently dropped on modern Android.
+  Future<bool> requestPermissions() async {
     try {
-      await _plugin
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        return await android.requestNotificationsPermission() ?? false;
+      }
+      final ios = await _plugin
           .resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(alert: true, badge: true, sound: true);
-      await _plugin
+      final macos = await _plugin
           .resolvePlatformSpecificImplementation<
               MacOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(alert: true, badge: true, sound: true);
+      return ios ?? macos ?? false;
     } catch (e, st) {
       _log.error('requestPermissions: failed', error: e, stackTrace: st);
+      return false;
     }
   }
 
