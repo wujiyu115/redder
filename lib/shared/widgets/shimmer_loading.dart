@@ -55,7 +55,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, _) {
-        final shimmerColor = theme.separatorColor.withOpacity(_animation.value);
+        final shimmerColor = theme.separatorColor.withValues(alpha: _animation.value);
 
         return ListView.builder(
           padding: EdgeInsets.zero,

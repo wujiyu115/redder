@@ -95,7 +95,7 @@ class _SourceItemState extends ConsumerState<SourceItem> {
         child: AnimatedContainer(
         duration: AppDurations.micro,
         color: _isPressed
-            ? theme.separatorColor.withOpacity(0.3)
+            ? theme.separatorColor.withValues(alpha: 0.3)
             : theme.backgroundColor,
         padding: EdgeInsets.only(
           left: widget.indented
@@ -199,7 +199,7 @@ class _SourceItemState extends ConsumerState<SourceItem> {
       width: AppDimensions.feedIconSize,
       height: AppDimensions.feedIconSize,
       decoration: BoxDecoration(
-        color: theme.accentColor.withOpacity(0.15),
+        color: theme.accentColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
       ),
       child: Center(

@@ -508,7 +508,7 @@ class _KeywordChip extends StatelessWidget {
         vertical: AppDimensions.spacingXS,
       ),
       decoration: BoxDecoration(
-        color: theme.accentColor.withOpacity(0.15),
+        color: theme.accentColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
       ),
       child: Row(

@@ -215,7 +215,7 @@ class _MiniArtwork extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: theme.accentColor.withOpacity(0.15),
+        color: theme.accentColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppDimensions.radiusS),
       ),
       child: const Center(

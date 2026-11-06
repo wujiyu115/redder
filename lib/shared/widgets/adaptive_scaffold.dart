@@ -316,7 +316,7 @@ class _DragHandleState extends State<_DragHandle> {
           color: _isDragging
               ? widget.theme.accentColor
               : _isHovering
-                  ? widget.theme.accentColor.withOpacity(0.5)
+                  ? widget.theme.accentColor.withValues(alpha: 0.5)
                   : widget.theme.separatorColor,
         ),
       ),

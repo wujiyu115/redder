@@ -134,7 +134,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
         child: AnimatedContainer(
         duration: AppDurations.micro,
         color: _isPressed
-            ? theme.separatorColor.withOpacity(0.3)
+            ? theme.separatorColor.withValues(alpha: 0.3)
             : theme.backgroundColor,
         child: Opacity(
           opacity: opacity,

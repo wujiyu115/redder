@@ -93,7 +93,7 @@ class _ReederListTileState extends State<ReederListTile> {
       child: AnimatedContainer(
         duration: AppDurations.micro,
         color: _isPressed
-            ? theme.separatorColor.withOpacity(0.3)
+            ? theme.separatorColor.withValues(alpha: 0.3)
             : (widget.backgroundColor ?? theme.backgroundColor),
         child: Column(
           mainAxisSize: MainAxisSize.min,
