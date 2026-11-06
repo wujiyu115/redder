@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/utils/podcast_chapters.dart';
 import '../../data/models/feed.dart';
 import '../../data/models/feed_item.dart';
 import '../podcast_player/podcast_controller.dart';
@@ -64,6 +65,11 @@ Future<void> launchMedia(
             episodeTitle: item.title,
             feedTitle: feedTitle,
             artworkUrl: item.imageUrl,
+            // Chapter markers live in the show notes; the player's chapter
+            // list was never fed by anyone before.
+            chapters: chaptersFromShowNotes(
+              item.content?.isNotEmpty == true ? item.content : item.summary,
+            ),
           );
       context.pushNamed('podcastPlayer');
     case MediaKind.video:
