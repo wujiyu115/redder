@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -37,6 +39,14 @@ class ArticleDetailController
   late final TagRepository _tagRepo;
   late final ReaderViewService _readerViewService;
   late final SyncBridge _syncBridge;
+
+  /// Completed once the first load finished (successfully or not).
+  ///
+  /// `markAsRead()` fires from a post-frame callback that races the initial
+  /// load: without this, the refresh saw `state == loading`, did nothing, and
+  /// the page kept rendering the pre-read article (action bar still offering
+  /// "mark as unread" on a just-read article).
+  final Completer<void> _loaded = Completer<void>();
 
   ArticleDetailController(this._ref, this.articleId, this.timelineId)
       : super(const AsyncValue.loading()) {
@@ -96,6 +106,8 @@ class ArticleDetailController
       }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    } finally {
+      if (!_loaded.isCompleted) _loaded.complete();
     }
   }
 
@@ -129,6 +141,7 @@ class ArticleDetailController
   /// Marks the article as read (with remote sync).
   Future<void> markAsRead() async {
     await _syncBridge.markAsReadWithSync([articleId]);
+    await _loaded.future;
     // Refresh the in-memory article too: without it the action bar kept showing
     // the pre-open state ("标为未读" highlighted on a just-read article).
     await _refreshArticle();
