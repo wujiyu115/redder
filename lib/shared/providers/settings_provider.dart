@@ -116,6 +116,12 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Toggles folder icons in the source list sidebar.
+  Future<void> toggleShowFolderIcons() async {
+    await _repository.toggleShowFolderIcons();
+    await _loadSettings();
+  }
+
   /// Toggles mark-as-read on scroll.
   Future<void> toggleMarkReadOnScroll() async {
     await _repository.toggleMarkReadOnScroll();
@@ -236,6 +242,12 @@ final hideReadArticlesProvider = Provider<bool>((ref) {
 });
 
 /// Whether articles are marked as read when they scroll past the viewport.
+/// Whether the source list draws a folder icon next to folder names.
+final showFolderIconsProvider = Provider<bool>((ref) {
+  return ref.watch(settingsProvider).whenOrNull(data: (s) => s.showFolderIcons) ??
+      true;
+});
+
 /// Whether timelines group articles under per-feed headers.
 final groupByFeedProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).whenOrNull(data: (s) => s.groupByFeed) ??

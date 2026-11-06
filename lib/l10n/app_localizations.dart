@@ -1364,6 +1364,18 @@ abstract class AppLocalizations {
   /// **'Group articles by their source feed'**
   String get groupByFeedDesc;
 
+  /// No description provided for @showFolderIcons.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Folder Icons'**
+  String get showFolderIcons;
+
+  /// No description provided for @showFolderIconsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a folder icon next to folder names'**
+  String get showFolderIconsDesc;
+
   /// No description provided for @contentExpiryHint.
   ///
   /// In en, this message translates to:

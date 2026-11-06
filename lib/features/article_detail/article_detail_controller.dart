@@ -179,6 +179,9 @@ class ArticleDetailController
         tagStates: updatedStates,
       ));
     }
+    // Tag badges on the source list are computed from the tagged-items table,
+    // so they only move once the list reloads.
+    _ref.read(sourceListControllerProvider.notifier).scheduleReload();
   }
 
   /// Toggles reader view mode.

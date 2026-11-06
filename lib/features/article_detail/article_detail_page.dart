@@ -113,7 +113,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
 
     return GestureDetector(
       onHorizontalDragStart: _onHorizontalDragStart,
-      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragCancel: _onHorizontalDragCancel,
       onHorizontalDragEnd: _onHorizontalDragEnd,
       // In fullscreen, a tap on empty content area restores the chrome.
       onTap: _isFullscreen ? _toggleFullscreen : null,
@@ -390,9 +390,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
     _isDraggingFromEdge = _dragStartX > screenWidth - 40;
   }
 
-  void _onHorizontalDragUpdate(DragUpdateDetails details) {
-    // Could add visual feedback here
-  }
+  void _onHorizontalDragCancel() => _isDraggingFromEdge = false;
 
   void _onHorizontalDragEnd(DragEndDetails details) {
     if (!_isDraggingFromEdge) return;

@@ -702,6 +702,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupByFeedDesc => 'Group articles by their source feed';
 
   @override
+  String get showFolderIcons => 'Show Folder Icons';
+
+  @override
+  String get showFolderIconsDesc => 'Draw a folder icon next to folder names';
+
+  @override
   String get contentExpiryHint =>
       'Articles older than the selected period will be hidden from timelines. They can still be found via search.';
 

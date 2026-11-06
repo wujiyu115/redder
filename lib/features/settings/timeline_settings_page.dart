@@ -126,6 +126,16 @@ class TimelineSettingsPage extends ConsumerWidget {
             ),
           ),
           ReederListTile(
+            title: l10n.showFolderIcons,
+            subtitle: l10n.showFolderIconsDesc,
+            trailing: ReederSwitch(
+              value: settings.showFolderIcons,
+              onChanged: (_) {
+                ref.read(settingsProvider.notifier).toggleShowFolderIcons();
+              },
+            ),
+          ),
+          ReederListTile(
             title: l10n.hideReadArticles,
             subtitle: l10n.hideReadArticlesDesc,
             trailing: ReederSwitch(

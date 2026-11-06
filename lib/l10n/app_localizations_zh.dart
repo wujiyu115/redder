@@ -690,6 +690,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groupByFeedDesc => '按来源订阅源对文章进行分组';
 
   @override
+  String get showFolderIcons => '显示文件夹图标';
+
+  @override
+  String get showFolderIconsDesc => '在文件夹名称前显示图标';
+
+  @override
   String get contentExpiryHint => '超过所选时间段的文章将从时间线中隐藏。仍可通过搜索找到。';
 
   @override

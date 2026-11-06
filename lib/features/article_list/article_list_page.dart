@@ -518,6 +518,8 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     }
     if (mounted) {
       ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
+      // Keeps the "Later" badge on the source list in sync.
+      ref.read(sourceListControllerProvider.notifier).scheduleReload();
     }
   }
 

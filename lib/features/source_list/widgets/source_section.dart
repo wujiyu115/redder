@@ -24,6 +24,9 @@ class SourceSection extends StatefulWidget {
   /// Child widgets (feed items).
   final List<Widget> children;
 
+  /// Whether to draw the folder icon before the title.
+  final bool showIcon;
+
   /// Callback when the section header is tapped.
   final VoidCallback? onTap;
 
@@ -38,6 +41,7 @@ class SourceSection extends StatefulWidget {
     this.isExpanded = true,
     this.unreadCount = 0,
     this.children = const [],
+    this.showIcon = true,
     this.onTap,
     this.onLongPressAt,
   });
@@ -121,7 +125,7 @@ class _SourceSectionState extends State<SourceSection>
                 const SizedBox(width: AppDimensions.spacingS),
 
                 // Folder icon
-                if (widget.iconName != null) ...[
+                if (widget.showIcon && widget.iconName != null) ...[
                   Text(
                     '📁',
                     style: const TextStyle(fontSize: 16),

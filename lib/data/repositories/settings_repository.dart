@@ -161,6 +161,16 @@ class SettingsRepository {
     return settings.groupByFeed;
   }
 
+  /// Toggles folder icons in the source list sidebar.
+  Future<bool> toggleShowFolderIcons() async {
+    final settings = await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        showFolderIcons: Value(!s.showFolderIcons),
+      ),
+    );
+    return settings.showFolderIcons;
+  }
+
   /// Toggles mark-as-read on scroll.
   Future<bool> toggleMarkReadOnScroll() async {
     final settings = await _localDs.updateSettings(

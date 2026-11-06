@@ -10,6 +10,7 @@ import '../../data/models/feed.dart';
 import '../../data/models/tag.dart';
 import '../../data/services/sync/sync_models.dart';
 import '../../shared/providers/account_provider.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
@@ -256,6 +257,7 @@ class SourceListPage extends ConsumerWidget {
         return SourceSection(
           title: row.folder!.name,
           iconName: row.folder!.iconName,
+          showIcon: ref.watch(showFolderIconsProvider),
           isExpanded: row.folder!.isExpanded,
           unreadCount: row.folder!.unreadCount,
           onTap: () => context.push('/timeline/folder_${row.folder!.id}'),

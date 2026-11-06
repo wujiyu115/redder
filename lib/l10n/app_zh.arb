@@ -230,6 +230,8 @@
   "contentExpirySection": "内容过期",
   "groupByFeed": "按订阅源分组",
   "groupByFeedDesc": "按来源订阅源对文章进行分组",
+  "showFolderIcons": "显示文件夹图标",
+  "showFolderIconsDesc": "在文件夹名称前显示图标",
   "contentExpiryHint": "超过所选时间段的文章将从时间线中隐藏。仍可通过搜索找到。",
   "oneWeek": "1 周",
   "twoWeeks": "2 周",
