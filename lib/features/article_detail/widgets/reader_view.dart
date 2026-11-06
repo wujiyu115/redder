@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart'
+    show RenderMode;
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/theme/app_theme.dart';
@@ -129,6 +131,9 @@ class ReaderView extends ConsumerWidget {
                 fontSize: fontSize,
                 lineHeight: lineHeight,
                 maxWidth: maxContentWidth,
+                // This view embeds the HTML in a box scroll view, so it cannot
+                // be a sliver.
+                renderMode: RenderMode.column,
                 onImageTap: onImageTap,
               ),
 

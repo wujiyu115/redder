@@ -332,7 +332,9 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     // Reload list to reflect changes
     if (mounted) {
       ref.read(articleListControllerProvider(widget.timelineId).notifier).reload();
-      ref.read(sourceListControllerProvider.notifier).reload();
+      // Badge refresh only — coalesced so rapid toggles don't reload the whole
+      // source list each time.
+      ref.read(sourceListControllerProvider.notifier).scheduleReload();
     }
   }
 

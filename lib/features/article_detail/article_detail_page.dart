@@ -233,45 +233,59 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
             color: isDarkLight
                 ? contentTheme.backgroundColor
                 : theme.backgroundColor,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Article header
-                  ArticleHeader(
-                    article: state.article,
-                    feedTitle: state.feedTitle,
-                    feedIconUrl: state.feedIconUrl,
-                  ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxContentWidth = ref.watch(maxContentWidthProvider);
 
-                  // Article content (uses light theme in Dark Light mode)
-                  ReederTheme(
-                    data: contentTheme,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.pagePaddingH,
-                      ),
-                      child: ArticleContentView(
-                        content: state.isReaderView
-                            ? (state.readerContent ?? state.displayContent)
-                            : state.displayContent,
-                        fontSize: state.fontSize,
-                        lineHeight: state.lineHeight,
-                        maxWidth: ref.watch(maxContentWidthProvider),
-                        bionicReading: state.bionicReading,
-                        onImageTap: (imageUrl) {
-                          _openImageViewer(context, imageUrl, state);
-                        },
+                // Centre the reading column on wide viewports instead of
+                // letting the HTML stretch edge to edge.
+                final hPadding = constraints.maxWidth > maxContentWidth
+                    ? (constraints.maxWidth - maxContentWidth) / 2
+                    : AppDimensions.pagePaddingH;
+
+                return CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    // Article header
+                    SliverToBoxAdapter(
+                      child: ArticleHeader(
+                        article: state.article,
+                        feedTitle: state.feedTitle,
+                        feedIconUrl: state.feedIconUrl,
                       ),
                     ),
-                  ),
 
-                  // Bottom spacing
-                  const SizedBox(height: AppDimensions.spacingXXL * 2),
-                ],
-              ),
+                    // Article content (uses light theme in Dark Light mode).
+                    //
+                    // `RenderMode.sliverList` builds only the blocks around the
+                    // viewport, so images below the fold are never fetched and
+                    // long articles do not parse/layout in one blocking pass.
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: hPadding),
+                      sliver: ReederTheme(
+                        data: contentTheme,
+                        child: ArticleContentView(
+                          content: state.isReaderView
+                              ? (state.readerContent ?? state.displayContent)
+                              : state.displayContent,
+                          fontSize: state.fontSize,
+                          lineHeight: state.lineHeight,
+                          maxWidth: maxContentWidth,
+                          bionicReading: state.bionicReading,
+                          onImageTap: (imageUrl) {
+                            _openImageViewer(context, imageUrl, state);
+                          },
+                        ),
+                      ),
+                    ),
+
+                    // Bottom spacing
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppDimensions.spacingXXL * 2),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

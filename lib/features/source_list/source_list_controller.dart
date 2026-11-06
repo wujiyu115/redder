@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,6 +58,9 @@ class SourceListController
   late final TagRepository _tagRepo;
   late final FeedRefreshService _refreshService;
   late final SyncBridge _syncBridge;
+
+  /// Pending coalesced reload started by [scheduleReload].
+  Timer? _reloadDebounce;
 
   SourceListController(this._ref) : super(const AsyncValue.loading()) {
     _feedRepo = _ref.read(feedRepositoryProvider);
@@ -541,6 +546,32 @@ class SourceListController
 
   /// Reloads the source list data.
   Future<void> reload() => _loadData();
+
+  /// Coalesced [reload] for read/unread hot paths.
+  ///
+  /// Marking articles read fires this repeatedly (opening an article, swiping
+  /// to the next one, toggling rows). Each call would otherwise run ~6
+  /// sequential queries and rebuild the whole source-list state while the
+  /// reader page is also loading the article, parsing HTML and decoding images
+  /// — and the source list is not even visible at that point. A trailing
+  /// debounce collapses a burst into a single load.
+  void scheduleReload({
+    Duration delay = const Duration(milliseconds: 400),
+  }) {
+    _reloadDebounce?.cancel();
+    _reloadDebounce = Timer(delay, () {
+      _reloadDebounce = null;
+      if (!mounted) return;
+      unawaited(reload());
+    });
+  }
+
+  @override
+  void dispose() {
+    _reloadDebounce?.cancel();
+    _reloadDebounce = null;
+    super.dispose();
+  }
 }
 
 /// State for the source list page.

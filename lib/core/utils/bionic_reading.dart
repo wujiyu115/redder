@@ -8,14 +8,21 @@
 class BionicReading {
   BionicReading._();
 
-  /// Matches a single "letter" character (Latin, Latin-extended, or CJK).
-  /// Hoisted to a `static final` so it is compiled once instead of on every
-  /// character/word — this runs on the article-rendering hot path.
-  static final RegExp _letter =
-      RegExp(r'[a-zA-ZÀ-ɏ一-鿿]');
-
   /// Matches runs of non-whitespace or whitespace (word/separator tokens).
   static final RegExp _wordOrSpace = RegExp(r'(\S+|\s+)');
+
+  /// True for a "letter" code unit: Latin, Latin-extended, or CJK.
+  ///
+  /// Equivalent to the character class `[a-zA-ZÀ-ɏ一-鿿]`, compared by code
+  /// point instead of compiled to a [RegExp]. [_processWord] inspects every
+  /// character of every word to find leading / trailing punctuation; a regex
+  /// match per character dominated the cost of this hot path (measured at
+  /// ~30% of the whole transform), so the ranges are compared directly.
+  static bool _isLetterCode(int c) =>
+      (c >= 0x41 && c <= 0x5A) || // A-Z
+      (c >= 0x61 && c <= 0x7A) || // a-z
+      (c >= 0xC0 && c <= 0x24F) || // À-ɏ (Latin supplements + extended)
+      (c >= 0x4E00 && c <= 0x9FFF); // 一-鿿 (CJK unified ideographs)
 
   /// Matches the opening tag name at the start of an HTML tag.
   static final RegExp _tagNamePattern = RegExp(r'^<([a-zA-Z][a-zA-Z0-9]*)');
@@ -134,21 +141,21 @@ class BionicReading {
     if (word.length <= 1) return word;
 
     // Check if the word contains any letters
-    if (!_letter.hasMatch(word)) {
+    if (!word.codeUnits.any(_isLetterCode)) {
       return word;
     }
 
     // Handle words with leading punctuation
     int leadingPunct = 0;
     while (leadingPunct < word.length &&
-        !_letter.hasMatch(word[leadingPunct])) {
+        !_isLetterCode(word.codeUnitAt(leadingPunct))) {
       leadingPunct++;
     }
 
     // Handle words with trailing punctuation
     int trailingPunct = word.length;
     while (trailingPunct > leadingPunct &&
-        !_letter.hasMatch(word[trailingPunct - 1])) {
+        !_isLetterCode(word.codeUnitAt(trailingPunct - 1))) {
       trailingPunct--;
     }
 

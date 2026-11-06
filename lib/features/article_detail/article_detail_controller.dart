@@ -123,7 +123,10 @@ class ArticleDetailController
   /// Marks the article as read (with remote sync).
   Future<void> markAsRead() async {
     await _syncBridge.markAsReadWithSync([articleId]);
-    await _ref.read(sourceListControllerProvider.notifier).reload();
+    // Coalesced: the source list is not visible while reading, and reloading it
+    // here would compete with the article's own load / HTML parse / image
+    // decode. `scheduleReload` folds a burst of opens into one refresh.
+    _ref.read(sourceListControllerProvider.notifier).scheduleReload();
   }
 
   /// Marks the article as unread (with remote sync).
@@ -138,7 +141,7 @@ class ArticleDetailController
         ));
       }
     }
-    await _ref.read(sourceListControllerProvider.notifier).reload();
+    _ref.read(sourceListControllerProvider.notifier).scheduleReload();
   }
 
   /// Toggles the starred state (with remote sync).
