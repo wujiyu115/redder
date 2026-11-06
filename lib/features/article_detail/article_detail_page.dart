@@ -376,15 +376,16 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
   }
 
   // ─── Swipe Gesture Handling ─────────────────────────────
+  //
+  // Back navigation is handled by the route itself (`EdgeSwipeBack` in
+  // `ReederPage`), which follows the finger and wins the gesture arena for
+  // drags that start at the screen edge. Only "swipe in from the right edge to
+  // open the next article" is page-specific.
 
   void _onHorizontalDragStart(DragStartDetails details) {
     final screenWidth = MediaQuery.of(context).size.width;
     _dragStartX = details.globalPosition.dx;
-
-    // Right edge: next article (left swipe)
-    // Left edge: back (right swipe)
-    _isDraggingFromEdge =
-        _dragStartX > screenWidth - 40 || _dragStartX < 40;
+    _isDraggingFromEdge = _dragStartX > screenWidth - 40;
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
@@ -396,10 +397,7 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
 
     final velocity = details.primaryVelocity ?? 0;
 
-    if (_dragStartX < 40 && velocity > 300) {
-      // Right swipe from left edge → go back
-      context.pop();
-    } else if (_dragStartX > MediaQuery.of(context).size.width - 40 &&
+    if (_dragStartX > MediaQuery.of(context).size.width - 40 &&
         velocity < -300) {
       // Left swipe from right edge → next article
       ref

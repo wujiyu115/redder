@@ -1,170 +1,79 @@
-import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../core/constants/app_durations.dart';
 
-/// Custom page transition for the Reeder app.
+/// iOS-style page transition for the app.
 ///
-/// Implements iOS-style right-to-left slide transition with:
-/// - 350ms easeInOut curve
-/// - Previous page slides left (parallax effect)
-/// - New page slides in from right
-/// - Supports gesture-driven back navigation via edge swipe
-class ReederPage extends CustomTransitionPage<void> {
-  ReederPage({
-    required super.child,
-    super.key,
-  }) : super(
-          transitionDuration: AppDurations.pageTransition,
-          reverseTransitionDuration: AppDurations.pageTransition,
-          transitionsBuilder: _buildTransition,
-        );
-
-  static Widget _buildTransition(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    // Incoming page: slide from right
-    final slideIn = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeInOut,
-    ));
-
-    // Outgoing page: slight slide to left (parallax)
-    final slideOut = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(-0.3, 0.0),
-    ).animate(CurvedAnimation(
-      parent: secondaryAnimation,
-      curve: Curves.easeInOut,
-    ));
-
-    // Shadow overlay on outgoing page
-    final shadowOpacity = Tween<double>(
-      begin: 0.0,
-      end: 0.1,
-    ).animate(secondaryAnimation);
-
-    // Wrap with gesture-driven back navigation
-    return SlideTransition(
-      position: slideOut,
-      child: _GestureDrivenBack(
-        animation: animation,
-        child: SlideTransition(
-          position: slideIn,
-          child: Stack(
-            children: [
-              child,
-              // Shadow overlay (only visible during secondary animation)
-              if (secondaryAnimation.value > 0)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: ColoredBox(
-                      color: Color.fromRGBO(0, 0, 0, shadowOpacity.value),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Enables gesture-driven back navigation by swiping from the left edge.
+/// Right-to-left slide with a parallax + shadow on the outgoing page, plus the
+/// interactive edge-swipe back gesture: dragging from the left edge makes the
+/// page follow the finger and either snap back or pop.
 ///
-/// Detects horizontal drag from the left 20px edge and drives the
-/// route's animation controller in reverse, providing a smooth
-/// interactive pop transition.
-class _GestureDrivenBack extends StatefulWidget {
-  final Animation<double> animation;
-  final Widget child;
-
-  const _GestureDrivenBack({
-    required this.animation,
+/// This is Flutter's own [CupertinoRouteTransitionMixin] rather than a
+/// hand-rolled transition, for two reasons the hand-rolled version got wrong:
+///
+/// 1. the drag target has to sit *above* the page content so a gesture starting
+///    at the screen edge wins the gesture arena before any horizontal
+///    recognizer inside the page (list row swipe actions, article swipe
+///    navigation) — otherwise edge swipes are swallowed by the page;
+/// 2. driving the transition during the drag requires the route's own
+///    `AnimationController`, which is `@protected` and only reachable from a
+///    route subclass.
+///
+/// The app's own timing ([AppDurations.pageTransition]) is kept.
+class ReederPage<T> extends Page<T> {
+  const ReederPage({
     required this.child,
+    this.title,
+    this.maintainState = true,
+    this.fullscreenDialog = false,
+    super.key,
+    super.name,
+    super.arguments,
+    super.restorationId,
   });
 
+  /// The page content.
+  final Widget child;
+
+  /// Title used by Cupertino navigation bars.
+  final String? title;
+
+  /// Whether the page keeps its state while covered by another route.
+  final bool maintainState;
+
+  /// Whether the page is presented as a fullscreen dialog (slides up, no
+  /// edge-swipe back).
+  final bool fullscreenDialog;
+
   @override
-  State<_GestureDrivenBack> createState() => _GestureDrivenBackState();
+  Route<T> createRoute(BuildContext context) => _ReederPageRoute<T>(this);
 }
 
-class _GestureDrivenBackState extends State<_GestureDrivenBack> {
-  bool _isDragging = false;
-  double _dragStartX = 0.0;
+class _ReederPageRoute<T> extends PageRoute<T>
+    with CupertinoRouteTransitionMixin<T> {
+  _ReederPageRoute(this.page) : super(settings: page);
 
-  /// Edge zone width for initiating back gesture.
-  static const double _edgeWidth = 20.0;
-
-  /// Minimum velocity to trigger pop.
-  static const double _popVelocity = 300.0;
+  final ReederPage<T> page;
 
   @override
-  Widget build(BuildContext context) {
-    // Only enable gesture when the page is fully visible (not animating in)
-    if (widget.animation.status != AnimationStatus.completed) {
-      return widget.child;
-    }
+  Widget buildContent(BuildContext context) => page.child;
 
-    return GestureDetector(
-      onHorizontalDragStart: _onDragStart,
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: _onDragEnd,
-      child: widget.child,
-    );
-  }
+  @override
+  String? get title => page.title;
 
-  void _onDragStart(DragStartDetails details) {
-    if (details.globalPosition.dx <= _edgeWidth) {
-      _isDragging = true;
-      _dragStartX = details.globalPosition.dx;
-    }
-  }
+  @override
+  bool get maintainState => page.maintainState;
 
-  void _onDragUpdate(DragUpdateDetails details) {
-    if (!_isDragging) return;
+  @override
+  bool get fullscreenDialog => page.fullscreenDialog;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dragDistance = details.globalPosition.dx - _dragStartX;
-    final progress = (dragDistance / screenWidth).clamp(0.0, 1.0);
+  @override
+  String get debugLabel => 'ReederPage';
 
-    // Drive the animation controller if available
-    final controller = widget.animation;
-    if (controller is AnimationController) {
-      controller.value = 1.0 - progress;
-    }
-  }
+  // Keep the app's timing instead of Cupertino's 500ms default.
+  @override
+  Duration get transitionDuration => AppDurations.pageTransition;
 
-  void _onDragEnd(DragEndDetails details) {
-    if (!_isDragging) return;
-    _isDragging = false;
-
-    final velocity = details.primaryVelocity ?? 0;
-    final controller = widget.animation;
-
-    if (controller is AnimationController) {
-      if (velocity > _popVelocity || controller.value < 0.5) {
-        // Pop the route
-        Navigator.of(context).pop();
-      } else {
-        // Snap back
-        controller.animateTo(
-          1.0,
-          duration: AppDurations.pageTransition,
-          curve: Curves.easeInOut,
-        );
-      }
-    } else {
-      // Fallback: check velocity only
-      if (velocity > _popVelocity) {
-        Navigator.of(context).pop();
-      }
-    }
-  }
+  @override
+  Duration get reverseTransitionDuration => AppDurations.pageTransition;
 }
