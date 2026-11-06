@@ -24,8 +24,13 @@ class ArticleActionBar extends StatelessWidget {
   final bool isStarred;
 
   /// Map of tag ID → is tagged state for built-in tags.
-  /// Expected keys: Later tag ID, Bookmarks tag ID, Favorites tag ID.
   final Map<int, bool> tagStates;
+
+  /// ID of the built-in "Later" tag, or null when it is missing.
+  final int? laterTagId;
+
+  /// ID of the built-in "Bookmarks" tag, or null when it is missing.
+  final int? bookmarksTagId;
 
   /// Whether the article is read.
   final bool isRead;
@@ -51,6 +56,8 @@ class ArticleActionBar extends StatelessWidget {
     this.isStarred = false,
     this.isRead = true,
     this.tagStates = const {},
+    this.laterTagId,
+    this.bookmarksTagId,
     this.onToggleStar,
     this.onToggleTag,
     this.onMarkAsUnread,
@@ -63,11 +70,11 @@ class ArticleActionBar extends StatelessWidget {
     final theme = ReederTheme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    // Extract tag IDs in order: Later, Bookmarks, Favorites
-    // tagStates is populated in order by ArticleDetailController._loadTagStates
-    final tagIds = tagStates.keys.toList();
-    final laterTagId = tagIds.isNotEmpty ? tagIds[0] : null;
-    final bookmarksTagId = tagIds.length > 1 ? tagIds[1] : null;
+    // Tag IDs arrive explicitly: inferring them from `tagStates` key order
+    // silently mapped "Later" onto "Bookmarks" whenever a built-in tag was
+    // missing (e.g. a fresh account before tag seeding completed).
+    final laterTagId = this.laterTagId;
+    final bookmarksTagId = this.bookmarksTagId;
 
     return Container(
       height: AppDimensions.bottomBarHeight,

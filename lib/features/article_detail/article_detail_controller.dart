@@ -64,7 +64,7 @@ class ArticleDetailController
       final feed = await _feedRepo.getFeedById(article.feedId);
 
       // Load tag states
-      final tagStates = await _loadTagStates(articleId);
+      final tagInfo = await _loadTagStates(articleId);
 
       // Get reading settings
       final settings = _ref.read(settingsProvider).valueOrNull;
@@ -80,7 +80,9 @@ class ArticleDetailController
         feedTitle: feed?.title,
         feedIconUrl: feed?.iconUrl,
         feedSiteUrl: feed?.siteUrl,
-        tagStates: tagStates,
+        tagStates: tagInfo.states,
+        laterTagId: tagInfo.laterTagId,
+        bookmarksTagId: tagInfo.bookmarksTagId,
         isReaderView: isAutoReader,
         readerContent: null,
         fontSize: fontSize,
@@ -97,8 +99,8 @@ class ArticleDetailController
     }
   }
 
-  /// Loads tag states for the article.
-  Future<Map<int, bool>> _loadTagStates(int itemId) async {
+  /// Loads tag states for the article plus the built-in tag IDs they belong to.
+  Future<_TagInfo> _loadTagStates(int itemId) async {
     final laterTag = await _tagRepo.getLaterTag();
     final bookmarksTag = await _tagRepo.getBookmarksTag();
     final favoritesTag = await _tagRepo.getFavoritesTag();
@@ -117,7 +119,11 @@ class ArticleDetailController
           await _tagRepo.isItemTagged(favoritesTag.id, itemId);
     }
 
-    return states;
+    return _TagInfo(
+      states: states,
+      laterTagId: laterTag?.id,
+      bookmarksTagId: bookmarksTag?.id,
+    );
   }
 
   /// Marks the article as read (with remote sync).
@@ -245,6 +251,19 @@ class ArticleDetailController
   Future<void> reload() => _loadArticle();
 }
 
+/// Tag flags for one article plus the IDs they were keyed by.
+class _TagInfo {
+  const _TagInfo({
+    required this.states,
+    required this.laterTagId,
+    required this.bookmarksTagId,
+  });
+
+  final Map<int, bool> states;
+  final int? laterTagId;
+  final int? bookmarksTagId;
+}
+
 /// State for the article detail page.
 class ArticleDetailState {
   final FeedItem article;
@@ -252,6 +271,11 @@ class ArticleDetailState {
   final String? feedIconUrl;
   final String? feedSiteUrl;
   final Map<int, bool> tagStates;
+
+  /// Built-in tag IDs, passed explicitly so the action bar never has to infer
+  /// them from [tagStates] key order (a missing tag used to shift every slot).
+  final int? laterTagId;
+  final int? bookmarksTagId;
   final bool isReaderView;
   final String? readerContent;
   final double fontSize;
@@ -264,6 +288,8 @@ class ArticleDetailState {
     this.feedIconUrl,
     this.feedSiteUrl,
     this.tagStates = const {},
+    this.laterTagId,
+    this.bookmarksTagId,
     this.isReaderView = false,
     this.readerContent,
     this.fontSize = 16.0,
@@ -287,6 +313,8 @@ class ArticleDetailState {
     String? feedIconUrl,
     String? feedSiteUrl,
     Map<int, bool>? tagStates,
+    int? laterTagId,
+    int? bookmarksTagId,
     bool? isReaderView,
     String? readerContent,
     double? fontSize,
@@ -299,6 +327,8 @@ class ArticleDetailState {
       feedIconUrl: feedIconUrl ?? this.feedIconUrl,
       feedSiteUrl: feedSiteUrl ?? this.feedSiteUrl,
       tagStates: tagStates ?? this.tagStates,
+      laterTagId: laterTagId ?? this.laterTagId,
+      bookmarksTagId: bookmarksTagId ?? this.bookmarksTagId,
       isReaderView: isReaderView ?? this.isReaderView,
       readerContent: readerContent ?? this.readerContent,
       fontSize: fontSize ?? this.fontSize,

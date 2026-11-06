@@ -297,6 +297,8 @@ class _ArticleDetailPageState extends ConsumerState<ArticleDetailPage> {
           isStarred: state.article.isStarred,
           isRead: state.article.isRead,
           tagStates: state.tagStates,
+          laterTagId: state.laterTagId,
+          bookmarksTagId: state.bookmarksTagId,
           onToggleStar: () => ref
               .read(
                   articleDetailControllerProvider((widget.articleId, widget.timelineId)).notifier)
