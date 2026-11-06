@@ -5,6 +5,7 @@ import 'package:reeder/l10n/app_localizations.dart';
 
 import '../../core/constants/app_dimensions.dart';
 import '../../core/database/app_database.dart';
+import '../../core/extensions/string_ext.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
@@ -217,6 +218,8 @@ class _HighlightedArticleItem extends StatelessWidget {
     required this.theme,
   });
 
+  String get _summary => item.summary?.plainText ?? '';
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -247,12 +250,12 @@ class _HighlightedArticleItem extends StatelessWidget {
             // Highlighted title
             _buildHighlightedTitle(),
 
-            // Summary
-            if (item.summary != null && item.summary!.isNotEmpty)
+            // Summary — feed HTML would otherwise leak tags and entities.
+            if (_summary.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  item.summary!,
+                  _summary,
                   style: theme.typography.summary.copyWith(
                     color: theme.secondaryTextColor,
                   ),
