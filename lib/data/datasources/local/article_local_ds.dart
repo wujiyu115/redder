@@ -219,6 +219,28 @@ class ArticleLocalDataSource {
     };
   }
 
+  /// Gets unread counts grouped by content type in a single query.
+  ///
+  /// Returns a map of `contentType -> unread count` for types that still have
+  /// unread items. Missing types should be treated as 0. Feeds the 文章 /
+  /// 播客 / 视频 rows of the source list.
+  Future<Map<ContentType, int>> unreadCountsByContentType({int? accountId}) async {
+    final typeCol = _db.feedItems.contentType;
+    final countExp = _db.feedItems.id.count();
+    final query = _db.selectOnly(_db.feedItems)
+      ..addColumns([typeCol, countExp])
+      ..where(_db.feedItems.isRead.equals(false))
+      ..groupBy([typeCol]);
+    if (accountId != null) {
+      query.where(_db.feedItems.accountId.equals(accountId));
+    }
+    final results = await query.get();
+    return {
+      for (final row in results)
+        row.readWithConverter(typeCol)!: row.read(countExp)!,
+    };
+  }
+
   /// Gets multiple items by their IDs in a single query, ordered by publish
   /// date descending. Avoids the N+1 pattern of calling [getById] in a loop.
   Future<List<FeedItem>> getByIds(

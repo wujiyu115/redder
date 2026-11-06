@@ -104,6 +104,14 @@ class ArticleRepository {
     return _localDs.unreadCountsForFeeds(feedIds, accountId: accountId);
   }
 
+  /// Gets unread counts grouped by content type in a single query.
+  ///
+  /// Returns a map of `contentType -> unread count` for types with at least one
+  /// unread item. Missing types should be treated as 0.
+  Future<Map<ContentType, int>> getUnreadCountsByContentType({int? accountId}) {
+    return _localDs.unreadCountsByContentType(accountId: accountId);
+  }
+
   /// Gets multiple articles by ID in a single query, ordered by publish date
   /// descending.
   Future<List<FeedItem>> getArticlesByIds(

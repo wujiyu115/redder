@@ -1091,6 +1091,65 @@ void main() {
     });
   });
 
+  group('unreadCountsByContentType', () {
+    FeedItemsCompanion item(
+      String url,
+      ContentType type, {
+      bool isRead = false,
+      int? accountId,
+    }) {
+      return FeedItemsCompanion.insert(
+        feedId: 1,
+        title: url,
+        url: url,
+        publishedAt: DateTime(2024, 1, 1),
+        fetchedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+        contentType: Value(type),
+        isRead: Value(isRead),
+        accountId: Value(accountId),
+      );
+    }
+
+    test('returns an empty map when nothing is unread', () async {
+      expect(await dataSource.unreadCountsByContentType(), isEmpty);
+    });
+
+    test('groups unread items by content type', () async {
+      await dataSource.upsertAll([
+        item('https://e.com/a1', ContentType.article),
+        item('https://e.com/a2', ContentType.article),
+        item('https://e.com/a3', ContentType.article, isRead: true),
+        item('https://e.com/p1', ContentType.audio),
+        item('https://e.com/p2', ContentType.audio, isRead: true),
+        item('https://e.com/v1', ContentType.video),
+      ]);
+
+      final counts = await dataSource.unreadCountsByContentType();
+
+      expect(counts[ContentType.article], 2);
+      expect(counts[ContentType.audio], 1);
+      expect(counts[ContentType.video], 1);
+      // Fully read types are omitted rather than reported as 0.
+      expect(counts.containsKey(ContentType.image), isFalse);
+    });
+
+    test('scopes counts to the given account', () async {
+      await dataSource.upsertAll([
+        item('https://e.com/a1', ContentType.article, accountId: 1),
+        item('https://e.com/a2', ContentType.article),
+        item('https://e.com/v1', ContentType.video, accountId: 1),
+      ]);
+
+      final scoped = await dataSource.unreadCountsByContentType(accountId: 1);
+      expect(scoped[ContentType.article], 1);
+      expect(scoped[ContentType.video], 1);
+
+      final all = await dataSource.unreadCountsByContentType();
+      expect(all[ContentType.article], 2);
+    });
+  });
+
   group('markMultipleAsRead / markMultipleAsUnread', () {
     test('should mark multiple items as read', () async {
       final items = [

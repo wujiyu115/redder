@@ -116,16 +116,19 @@ class SourceListPage extends ConsumerWidget {
       _SourceRow.home(
         icon: const Text('📝', style: TextStyle(fontSize: 18)),
         title: l10n.articles,
+        count: state.articlesUnreadCount,
         onTap: () => context.push('/timeline/articles'),
       ),
       _SourceRow.home(
         icon: const Text('🎙', style: TextStyle(fontSize: 18)),
         title: l10n.podcasts,
+        count: state.podcastsUnreadCount,
         onTap: () => context.push('/timeline/podcasts'),
       ),
       _SourceRow.home(
         icon: const Text('🎬', style: TextStyle(fontSize: 18)),
         title: l10n.videos,
+        count: state.videosUnreadCount,
         onTap: () => context.push('/timeline/videos'),
       ),
 

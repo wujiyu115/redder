@@ -7,6 +7,7 @@ import '../../core/database/app_database.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/opml_parser.dart';
 import '../../data/models/feed.dart';
+import '../../data/models/feed_item.dart';
 import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/tag_repository.dart';
@@ -183,6 +184,10 @@ class SourceListController
       // Calculate total unread count
       final totalUnread = feeds.fold<int>(0, (sum, f) => sum + f.unreadCount);
 
+      // Unread counts per content type power the 文章 / 播客 / 视频 home rows.
+      final unreadByContentType =
+          await _articleRepo.getUnreadCountsByContentType(accountId: accountId);
+
       state = AsyncValue.data(SourceListState(
         feeds: feeds,
         folders: folders,
@@ -192,6 +197,7 @@ class SourceListController
         feedsByFolder: feedsByFolder,
         feedsByType: feedsByType,
         totalUnreadCount: totalUnread,
+        unreadByContentType: unreadByContentType,
         hideRead: _hideRead,
       ));
     } catch (e, st) {
@@ -586,6 +592,18 @@ class SourceListState {
   final int totalUnreadCount;
   final bool hideRead;
 
+  /// Unread item counts per content type, used by the 文章 / 播客 / 视频 rows.
+  final Map<ContentType, int> unreadByContentType;
+
+  /// Unread articles (plain text content).
+  int get articlesUnreadCount => unreadByContentType[ContentType.article] ?? 0;
+
+  /// Unread podcast episodes.
+  int get podcastsUnreadCount => unreadByContentType[ContentType.audio] ?? 0;
+
+  /// Unread videos.
+  int get videosUnreadCount => unreadByContentType[ContentType.video] ?? 0;
+
   const SourceListState({
     required this.feeds,
     required this.folders,
@@ -595,6 +613,7 @@ class SourceListState {
     required this.feedsByFolder,
     required this.feedsByType,
     required this.totalUnreadCount,
+    this.unreadByContentType = const {},
     this.hideRead = false,
   });
 }
