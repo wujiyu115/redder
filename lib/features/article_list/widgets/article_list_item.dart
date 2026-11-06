@@ -66,6 +66,14 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
 
+  /// Plain-text summary, cached for the lifetime of this widget instance.
+  ///
+  /// [StringExt.plainText] runs four regexes plus a whitespace squeeze; doing
+  /// that inside `build()` for every row on every frame (and again for the
+  /// Semantics label) showed up as build spikes when a fast fling threw a
+  /// dozen fresh rows at the list in a single frame.
+  String _summary = '';
+
   /// Entrance animation. Only created when this item actually animates —
   /// recycled items (the vast majority while scrolling) skip the ticker.
   AnimationController? _appearController;
@@ -80,6 +88,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
   @override
   void initState() {
     super.initState();
+    _summary = widget.item.summary?.plainText ?? '';
     if (!widget.animate) return;
 
     final controller = AnimationController(
@@ -104,6 +113,14 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
     Future.delayed(delay, () {
       if (mounted) controller.forward();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ArticleListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.summary != widget.item.summary) {
+      _summary = widget.item.summary?.plainText ?? '';
+    }
   }
 
   @override
@@ -134,7 +151,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
     final dpr = MediaQuery.devicePixelRatioOf(context);
     // Feed summaries arrive as HTML; render them as plain text so markup such
     // as `<p>` / `<a href="…">查看全文</a>` / `&nbsp;` never leaks into the row.
-    final summary = widget.item.summary?.plainText ?? '';
+    final summary = _summary;
 
     return Semantics(
       label:

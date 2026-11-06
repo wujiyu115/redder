@@ -5,9 +5,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/bootstrap/reeder_bootstrap.dart';
+import 'core/devtools/frame_stats.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // No-op unless built with --dart-define=FRAME_LOG=true.
+  enableFrameStats();
 
   // Silence image loading HTTP errors (e.g. 403 from CDN)
   // These are already handled by CachedNetworkImage's errorWidget,
