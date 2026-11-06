@@ -120,8 +120,20 @@ class SourceListController
       // accounts — merge is fine until per-account built-in tags are a real need.
       final builtInTags = await _tagRepo.getBuiltInTags();
       final customTags = await _tagRepo.getCustomTags(accountId: accountId);
-      final tags = [...builtInTags, ...customTags]
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      // Recount tagged items live (joined against existing articles) instead of
+      // trusting the incrementally maintained `itemCount` column, which drifts
+      // as soon as articles are deleted. Built-in tags are global, so their
+      // badges stay unscoped to match the rows above.
+      final scopedTagCounts = await _tagRepo.getTagItemCounts(accountId: accountId);
+      final globalTagCounts = accountId == null
+          ? scopedTagCounts
+          : await _tagRepo.getTagItemCounts();
+      final tags = [
+        for (final t in builtInTags)
+          t.copyWith(itemCount: globalTagCounts[t.id] ?? 0),
+        for (final t in customTags)
+          t.copyWith(itemCount: scopedTagCounts[t.id] ?? 0),
+      ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       // Recompute each feed's unread count live from articles so badges stay
       // accurate even between refresh/sync cycles. Single batch query instead

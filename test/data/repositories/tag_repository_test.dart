@@ -650,4 +650,50 @@ void main() {
       expect(retrieved!.sortOrder, equals(999));
     });
   });
+
+  group('getTagItemCounts', () {
+    late Tag tag;
+
+    setUp(() async {
+      tag = await tagRepository.createTag(name: 'Counted');
+    });
+
+    Future<int> addItem(String url) {
+      return testDb.into(testDb.feedItems).insert(FeedItemsCompanion.insert(
+            feedId: 1,
+            title: url,
+            url: url,
+            publishedAt: DateTime(2024, 1, 1),
+            fetchedAt: DateTime(2024, 1, 1),
+            createdAt: DateTime(2024, 1, 1),
+          ));
+    }
+
+    test('counts tagged items per tag', () async {
+      final a = await addItem('https://example.com/a');
+      final b = await addItem('https://example.com/b');
+      await tagRepository.tagItem(tag.id, a);
+      await tagRepository.tagItem(tag.id, b);
+
+      expect(await tagRepository.getTagItemCounts(), {tag.id: 2});
+    });
+
+    test('ignores tagged rows whose article is gone', () async {
+      final a = await addItem('https://example.com/a');
+      await tagRepository.tagItem(tag.id, a);
+      // Simulate an article deleted by content expiry / unsubscribe: the
+      // taggedItems row survives, the feedItems row does not.
+      await (testDb.delete(testDb.feedItems)
+            ..where((t) => t.id.equals(a)))
+          .go();
+
+      expect(await tagRepository.getTagItemCounts(), isEmpty);
+      // The stale column is exactly what the live recompute works around.
+      expect((await tagRepository.getTagById(tag.id))!.itemCount, equals(1));
+    });
+
+    test('omits tags with no tagged items', () async {
+      expect(await tagRepository.getTagItemCounts(), isEmpty);
+    });
+  });
 }

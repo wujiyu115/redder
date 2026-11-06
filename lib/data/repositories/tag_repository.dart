@@ -260,6 +260,31 @@ class TagRepository {
   }
 
   /// Gets the item count for a tag, optionally filtered by [accountId].
+  /// Tagged-item counts for every tag, in one query.
+  ///
+  /// Counts are joined against `feedItems` so rows left behind by deleted
+  /// articles (unsubscribe, content expiry) never inflate a badge — the
+  /// incrementally maintained `Tag.itemCount` column cannot see those.
+  Future<Map<int, int>> getTagItemCounts({int? accountId}) async {
+    final countExp = _db.feedItems.id.count();
+    final query = _db.select(_db.taggedItems).join([
+      innerJoin(
+        _db.feedItems,
+        _db.feedItems.id.equalsExp(_db.taggedItems.itemId),
+      ),
+    ])
+      ..addColumns([_db.taggedItems.tagId, countExp])
+      ..groupBy([_db.taggedItems.tagId]);
+    if (accountId != null) {
+      query.where(_db.feedItems.accountId.equals(accountId));
+    }
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        row.read(_db.taggedItems.tagId)!: row.read(countExp)!,
+    };
+  }
+
   Future<int> getTagItemCount(int tagId, {int? accountId}) async {
     final countExp = _db.taggedItems.id.count();
     final query = _db.selectOnly(_db.taggedItems)
