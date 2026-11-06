@@ -275,46 +275,69 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         ref.watch(groupByFeedProvider) ? groupItemsByFeed(state.items) : null;
     final bodyRowCount = groupedRows?.length ?? state.items.length;
 
-    return ListView.builder(
+    // Row id -> row index for the current window. Handed to the delegate's
+    // `findChildIndexCallback`, which is what lets Flutter keep every surviving
+    // row's Element/State when rows disappear above it (mark-read-on-scroll, or
+    // hide-read dropping the article you just opened). Without it the whole
+    // window below the gap is rebuilt from scratch.
+    final indexById = <int, int>{};
+    if (groupedRows == null) {
+      for (var i = 0; i < state.items.length; i++) {
+        indexById[state.items[i].id] = i;
+      }
+    } else {
+      for (var i = 0; i < groupedRows.length; i++) {
+        final row = groupedRows[i];
+        if (row is GroupedArticle) indexById[row.item.id] = i;
+      }
+    }
+
+    return ListView.custom(
       controller: _scrollController,
       padding: EdgeInsets.zero,
-      itemCount: bodyRowCount + (state.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= bodyRowCount) return _buildLoadingMore(theme, l10n);
+      childrenDelegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index >= bodyRowCount) return _buildLoadingMore(theme, l10n);
 
-        if (groupedRows != null) {
-          switch (groupedRows[index]) {
-            case FeedGroupHeader(:final feedId, :final itemCount):
-              return _buildGroupHeader(
-                state,
-                feedId,
-                itemCount,
-                theme,
-                isCompact,
-              );
-            case GroupedArticle(:final item):
-              return _buildItemRow(
-                context,
-                state,
-                item,
-                theme,
-                isCompact,
-                markReadOnScroll,
-                index,
-              );
+          if (groupedRows != null) {
+            switch (groupedRows[index]) {
+              case FeedGroupHeader(:final feedId, :final itemCount):
+                return _buildGroupHeader(
+                  state,
+                  feedId,
+                  itemCount,
+                  theme,
+                  isCompact,
+                );
+              case GroupedArticle(:final item):
+                return _buildItemRow(
+                  context,
+                  state,
+                  item,
+                  theme,
+                  isCompact,
+                  markReadOnScroll,
+                  index,
+                );
+            }
           }
-        }
 
-        return _buildItemRow(
-          context,
-          state,
-          state.items[index],
-          theme,
-          isCompact,
-          markReadOnScroll,
-          index,
-        );
-      },
+          return _buildItemRow(
+            context,
+            state,
+            state.items[index],
+            theme,
+            isCompact,
+            markReadOnScroll,
+            index,
+          );
+        },
+        childCount: bodyRowCount + (state.hasMore ? 1 : 0),
+        findChildIndexCallback: (key) {
+          if (key is ValueKey<int>) return indexById[key.value];
+          return null;
+        },
+      ),
     );
   }
 
@@ -442,13 +465,18 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
         // Report the row's position so "mark as read on scroll" knows when it
         // has left the viewport. Only wrapped when the setting is on, so the
         // default path costs nothing.
-    return markReadOnScroll
-        ? ScrollPastProbe(
-            itemId: item.id,
-            reporter: _scrollPast,
-            child: row,
-          )
-        : row;
+    // A stable key per item is what makes `findChildIndexCallback` work: rows
+    // keep their Element/State when the window shifts instead of being rebuilt.
+    return KeyedSubtree(
+      key: ValueKey<int>(item.id),
+      child: markReadOnScroll
+          ? ScrollPastProbe(
+              itemId: item.id,
+              reporter: _scrollPast,
+              child: row,
+            )
+          : row,
+    );
   }
 
   /// Opens the long-press action menu for [item] at [position].
