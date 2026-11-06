@@ -183,6 +183,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cacheImagesDesc => '保存图片以供离线阅读';
 
   @override
+  String get cacheLimit => '缓存上限';
+
+  @override
+  String get cacheLimitDesc => '图片缓存可占用的最大磁盘空间';
+
+  @override
   String get importExport => '导入 / 导出';
 
   @override
@@ -310,6 +316,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get isarDesc => '本地数据库';
+
+  @override
+  String get drift => 'Drift';
+
+  @override
+  String get driftDesc => '响应式 SQLite 数据库';
 
   @override
   String get openSourceLicenses => '开源许可证';

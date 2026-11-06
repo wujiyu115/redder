@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/app_settings_helpers.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/services/background_refresh_service.dart';
+import '../../data/services/content_expiry_service.dart';
 import '../../data/services/image_cache_manager.dart';
 import 'theme_provider.dart';
 
@@ -146,8 +147,21 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
   }
 
   /// Sets content expiry days.
+  ///
+  /// Persists the value and re-arms the cleanup timer so a lowered retention
+  /// window prunes immediately instead of after the next app start.
   Future<void> setContentExpiryDays(int days) async {
     await _repository.setContentExpiryDays(days);
+    await _loadSettings();
+    ContentExpiryService.schedule(days);
+  }
+
+  /// Sets the on-disk image cache cap.
+  ///
+  /// Persists the value; [imageCacheSizeCapEnforcerProvider] reacts to the
+  /// settings change and trims the cache to the new cap.
+  Future<void> setMaxCacheSizeMB(int mb) async {
+    await _repository.setMaxCacheSizeMB(mb);
     await _loadSettings();
   }
 

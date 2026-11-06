@@ -63,6 +63,8 @@
   "contentExpiryDesc": "自动隐藏旧文章",
   "cacheImages": "缓存图片",
   "cacheImagesDesc": "保存图片以供离线阅读",
+  "cacheLimit": "缓存上限",
+  "cacheLimitDesc": "图片缓存可占用的最大磁盘空间",
   "importExport": "导入 / 导出",
   "importOpml": "导入 OPML",
   "importOpmlDesc": "从 OPML 文件导入订阅",
@@ -98,6 +100,8 @@
   "riverpodDesc": "状态管理",
   "isar": "Isar",
   "isarDesc": "本地数据库",
+  "drift": "Drift",
+  "driftDesc": "响应式 SQLite 数据库",
   "openSourceLicenses": "开源许可证",
   "madeWithFlutter": "使用 Flutter 用 ❤ 制作",
 

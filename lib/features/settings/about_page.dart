@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:reeder/l10n/app_localizations.dart';
 
@@ -16,8 +17,28 @@ import '../../shared/widgets/reeder_section_header.dart';
 /// - App name and version
 /// - Credits and acknowledgments
 /// - Links to privacy policy, terms, etc.
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  /// Read from the platform bundle so it can never drift from pubspec again;
+  /// empty until the (async) plugin answers.
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (!mounted) return;
+      setState(() => _version = info.version);
+    }).catchError((_) {
+      // Plugin unavailable (e.g. widget tests): keep the version hidden.
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +95,7 @@ class AboutPage extends StatelessWidget {
 
                 // Version
                 Text(
-                  l10n.version('1.0.0'),
+                  l10n.version(_version),
                   style: theme.typography.caption.copyWith(
                     color: theme.secondaryTextColor,
                   ),
@@ -104,20 +125,14 @@ class AboutPage extends StatelessWidget {
           ReederListTile(
             title: l10n.privacyPolicy,
             showDisclosure: true,
-            onTap: () => _openUrl('https://example.com/privacy'),
-          ),
-
-          ReederListTile(
-            title: l10n.termsOfService,
-            showDisclosure: true,
-            onTap: () => _openUrl('https://example.com/terms'),
+            onTap: () => context.push('/settings/about/privacy'),
           ),
 
           ReederListTile(
             title: l10n.sourceCode,
             subtitle: l10n.viewOnGithub,
             showDisclosure: true,
-            onTap: () => _openUrl('https://github.com/example/reeder'),
+            onTap: () => _openUrl('https://github.com/wujiyu115/redder'),
           ),
 
           // ─── ACKNOWLEDGMENTS ──────────────────────────────
@@ -138,10 +153,10 @@ class AboutPage extends StatelessWidget {
           ),
 
           ReederListTile(
-            title: l10n.isar,
-            subtitle: l10n.isarDesc,
+            title: l10n.drift,
+            subtitle: l10n.driftDesc,
             showDisclosure: true,
-            onTap: () => _openUrl('https://isar.dev'),
+            onTap: () => _openUrl('https://drift.simonbinder.eu'),
           ),
 
           ReederListTile(

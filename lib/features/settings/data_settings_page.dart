@@ -107,6 +107,18 @@ class DataSettingsPage extends ConsumerWidget {
           ),
         ),
 
+        ReederListTile(
+          title: l10n.cacheLimit,
+          subtitle: l10n.cacheLimitDesc,
+          trailing: Text(
+            '${settings.maxCacheSizeMB} MB',
+            style: theme.typography.body.copyWith(
+              color: theme.secondaryTextColor,
+            ),
+          ),
+          onTap: () => _showCacheLimitPicker(context, ref, settings),
+        ),
+
         // ─── NOTIFICATIONS ───────────────────────────────────
         ReederSectionHeader(title: l10n.notifications),
 
@@ -281,6 +293,35 @@ class DataSettingsPage extends ConsumerWidget {
                   ref
                       .read(settingsProvider.notifier)
                       .setContentExpiryDays(days);
+                  Navigator.of(context).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCacheLimitPicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettingsTableData settings,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final options = [100, 250, 500, 1000, 2000];
+    ReederDialog.show(
+      context: context,
+      builder: (context) => ReederDialog(
+        title: l10n.cacheLimit,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final mb in options)
+              _OptionTile(
+                label: '$mb MB',
+                isSelected: settings.maxCacheSizeMB == mb,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setMaxCacheSizeMB(mb);
                   Navigator.of(context).pop();
                 },
               ),

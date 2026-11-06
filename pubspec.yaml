@@ -71,6 +71,9 @@ dependencies:
   # File picker (for OPML import)
   file_picker: ^8.0.0
 
+  # App version shown on the About page (read from the platform bundle).
+  package_info_plus: ^8.1.3
+
 dependency_overrides:
   package_info_plus: ^8.1.3
   wakelock_plus: '>=1.2.0 <1.3.0'

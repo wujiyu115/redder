@@ -187,6 +187,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cacheImagesDesc => 'Save images for offline reading';
 
   @override
+  String get cacheLimit => 'Cache Limit';
+
+  @override
+  String get cacheLimitDesc => 'Maximum disk space used by cached images';
+
+  @override
   String get importExport => 'Import / Export';
 
   @override
@@ -318,6 +324,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get isarDesc => 'Local database';
+
+  @override
+  String get drift => 'Drift';
+
+  @override
+  String get driftDesc => 'Reactive SQLite database';
 
   @override
   String get openSourceLicenses => 'Open Source Licenses';

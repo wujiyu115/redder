@@ -68,6 +68,8 @@
   "contentExpiryDesc": "Automatically hide old articles",
   "cacheImages": "Cache Images",
   "cacheImagesDesc": "Save images for offline reading",
+  "cacheLimit": "Cache Limit",
+  "cacheLimitDesc": "Maximum disk space used by cached images",
   "importExport": "Import / Export",
   "importOpml": "Import OPML",
   "importOpmlDesc": "Import subscriptions from an OPML file",
@@ -133,6 +135,8 @@
   "riverpodDesc": "State management",
   "isar": "Isar",
   "isarDesc": "Local database",
+  "drift": "Drift",
+  "driftDesc": "Reactive SQLite database",
   "openSourceLicenses": "Open Source Licenses",
   "madeWithFlutter": "Made with ❤ using Flutter",
 

@@ -41,7 +41,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
             const SizedBox(height: AppDimensions.spacingXS),
             Text(
-              'Last updated: April 2026',
+              'Last updated: November 2026',
               style: theme.typography.caption.copyWith(
                 color: theme.tertiaryTextColor,
               ),
@@ -68,7 +68,18 @@ class PrivacyPolicyPage extends StatelessWidget {
                   '• Tags, bookmarks, and reading history\n'
                   '• Scroll positions and app settings\n\n'
                   'All data is stored locally on your device using an embedded database. '
-                  'No data is transmitted to our servers.',
+                  'No data is transmitted to our servers. Reeder has no servers.',
+            ),
+
+            // Sync Accounts
+            _buildSection(
+              theme,
+              'Sync Accounts (optional)',
+              'Reeder works fully offline. If you choose to add a sync account '
+                  '(Feedbin, FreshRSS, or a Reader-compatible server), your '
+                  'credentials are stored on-device and requests go directly to '
+                  'the server you entered. Nothing is routed through us, and you '
+                  'can remove the account at any time from Settings > Accounts.',
             ),
 
             // Network Requests

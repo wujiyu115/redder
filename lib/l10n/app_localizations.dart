@@ -440,6 +440,18 @@ abstract class AppLocalizations {
   /// **'Save images for offline reading'**
   String get cacheImagesDesc;
 
+  /// No description provided for @cacheLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache Limit'**
+  String get cacheLimit;
+
+  /// No description provided for @cacheLimitDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum disk space used by cached images'**
+  String get cacheLimitDesc;
+
   /// No description provided for @importExport.
   ///
   /// In en, this message translates to:
@@ -643,6 +655,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Local database'**
   String get isarDesc;
+
+  /// No description provided for @drift.
+  ///
+  /// In en, this message translates to:
+  /// **'Drift'**
+  String get drift;
+
+  /// No description provided for @driftDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactive SQLite database'**
+  String get driftDesc;
 
   /// No description provided for @openSourceLicenses.
   ///

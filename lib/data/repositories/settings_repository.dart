@@ -200,6 +200,15 @@ class SettingsRepository {
     );
   }
 
+  /// Sets the on-disk image cache cap in MB.
+  Future<void> setMaxCacheSizeMB(int mb) async {
+    await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        maxCacheSizeMB: Value(mb.clamp(50, 5120)),
+      ),
+    );
+  }
+
   // ─── Data Settings ────────────────────────────────────────
 
   /// Sets the auto-refresh interval in minutes (0 = manual only).

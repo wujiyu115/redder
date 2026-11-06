@@ -11,6 +11,7 @@ import '../../features/settings/reading_settings_page.dart';
 import '../../features/settings/data_settings_page.dart';
 import '../../features/settings/about_page.dart';
 import '../../features/settings/licenses_page.dart';
+import '../../features/settings/privacy_policy_page.dart';
 import '../../features/settings/timeline_settings_page.dart';
 import '../../features/settings/accounts_page.dart';
 import '../../features/settings/add_account_page.dart';
@@ -107,6 +108,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   child: const AboutPage(),
                 ),
                 routes: [
+                  GoRoute(
+                    path: 'privacy',
+                    name: 'privacyPolicy',
+                    pageBuilder: (context, state) => ReederPage(
+                      key: state.pageKey,
+                      child: const PrivacyPolicyPage(),
+                    ),
+                  ),
                   GoRoute(
                     path: 'licenses',
                     name: 'licenses',

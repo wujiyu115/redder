@@ -4,9 +4,9 @@ import 'dart:developer' as developer;
 import 'package:flutter/widgets.dart';
 
 import '../../app.dart';
-import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../../data/services/background_refresh_service.dart';
+import '../../data/services/content_expiry_service.dart';
 import '../../data/services/notification_service.dart';
 import '../constants/app_colors.dart';
 import '../database/app_database.dart';
@@ -118,7 +118,7 @@ class _ReederBootstrapState extends State<ReederBootstrap> {
     // Schedule periodic cleanup of articles older than contentExpiryDays.
     // Runs once at startup and then every 24h.
     BootProgress.mark('cleanup');
-    _scheduleContentExpiryCleanup(settings.contentExpiryDays);
+    ContentExpiryService.schedule(settings.contentExpiryDays);
 
     BootProgress.mark('ready');
   }
@@ -136,39 +136,6 @@ class _ReederBootstrapState extends State<ReederBootstrap> {
     if (!_ready) return const AppBootstrapLoadingPage();
     return const ReederApp();
   }
-}
-
-/// Schedules a periodic cleanup of articles older than `contentExpiryDays`.
-///
-/// Runs immediately (if days > 0) and then every 24h. When days == 0 the
-/// cleanup is a no-op and no timer is scheduled.
-Timer? _contentExpiryTimer;
-void _scheduleContentExpiryCleanup(int contentExpiryDays) {
-  _contentExpiryTimer?.cancel();
-  if (contentExpiryDays <= 0) return;
-
-  Future<void> cleanup() async {
-    try {
-      final deleted =
-          await ArticleRepository().deleteOldArticles(contentExpiryDays);
-      developer.log(
-        'Content expiry cleanup: removed $deleted articles older than '
-        '$contentExpiryDays days',
-        name: 'Reeder.Expiry',
-      );
-    } catch (e) {
-      developer.log(
-        'Content expiry cleanup failed: $e',
-        name: 'Reeder.Expiry',
-        error: e,
-      );
-    }
-  }
-
-  // Kick off immediately on startup.
-  cleanup();
-  _contentExpiryTimer =
-      Timer.periodic(const Duration(hours: 24), (_) => cleanup());
 }
 
 /// Startup failure surface. Plain widgets (no theme/l10n machinery that may

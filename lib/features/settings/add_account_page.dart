@@ -37,18 +37,19 @@ class AddAccountPage extends StatelessWidget {
             onTap: () => context.push('/settings/accounts/login/feedbin'),
           ),
 
+          // Feedly / Inoreader need OAuth: the sync services exist but the
+          // authorization flow is not wired (no client IDs, and Android is
+          // missing the `reeder://` redirect scheme). Keep the rows as
+          // non-tappable "coming soon" entries so the UI stops advertising a
+          // login that can only fail.
           ReederListTile(
             title: 'Feedly',
             subtitle: l10n.comingSoon,
-            showDisclosure: true,
-            onTap: () => context.push('/settings/accounts/login/feedly'),
           ),
 
           ReederListTile(
             title: 'Inoreader',
             subtitle: l10n.comingSoon,
-            showDisclosure: true,
-            onTap: () => context.push('/settings/accounts/login/inoreader'),
           ),
 
           // ─── Self-Hosted Services ────────────────────────────
