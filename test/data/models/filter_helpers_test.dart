@@ -172,5 +172,34 @@ void main() {
         isFalse,
       );
     });
+
+    test('exclude found only in the body still vetoes a title include', () {
+      // The matcher decides on title+summary first; it must not skip the body
+      // scan when exclude keywords are configured.
+      final f = _filter(include: ['flutter'], exclude: ['crypto']);
+      expect(
+        f.matches(
+          _item(title: 'Learning Flutter', content: 'buy crypto now'),
+          FeedType.blog,
+        ),
+        isFalse,
+      );
+    });
+
+    test('include keyword only inside the body matches', () {
+      final f = _filter(include: ['flutter']);
+      expect(
+        f.matches(
+          _item(title: 'Weekly roundup', content: 'we tried flutter today'),
+          FeedType.blog,
+        ),
+        isTrue,
+      );
+    });
+
+    test('null body does not crash and does not match', () {
+      final f = _filter(include: ['flutter'], exclude: ['spam']);
+      expect(f.matches(_item(title: 'Weekly roundup'), FeedType.blog), isFalse);
+    });
   });
 }

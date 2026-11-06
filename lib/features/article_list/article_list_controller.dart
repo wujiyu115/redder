@@ -6,7 +6,7 @@ import '../../core/database/app_database.dart';
 import '../../core/utils/app_logger.dart';
 import '../../data/models/feed.dart';
 import '../../data/models/feed_item.dart';
-import '../../data/models/filter_helpers.dart';
+import '../../data/models/filter_matcher.dart';
 import '../../data/repositories/article_repository.dart';
 import '../../data/repositories/feed_repository.dart';
 import '../../data/repositories/tag_repository.dart';
@@ -38,12 +38,38 @@ class ArticleListController
   late final ArticleRepository _articleRepo;
   late final FeedRepository _feedRepo;
   late final TagRepository _tagRepo;
+
   late final FeedRefreshService _refreshService;
   late final SyncBridge _syncBridge;
 
   static const int _pageSize = 30;
   int _currentOffset = 0;
   bool _isLoadingMore = false;
+
+  // ─── Filter timeline scan cache ────────────────────────────
+  //
+  // Keyword filters can only be evaluated in Dart, so the page request used to
+  // re-read `(offset + limit) * 3` rows from the top and re-match all of them —
+  // for a 200-item filtered timeline the last page scanned ~600 rows and ran
+  // the matcher over every one of them, on every page. The matches are now kept
+  // and the raw rows are scanned at most once.
+  List<FeedItem>? _filterMatches;
+  Map<int, FeedType>? _filterFeedTypes;
+  int _filterScanned = 0;
+  bool _filterExhausted = false;
+  int? _filterCacheId;
+
+  /// How many raw rows one scan step pulls.
+  static const int _filterScanStep = 200;
+
+  void _resetFilterCache() {
+    _filterMatches = null;
+    _filterFeedTypes = null;
+    _filterScanned = 0;
+    _filterExhausted = false;
+    _filterCacheId = null;
+  }
+
 
   /// Articles scrolled past the viewport, waiting to be persisted.
   final ScrollReadBuffer _scrollReadBuffer = ScrollReadBuffer();
@@ -151,6 +177,7 @@ class ArticleListController
       // account instead of null.
       await _ref.read(activeAccountIdProvider.future);
       _currentOffset = 0;
+      _resetFilterCache();
       final items = await _loadItems(offset: 0, limit: _pageSize);
       final feedMeta = await _loadFeedMetadata(items);
 
@@ -279,9 +306,10 @@ class ArticleListController
             final feedTypeMap = <int, FeedType>{
               for (final f in feeds) f.id: f.type,
             };
+            final matcher = FilterMatcher(filter);
             final matchedIds = batch
                 .where((i) =>
-                    filter.matches(i, feedTypeMap[i.feedId] ?? FeedType.blog))
+                    matcher.matches(i, feedTypeMap[i.feedId] ?? FeedType.blog))
                 .map((i) => i.id)
                 .toList();
             if (matchedIds.isNotEmpty) {
@@ -396,60 +424,80 @@ class ArticleListController
     if (timelineId.startsWith('tag_')) {
       final tagId = int.tryParse(timelineId.substring(4));
       if (tagId != null) {
-        final itemIds = await _tagRepo.getItemIdsByTag(tagId, accountId: accountId);
-        // Batch-fetch in one query, then sort by recency and paginate in
-        // Dart — getArticlesByIds doesn't preserve publishedAt ordering.
-        final items = await _articleRepo.getArticlesByIds(
-          itemIds,
-          offset: 0,
-          limit: itemIds.length,
+        // Paginated by SQLite: previously every page re-read *all* tagged rows
+        // (with their article HTML) and sliced in Dart.
+        return _articleRepo.getArticlesByTag(
+          tagId,
+          limit: limit,
+          offset: offset,
+          oldestFirst: oldestFirst,
           accountId: accountId,
         );
-        items.sort((a, b) => oldestFirst
-            ? a.publishedAt.compareTo(b.publishedAt)
-            : b.publishedAt.compareTo(a.publishedAt));
-        return items.skip(offset).take(limit).toList();
       }
     }
 
     if (timelineId.startsWith('filter_')) {
-      final filterId = int.tryParse(timelineId.substring(7));
-      if (filterId != null) {
-        final db = AppDatabase.instance;
-        final filter = await (db.select(db.filters)
-              ..where((t) => t.id.equals(filterId)))
-            .getSingleOrNull();
-        if (filter != null) {
-          // Load a larger batch and filter in memory
-          final batchSize = (offset + limit) * 3;
-          final allItems = await _articleRepo.getArticles(
-            limit: batchSize,
-            offset: 0,
-            oldestFirst: oldestFirst,
-            accountId: accountId,
-          );
-
-          // Build feed type map
-          final feeds = await _feedRepo.getAllFeeds(accountId: accountId);
-          final feedTypeMap = <int, FeedType>{};
-          for (final feed in feeds) {
-            feedTypeMap[feed.id] = feed.type;
-          }
-
-          // Apply filter
-          final matched = allItems.where((item) {
-            final feedType = feedTypeMap[item.feedId] ?? FeedType.blog;
-            return filter.matches(item, feedType);
-          }).toList();
-
-          if (offset >= matched.length) return [];
-          final end = (offset + limit).clamp(0, matched.length);
-          return matched.sublist(offset, end);
-        }
-      }
+      return _loadFilterItems(offset: offset, limit: limit);
     }
 
     return _articleRepo.getArticles(limit: limit, offset: offset, oldestFirst: oldestFirst, accountId: accountId);
+  }
+
+  /// Pages through a `filter_*` timeline, scanning raw rows at most once.
+  ///
+  /// Keyword filters can only be evaluated in Dart, so the old code re-read
+  /// `(offset + limit) * 3` rows from the top for *every* page and re-matched
+  /// all of them — a 200-item filtered timeline re-scanned ~600 rows per page.
+  Future<List<FeedItem>> _loadFilterItems({
+    required int offset,
+    required int limit,
+  }) async {
+    final filterId = int.tryParse(timelineId.substring(7));
+    if (filterId == null) return [];
+
+    if (_filterCacheId != filterId) {
+      _resetFilterCache();
+      _filterCacheId = filterId;
+    }
+
+    final accountId = _activeAccountId;
+    final oldestFirst = _ref.read(sortOrderProvider) == SortOrder.oldest;
+
+    final db = AppDatabase.instance;
+    final filter = await (db.select(db.filters)
+          ..where((t) => t.id.equals(filterId)))
+        .getSingleOrNull();
+    if (filter == null) return [];
+
+    _filterFeedTypes ??= {
+      for (final feed in await _feedRepo.getAllFeeds(accountId: accountId))
+        feed.id: feed.type,
+    };
+    final feedTypes = _filterFeedTypes!;
+
+    final matcher = FilterMatcher(filter);
+    final matches = _filterMatches ??= <FeedItem>[];
+
+    while (matches.length < offset + limit && !_filterExhausted) {
+      final rows = await _articleRepo.getArticles(
+        limit: _filterScanStep,
+        offset: _filterScanned,
+        oldestFirst: oldestFirst,
+        accountId: accountId,
+      );
+      _filterScanned += rows.length;
+      if (rows.length < _filterScanStep) _filterExhausted = true;
+      for (final row in rows) {
+        if (matcher.matches(row, feedTypes[row.feedId] ?? FeedType.blog)) {
+          matches.add(row);
+        }
+      }
+      if (rows.isEmpty) break;
+    }
+
+    if (offset >= matches.length) return [];
+    final end = (offset + limit).clamp(0, matches.length);
+    return matches.sublist(offset, end);
   }
 
   /// Loads feed titles and icons for the given items.

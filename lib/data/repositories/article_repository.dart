@@ -114,6 +114,24 @@ class ArticleRepository {
 
   /// Gets multiple articles by ID in a single query, ordered by publish date
   /// descending.
+  /// Gets items of one tag, paginated in SQL (see
+  /// [ArticleLocalDataSource.getByTagId]).
+  Future<List<FeedItem>> getArticlesByTag(
+    int tagId, {
+    int? limit,
+    int? offset,
+    bool oldestFirst = false,
+    int? accountId,
+  }) {
+    return _localDs.getByTagId(
+      tagId,
+      limit: limit,
+      offset: offset,
+      oldestFirst: oldestFirst,
+      accountId: accountId,
+    );
+  }
+
   Future<List<FeedItem>> getArticlesByIds(
     List<int> ids, {
     int offset = 0,

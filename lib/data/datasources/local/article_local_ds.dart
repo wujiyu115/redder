@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../models/feed.dart';
 import '../../models/feed_item.dart';
-import '../../models/filter_helpers.dart';
+import '../../models/filter_matcher.dart';
 
 /// Local data source for FeedItem (article) operations using Drift.
 ///
@@ -111,6 +111,40 @@ class ArticleLocalDataSource {
     }
     if (limit != null) query.limit(limit, offset: offset ?? 0);
     return query.get();
+  }
+
+  /// Gets items carrying [tagId], newest first, paginated in SQL.
+  ///
+  /// The tag timelines used to resolve every tagged item id first, fetch all of
+  /// them in one go and slice in Dart — for a tag with a few hundred saved
+  /// articles every `loadMore` re-read the whole set (full rows incl. article
+  /// HTML). The join lets SQLite walk the index and return just the page.
+  Future<List<FeedItem>> getByTagId(
+    int tagId, {
+    int? limit,
+    int? offset,
+    bool oldestFirst = false,
+    int? accountId,
+  }) {
+    final query = _db.select(_db.feedItems).join([
+      innerJoin(
+        _db.taggedItems,
+        _db.taggedItems.itemId.equalsExp(_db.feedItems.id),
+      ),
+    ])
+      ..where(_db.taggedItems.tagId.equals(tagId));
+    if (accountId != null) {
+      // Same scoping as TagRepository.getItemIdsByTag: the association row (not
+      // the item row) carries the account.
+      query.where(_db.taggedItems.accountId.equals(accountId));
+    }
+    query.orderBy([
+      oldestFirst
+          ? OrderingTerm.asc(_db.feedItems.publishedAt)
+          : OrderingTerm.desc(_db.feedItems.publishedAt),
+    ]);
+    if (limit != null) query.limit(limit, offset: offset ?? 0);
+    return query.map((row) => row.readTable(_db.feedItems)).get();
   }
 
   /// Gets items by content type.
@@ -439,10 +473,13 @@ class ArticleLocalDataSource {
         for (final feed in await _db.select(_db.feeds).get())
           feed.id: feed.type,
       };
+      // Compiled once: the per-call form re-decodes the filter's JSON columns
+      // and recompiles keyword patterns for every candidate.
+      final matcher = FilterMatcher(filter);
       final candidates = await query.get();
       for (final candidate in candidates) {
         final feedType = feedTypes[candidate.feedId] ?? FeedType.blog;
-        if (filter.matches(candidate, feedType)) return candidate.id;
+        if (matcher.matches(candidate, feedType)) return candidate.id;
       }
       return null;
     } else {

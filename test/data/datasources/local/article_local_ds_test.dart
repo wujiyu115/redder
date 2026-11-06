@@ -1785,4 +1785,74 @@ void main() {
       );
     });
   });
+
+  group('getByTagId', () {
+    late int tagId;
+    late List<int> taggedIds;
+
+    setUp(() async {
+      tagId = await testDb.into(testDb.tags).insert(
+            TagsCompanion.insert(name: 'Saved', createdAt: DateTime(2024, 1, 1)),
+          );
+      taggedIds = [];
+      for (var i = 0; i < 5; i++) {
+        final id = await dataSource.upsert(FeedItemsCompanion.insert(
+          feedId: 1,
+          title: 'Tagged $i',
+          url: 'https://example.com/tagged-$i',
+          publishedAt: DateTime(2024, 1, i + 1),
+          fetchedAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024, 1, 1),
+        ));
+        taggedIds.add(id);
+        await testDb.into(testDb.taggedItems).insert(
+              TaggedItemsCompanion.insert(
+                tagId: tagId,
+                itemId: id,
+                taggedAt: DateTime(2024, 1, 1),
+              ),
+            );
+      }
+      // An untagged item must never show up.
+      await dataSource.upsert(FeedItemsCompanion.insert(
+        feedId: 1,
+        title: 'Untagged',
+        url: 'https://example.com/untagged',
+        publishedAt: DateTime(2024, 1, 9),
+        fetchedAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024, 1, 1),
+      ));
+    });
+
+    test('returns only tagged items, newest first, paginated', () async {
+      final firstPage = await dataSource.getByTagId(tagId, limit: 2, offset: 0);
+      expect(firstPage.map((i) => i.title), ['Tagged 4', 'Tagged 3']);
+
+      final secondPage =
+          await dataSource.getByTagId(tagId, limit: 2, offset: 2);
+      expect(secondPage.map((i) => i.title), ['Tagged 2', 'Tagged 1']);
+    });
+
+    test('oldestFirst reverses the order', () async {
+      final page =
+          await dataSource.getByTagId(tagId, limit: 5, oldestFirst: true);
+      expect(page.map((i) => i.title), [
+        'Tagged 0',
+        'Tagged 1',
+        'Tagged 2',
+        'Tagged 3',
+        'Tagged 4',
+      ]);
+    });
+
+    test('paging through everything yields each item exactly once', () async {
+      final seen = <int>[];
+      for (var offset = 0; offset < taggedIds.length; offset += 2) {
+        final page = await dataSource.getByTagId(tagId, limit: 2, offset: offset);
+        seen.addAll(page.map((i) => i.id));
+      }
+      expect(seen.toSet(), taggedIds.toSet());
+      expect(seen.length, taggedIds.length);
+    });
+  });
 }
