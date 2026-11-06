@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
@@ -14,6 +16,7 @@ import '../../shared/providers/account_provider.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/sync_provider.dart';
 import '../source_list/source_list_controller.dart';
+import 'scroll_read_buffer.dart';
 
 /// Provider family for article list controllers, keyed by timeline ID.
 final articleListControllerProvider = StateNotifierProvider.family<
@@ -42,6 +45,13 @@ class ArticleListController
   int _currentOffset = 0;
   bool _isLoadingMore = false;
 
+  /// Articles scrolled past the viewport, waiting to be persisted.
+  final ScrollReadBuffer _scrollReadBuffer = ScrollReadBuffer();
+  Timer? _scrollReadTimer;
+
+  /// How long scrolled-past articles are batched before one write + push.
+  static const _scrollReadDebounce = Duration(milliseconds: 800);
+
   /// Per-account feed metadata cache so pagination doesn't re-fetch feeds
   /// already seen this session. Keyed by accountId because feeds are
   /// account-scoped — a cross-account cache would serve stale metadata
@@ -60,6 +70,77 @@ class ArticleListController
 
   /// Gets the current active account ID.
   int? get _activeAccountId => _ref.read(accountSwitchProvider);
+
+  /// Marks articles the user scrolled past as read.
+  ///
+  /// The rows are updated in place (no reload) so the list never shifts under
+  /// the user's finger, then persisted + pushed to the remote service as one
+  /// debounced batch. Already-read and already-seen ids are ignored.
+  void markReadOnScroll(List<int> ids) {
+    if (ids.isEmpty) return;
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final reported = ids.toSet();
+    final unread = <int>{
+      for (final item in current.items)
+        if (!item.isRead && reported.contains(item.id)) item.id,
+    };
+    if (unread.isEmpty) return;
+
+    final fresh = _scrollReadBuffer.markSeen(unread);
+    if (fresh.isEmpty) return;
+
+    final freshIds = fresh.toSet();
+    state = AsyncData(
+      ArticleListState(
+        items: [
+          for (final item in current.items)
+            freshIds.contains(item.id)
+                ? item.copyWith(isRead: true)
+                : item,
+        ],
+        feedTitles: current.feedTitles,
+        feedIcons: current.feedIcons,
+        hasMore: current.hasMore,
+      ),
+    );
+
+    _scrollReadBuffer.enqueue(fresh);
+    _scrollReadTimer?.cancel();
+    _scrollReadTimer = Timer(_scrollReadDebounce, _flushScrollReads);
+  }
+
+  /// Persists the batched scrolled-past articles and pushes them remotely.
+  Future<void> _flushScrollReads() async {
+    final batch = _scrollReadBuffer.takePending();
+    if (batch.isEmpty) return;
+
+    _log.info('markReadOnScroll: persisting ${batch.length} articles');
+    try {
+      await _syncBridge.markAsReadWithSync(batch, accountId: _activeAccountId);
+    } catch (e, st) {
+      _log.error('markReadOnScroll: failed', error: e, stackTrace: st);
+      return;
+    }
+
+    // Badge refresh only — coalesced so scrolling doesn't reload the sources.
+    _ref.read(sourceListControllerProvider.notifier).scheduleReload();
+  }
+
+  @override
+  void dispose() {
+    _scrollReadTimer?.cancel();
+    // Don't lose what was already scrolled past: `ref` is unusable here, but
+    // the sync bridge reference stays valid for the in-flight write.
+    final pending = _scrollReadBuffer.takePending();
+    if (pending.isNotEmpty) {
+      unawaited(
+        _syncBridge.markAsReadWithSync(pending).catchError((_) {}),
+      );
+    }
+    super.dispose();
+  }
 
   /// Loads the initial page of articles.
   Future<void> _loadInitial() async {

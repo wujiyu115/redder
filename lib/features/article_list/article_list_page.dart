@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +25,7 @@ import 'article_list_controller.dart';
 import 'widgets/article_list_item.dart';
 import 'widgets/article_list_item_compact.dart';
 import 'widgets/timeline_control_button.dart';
+import 'widgets/scroll_past_probe.dart';
 import 'widgets/swipe_action_widget.dart';
 
 /// The article list page displaying a timeline of feed items.
@@ -68,6 +71,19 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   /// `ref.read` rebuilds the provider handle.
   late final ArticleListController _listController;
 
+  /// Rows that scrolled past the viewport, for "mark as read on scroll".
+  final ScrollPastReporter _scrollPast = ScrollPastReporter();
+
+  /// Previous scroll offset, to tell down-scrolls from up-scrolls.
+  double _lastScrollOffset = 0;
+
+  /// Set while the list is programmatically positioned (e.g. restoring a saved
+  /// scroll position) so rows above the viewport aren't marked read.
+  bool _suppressScrollRead = false;
+
+  /// Coalesces scrolled-past checks to one per frame.
+  bool _scrollReadCheckScheduled = false;
+
   @override
   void initState() {
     super.initState();
@@ -101,7 +117,13 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       // Wait for the list to be built before jumping to position
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients && mounted) {
+          _suppressScrollRead = true;
           _scrollController.jumpTo(savedPosition.scrollOffset);
+          _lastScrollOffset = savedPosition.scrollOffset;
+          // Rows above a restored position were never actually read now.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _suppressScrollRead = false;
+          });
         }
       });
     }
@@ -110,6 +132,8 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
+    final scrollingDown = position.pixels > _lastScrollOffset;
+    _lastScrollOffset = position.pixels;
 
     // Infinite scroll: load more when near bottom.
     // `loadMore` guards itself, so this is cheap once a page is in flight.
@@ -117,11 +141,37 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       _listController.loadMore();
     }
 
+    // Mark as read on scroll: only on the way down, so scrolling back up never
+    // consumes unread articles the user is heading towards.
+    if (scrollingDown && !_suppressScrollRead) {
+      _scheduleScrollReadCheck();
+    }
+
     // Save scroll position with debouncing (500ms).
     _scrollService.savePositionDebounced(
       timelineId: widget.timelineId,
       scrollOffset: position.pixels,
     );
+  }
+
+  /// Runs the scrolled-past check off the scroll notification.
+  ///
+  /// The check reads live render geometry and then updates provider state;
+  /// both are safer after the current frame's layout finishes, and a frame of
+  /// latency is invisible here (a row stays above the top for several frames).
+  void _scheduleScrollReadCheck() {
+    if (_scrollReadCheckScheduled) return;
+    _scrollReadCheckScheduled = true;
+    scheduleMicrotask(() {
+      _scrollReadCheckScheduled = false;
+      if (!mounted || _suppressScrollRead) return;
+      if (!ref.read(markReadOnScrollProvider)) return;
+
+      final scrolledPast = _scrollPast.collectScrolledPast();
+      if (scrolledPast.isNotEmpty) {
+        _listController.markReadOnScroll(scrolledPast);
+      }
+    });
   }
 
   void _scrollToTop() {
@@ -153,6 +203,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     final listState = ref.watch(articleListControllerProvider(widget.timelineId));
     final isCompact = ref.watch(compactModeProvider);
     final syncStatus = ref.watch(syncStatusProvider);
+    final markReadOnScroll = ref.watch(markReadOnScrollProvider);
 
     return ReederScaffold(
       navBar: ReederNavBar(
@@ -187,7 +238,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
       body: listState.when(
         data: (state) => PullToRefresh(
           onRefresh: _onRefresh,
-          child: _buildList(context, state, theme, isCompact),
+          child: _buildList(context, state, theme, isCompact, markReadOnScroll),
         ),
         loading: () => ShimmerLoading(compact: isCompact),
         error: (e, _) => ErrorState(
@@ -204,6 +255,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
     ArticleListState state,
     ReederThemeData theme,
     bool isCompact,
+    bool markReadOnScroll,
   ) {
     final l10n = AppLocalizations.of(context)!;
 
@@ -278,7 +330,7 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
                 animate: animate,
               );
 
-        return SwipeActionWidget(
+        final row = SwipeActionWidget(
           leftSwipeActions: [
             SwipeAction(
               id: 'share',
@@ -319,6 +371,17 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
           ],
           child: listItemWidget,
         );
+
+        // Report the row's position so "mark as read on scroll" knows when it
+        // has left the viewport. Only wrapped when the setting is on, so the
+        // default path costs nothing.
+        return markReadOnScroll
+            ? ScrollPastProbe(
+                itemId: item.id,
+                reporter: _scrollPast,
+                child: row,
+              )
+            : row;
       },
     );
   }

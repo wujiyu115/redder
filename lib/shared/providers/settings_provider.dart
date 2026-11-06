@@ -221,6 +221,14 @@ final hideReadArticlesProvider = Provider<bool>((ref) {
       true;
 });
 
+/// Whether articles are marked as read when they scroll past the viewport.
+final markReadOnScrollProvider = Provider<bool>((ref) {
+  return ref
+          .watch(settingsProvider)
+          .whenOrNull(data: (s) => s.markReadOnScroll) ??
+      false;
+});
+
 /// Whether articles open in fullscreen reading mode by default.
 final defaultFullscreenReadingProvider = Provider<bool>((ref) {
   return ref
