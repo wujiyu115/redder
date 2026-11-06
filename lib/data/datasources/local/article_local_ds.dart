@@ -1,7 +1,9 @@
 import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../models/feed.dart';
 import '../../models/feed_item.dart';
+import '../../models/filter_helpers.dart';
 
 /// Local data source for FeedItem (article) operations using Drift.
 ///
@@ -389,8 +391,7 @@ class ArticleLocalDataSource {
 
     final query = _db.select(_db.feedItems)
       ..where((t) => t.publishedAt.isSmallerThanValue(publishedAt))
-      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)])
-      ..limit(1);
+      ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -424,7 +425,26 @@ class ArticleLocalDataSource {
         query.where((t) => t.id.isIn(taggedItemIds));
       }
     } else if (timelineId.startsWith('filter_')) {
-      // Filter scoping deferred — fall back to account-wide ordering.
+      // Filters match on title/summary/content, which SQL cannot express, so
+      // walk the older candidates newest-first and take the first match. The
+      // previous behaviour fell back to account-wide ordering, which jumped to
+      // an article that was not part of the filter at all.
+      final filterId = int.tryParse(timelineId.substring(7));
+      if (filterId == null) return null;
+      final filter = await (_db.select(_db.filters)
+            ..where((t) => t.id.equals(filterId)))
+          .getSingleOrNull();
+      if (filter == null) return null;
+      final feedTypes = {
+        for (final feed in await _db.select(_db.feeds).get())
+          feed.id: feed.type,
+      };
+      final candidates = await query.get();
+      for (final candidate in candidates) {
+        final feedType = feedTypes[candidate.feedId] ?? FeedType.blog;
+        if (filter.matches(candidate, feedType)) return candidate.id;
+      }
+      return null;
     } else {
       final type = _resolveContentType(timelineId);
       if (type != null) {
@@ -432,7 +452,7 @@ class ArticleLocalDataSource {
       }
     }
 
-    final result = await query.get();
+    final result = await (query..limit(1)).get();
     return result.isEmpty ? null : result.first.id;
   }
 

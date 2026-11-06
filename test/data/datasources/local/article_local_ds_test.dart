@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:reeder/core/database/app_database.dart';
 import 'package:reeder/data/datasources/local/article_local_ds.dart';
+import 'package:reeder/data/models/feed.dart';
 import 'package:reeder/data/models/feed_item.dart';
 
 void main() {
@@ -1686,6 +1687,102 @@ void main() {
       final allItems = await dataSource.getAll();
       expect(allItems.length, equals(1));
       expect(allItems[0].title, equals('New Article'));
+    });
+  });
+
+  group('getNextArticleId', () {
+    Future<int> addFeed(String name, FeedType type) {
+      return testDb.into(testDb.feeds).insert(FeedsCompanion.insert(
+            title: name,
+            feedUrl: 'https://example.com/$name.xml',
+            type: Value(type),
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+          ));
+    }
+
+    Future<int> addItem(int feedId, String title, DateTime publishedAt) {
+      return dataSource.upsert(FeedItemsCompanion.insert(
+        feedId: feedId,
+        title: title,
+        url: 'https://example.com/$title',
+        publishedAt: publishedAt,
+        fetchedAt: DateTime(2024, 1, 2),
+        createdAt: DateTime(2024, 1, 2),
+      ));
+    }
+
+    test('stays inside the filter timeline instead of jumping account-wide',
+        () async {
+      final feedId = await addFeed('feed', FeedType.blog);
+      // Newest first: "Match A" (10:00), "Other" (09:00), "Match B" (08:00).
+      final newest = await addItem(feedId, 'Match A', DateTime(2024, 1, 1, 10));
+      await addItem(feedId, 'Other', DateTime(2024, 1, 1, 9));
+      final matchB = await addItem(feedId, 'Match B', DateTime(2024, 1, 1, 8));
+
+      final filterId = await testDb.into(testDb.filters).insert(
+            FiltersCompanion.insert(
+              name: 'Only matches',
+              includeKeywords: const Value('["match"]'),
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+          );
+
+      final next = await dataSource.getNextArticleId(
+        newest,
+        timelineId: 'filter_$filterId',
+        accountId: null,
+      );
+
+      // "Other" does not match, so the next article must skip it.
+      expect(next, equals(matchB));
+    });
+
+    test('returns null when no older article matches the filter', () async {
+      final feedId = await addFeed('feed2', FeedType.blog);
+      final older = await addItem(feedId, 'Match', DateTime(2024, 1, 1, 8));
+      final newer = await addItem(feedId, 'Other', DateTime(2024, 1, 1, 9));
+
+      final filterId = await testDb.into(testDb.filters).insert(
+            FiltersCompanion.insert(
+              name: 'Only matches',
+              includeKeywords: const Value('["match"]'),
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+          );
+
+      expect(
+        await dataSource.getNextArticleId(
+          older,
+          timelineId: 'filter_$filterId',
+          accountId: null,
+        ),
+        isNull,
+      );
+      expect(
+        await dataSource.getNextArticleId(
+          newer,
+          timelineId: 'filter_$filterId',
+          accountId: null,
+        ),
+        equals(older),
+      );
+    });
+
+    test('unknown filter id yields no next article', () async {
+      final feedId = await addFeed('feed3', FeedType.blog);
+      final id = await addItem(feedId, 'A', DateTime(2024, 1, 1, 8));
+
+      expect(
+        await dataSource.getNextArticleId(
+          id,
+          timelineId: 'filter_9999',
+          accountId: null,
+        ),
+        isNull,
+      );
     });
   });
 }
