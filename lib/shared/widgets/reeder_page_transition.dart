@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 
 import '../../core/constants/app_durations.dart';
 
@@ -56,7 +57,25 @@ class _ReederPageRoute<T> extends PageRoute<T>
   final ReederPage<T> page;
 
   @override
-  Widget buildContent(BuildContext context) => page.child;
+  Widget buildContent(BuildContext context) {
+    // Page-level horizontal recognizers (list row swipe actions) take their
+    // touch slop from the platform (Android reports ~8dp), while the back
+    // gesture recognizer falls back to kTouchSlop (18). The smaller slop wins
+    // the gesture arena first, so edge swipes over list rows were swallowed by
+    // the row instead of popping the page. Level the field: with equal slops
+    // the back gesture resolves first because it is hit-tested above the page
+    // content.
+    final MediaQueryData media = MediaQuery.of(context);
+    if ((media.gestureSettings.touchSlop ?? 0) >= kTouchSlop) {
+      return page.child;
+    }
+    return MediaQuery(
+      data: media.copyWith(
+        gestureSettings: const DeviceGestureSettings(touchSlop: kTouchSlop),
+      ),
+      child: page.child,
+    );
+  }
 
   @override
   String? get title => page.title;

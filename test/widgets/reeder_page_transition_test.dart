@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -13,9 +14,16 @@ import 'package:reeder/shared/widgets/reeder_page_transition.dart';
 void main() {
   late GoRouter router;
 
+  /// Simulates the platform touch slop (Android reports ~8dp) which is
+  /// smaller than [kTouchSlop], the value the back-gesture recognizer falls
+  /// back to when it has no gesture settings of its own.
+  DeviceGestureSettings platformGestureSettings() =>
+      const DeviceGestureSettings(touchSlop: 8.0);
+
   Widget buildApp({
     required Widget pageA,
     required Widget pageB,
+    DeviceGestureSettings? gestureSettings,
   }) {
     router = GoRouter(
       initialLocation: '/a',
@@ -32,7 +40,33 @@ void main() {
         ),
       ],
     );
-    return MaterialApp.router(routerConfig: router);
+    return MaterialApp.router(
+      routerConfig: router,
+      builder: gestureSettings == null
+          ? null
+          : (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(gestureSettings: gestureSettings),
+                child: child!,
+              ),
+    );
+  }
+
+  /// Drags from the left edge in small steps, the way a real finger arrives:
+  /// with competing recognizers the back gesture accepts only once it crosses
+  /// the touch slop, and the movement before that is not applied.
+  Future<TestGesture> dragFromEdge(
+    WidgetTester tester, {
+    double total = 600,
+    double step = 10,
+    double y = 300,
+  }) async {
+    final gesture = await tester.startGesture(Offset(5, y));
+    for (var moved = 0.0; moved < total; moved += step) {
+      await gesture.moveBy(Offset(step, 0));
+      await tester.pump();
+    }
+    return gesture;
   }
 
   Future<void> openSecondPage(WidgetTester tester) async {
@@ -123,6 +157,7 @@ void main() {
         pageA: const Center(child: Text('page A')),
         pageB: GestureDetector(
           // Stands in for the list's row swipe actions.
+          behavior: HitTestBehavior.opaque,
           onHorizontalDragStart: (_) => pageDragStartCount++,
           onHorizontalDragUpdate: (_) => pageDragUpdateCount++,
           child: const Center(child: Text('page B')),
@@ -132,13 +167,52 @@ void main() {
 
     await openSecondPage(tester);
 
-    final gesture = await tester.startGesture(const Offset(5, 300));
-    await gesture.moveBy(const Offset(600, 0));
-    await tester.pump();
+    final gesture = await dragFromEdge(tester);
     await gesture.up();
     await tester.pumpAndSettle();
 
     expect(pageDragStartCount, 0, reason: 'the page gesture must lose the arena');
+    expect(pageDragUpdateCount, 0);
+    expect(find.text('page B'), findsNothing);
+  });
+
+  testWidgets('edge drag still wins with the platform touch slop on rows',
+      (tester) async {
+    // Regression: Android reports a touch slop (8dp) smaller than [kTouchSlop]
+    // (18), which the back-gesture recognizer falls back to. The row's own
+    // horizontal recognizer therefore accepted the pointer first and the edge
+    // swipe over a list row did nothing on device.
+    var pageDragStartCount = 0;
+    var pageDragUpdateCount = 0;
+    double? seenTouchSlop;
+
+    await tester.pumpWidget(
+      buildApp(
+        gestureSettings: platformGestureSettings(),
+        pageA: const Center(child: Text('page A')),
+        pageB: Builder(builder: (context) {
+          seenTouchSlop = MediaQuery.maybeGestureSettingsOf(context)?.touchSlop;
+          return GestureDetector(
+            // Stands in for the list's row swipe actions.
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragStart: (_) => pageDragStartCount++,
+            onHorizontalDragUpdate: (_) => pageDragUpdateCount++,
+            child: const Center(child: Text('page B')),
+          );
+        }),
+      ),
+    );
+
+    await openSecondPage(tester);
+    // The page sees the route's normalised slop, not the platform's 8dp.
+    expect(seenTouchSlop, kTouchSlop);
+
+    final gesture = await dragFromEdge(tester);
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(pageDragStartCount, 0,
+        reason: 'the page gesture must lose the arena');
     expect(pageDragUpdateCount, 0);
     expect(find.text('page B'), findsNothing);
   });
