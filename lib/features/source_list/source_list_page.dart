@@ -163,9 +163,10 @@ class SourceListPage extends ConsumerWidget {
           tagIcon: _tagIcon(tag.iconName),
           isBuiltIn: tag.isBuiltIn,
           onTap: () => context.push('/timeline/tag_${tag.id}'),
-          onLongPress: tag.isBuiltIn
+          onLongPressAt: tag.isBuiltIn
               ? null
-              : () => _showTagContextMenu(context, ref, tag, theme),
+              : (position) =>
+                  _showTagContextMenu(context, ref, tag, theme, position),
         ),
 
       // New Tag button
@@ -180,7 +181,8 @@ class SourceListPage extends ConsumerWidget {
           _SourceRow.filter(
             filter: filter,
             onTap: () => context.push('/timeline/filter_${filter.id}'),
-            onLongPress: () => _showFilterContextMenu(context, ref, filter, theme),
+            onLongPressAt: (position) =>
+                _showFilterContextMenu(context, ref, filter, theme, position),
           ),
       ],
 
@@ -257,8 +259,8 @@ class SourceListPage extends ConsumerWidget {
           isExpanded: row.folder!.isExpanded,
           unreadCount: row.folder!.unreadCount,
           onTap: () => context.push('/timeline/folder_${row.folder!.id}'),
-          onLongPress: () => _showFolderContextMenu(
-            context, ref, row.folder!, theme,
+          onLongPressAt: (position) => _showFolderContextMenu(
+            context, ref, row.folder!, theme, position,
           ),
           children: [
             for (final feed in row.feeds)
@@ -269,8 +271,8 @@ class SourceListPage extends ConsumerWidget {
                   count: feed.unreadCount,
                   dimWhenRead: true,
                   onTap: () => context.push('/timeline/feed_${feed.id}'),
-                  onLongPress: () => _showFeedContextMenu(
-                    context, ref, feed, state.folders, theme,
+                  onLongPressAt: (position) => _showFeedContextMenu(
+                    context, ref, feed, state.folders, theme, position,
                   ),
                 ),
           ],
@@ -284,8 +286,8 @@ class SourceListPage extends ConsumerWidget {
           count: feed.unreadCount,
           dimWhenRead: true,
           onTap: () => context.push('/timeline/feed_${feed.id}'),
-          onLongPress: () => _showFeedContextMenu(
-            context, ref, feed, state.folders, theme,
+          onLongPressAt: (position) => _showFeedContextMenu(
+            context, ref, feed, state.folders, theme, position,
           ),
         );
 
@@ -304,7 +306,7 @@ class SourceListPage extends ConsumerWidget {
           title: row.title!,
           count: row.tag!.itemCount,
           onTap: row.onTap,
-          onLongPress: row.onLongPress,
+          onLongPressAt: row.onLongPressAt,
         );
 
       case _SourceRowType.newTagButton:
@@ -322,7 +324,7 @@ class SourceListPage extends ConsumerWidget {
           icon: const Text('⚡', style: TextStyle(fontSize: 18)),
           title: filter.name,
           onTap: row.onTap,
-          onLongPress: row.onLongPress,
+          onLongPressAt: row.onLongPressAt,
         );
 
       case _SourceRowType.newFilterButton:
@@ -413,11 +415,12 @@ class SourceListPage extends ConsumerWidget {
     WidgetRef ref,
     Filter filter,
     ReederThemeData theme,
+    Offset position,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final selected = await ReederPopupMenu.show(
       context: context,
-      position: const Offset(100, 400),
+      position: position,
       items: [
         ReederPopupMenuItem(
           id: 'edit',
@@ -487,11 +490,12 @@ class SourceListPage extends ConsumerWidget {
     Feed feed,
     List<Folder> folders,
     ReederThemeData theme,
+    Offset position,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final selected = await ReederPopupMenu.show(
       context: context,
-      position: const Offset(100, 300), // Approximate position
+      position: position,
       items: [
         ReederPopupMenuItem(
           id: 'settings',
@@ -685,11 +689,12 @@ class SourceListPage extends ConsumerWidget {
     WidgetRef ref,
     Folder folder,
     ReederThemeData theme,
+    Offset position,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final selected = await ReederPopupMenu.show(
       context: context,
-      position: const Offset(100, 300),
+      position: position,
       items: [
         ReederPopupMenuItem(
           id: 'rename',
@@ -836,11 +841,12 @@ class SourceListPage extends ConsumerWidget {
     WidgetRef ref,
     dynamic tag,
     ReederThemeData theme,
+    Offset position,
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final selected = await ReederPopupMenu.show(
       context: context,
-      position: const Offset(100, 400),
+      position: position,
       items: [
         ReederPopupMenuItem(
           id: 'rename',
@@ -1013,7 +1019,7 @@ class _SourceRow {
   final Widget? icon;
   final int count;
   final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
+  final ValueChanged<Offset>? onLongPressAt;
   final Folder? folder;
   final List<Feed> feeds;
   final bool hideRead;
@@ -1030,7 +1036,7 @@ class _SourceRow {
     this.icon,
     this.count = 0,
     this.onTap,
-    this.onLongPress,
+    this.onLongPressAt,
     this.folder,
     this.feeds = const [],
     this.hideRead = false,
@@ -1078,7 +1084,7 @@ class _SourceRow {
     required String tagIcon,
     required bool isBuiltIn,
     VoidCallback? onTap,
-    VoidCallback? onLongPress,
+    ValueChanged<Offset>? onLongPressAt,
   }) : this._(
           type: _SourceRowType.tag,
           tag: tag,
@@ -1086,19 +1092,19 @@ class _SourceRow {
           tagIcon: tagIcon,
           isBuiltIn: isBuiltIn,
           onTap: onTap,
-          onLongPress: onLongPress,
+          onLongPressAt: onLongPressAt,
         );
   const _SourceRow.newTagButton({VoidCallback? onTap})
       : this._(type: _SourceRowType.newTagButton, onTap: onTap);
   const _SourceRow.filter({
     required Filter filter,
     VoidCallback? onTap,
-    VoidCallback? onLongPress,
+    ValueChanged<Offset>? onLongPressAt,
   }) : this._(
           type: _SourceRowType.filter,
           filter: filter,
           onTap: onTap,
-          onLongPress: onLongPress,
+          onLongPressAt: onLongPressAt,
         );
   const _SourceRow.newFilterButton({VoidCallback? onTap})
       : this._(type: _SourceRowType.newFilterButton, onTap: onTap);

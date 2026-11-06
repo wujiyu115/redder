@@ -32,8 +32,9 @@ class SourceItem extends ConsumerStatefulWidget {
   /// Callback when tapped.
   final VoidCallback? onTap;
 
-  /// Callback when long-pressed.
-  final VoidCallback? onLongPress;
+  /// Callback when long-pressed, carrying the global press position so the
+  /// context menu can open under the finger instead of a fixed offset.
+  final ValueChanged<Offset>? onLongPressAt;
 
   /// Whether to indent the item (for items inside folders).
   final bool indented;
@@ -49,7 +50,7 @@ class SourceItem extends ConsumerStatefulWidget {
     required this.title,
     this.count = 0,
     this.onTap,
-    this.onLongPress,
+    this.onLongPressAt,
     this.indented = false,
     this.dimWhenRead = false,
   });
@@ -89,7 +90,9 @@ class _SourceItemState extends ConsumerState<SourceItem> {
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
+      onLongPressStart: widget.onLongPressAt == null
+          ? null
+          : (details) => widget.onLongPressAt!(details.globalPosition),
       behavior: HitTestBehavior.opaque,
       child: ExcludeSemantics(
         child: AnimatedContainer(

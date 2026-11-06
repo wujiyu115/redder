@@ -27,8 +27,9 @@ class SourceSection extends StatefulWidget {
   /// Callback when the section header is tapped.
   final VoidCallback? onTap;
 
-  /// Callback when the section header is long-pressed.
-  final VoidCallback? onLongPress;
+  /// Callback when the section header is long-pressed, carrying the global
+  /// press position so the context menu opens under the finger.
+  final ValueChanged<Offset>? onLongPressAt;
 
   const SourceSection({
     super.key,
@@ -38,7 +39,7 @@ class SourceSection extends StatefulWidget {
     this.unreadCount = 0,
     this.children = const [],
     this.onTap,
-    this.onLongPress,
+    this.onLongPressAt,
   });
 
   @override
@@ -94,7 +95,9 @@ class _SourceSectionState extends State<SourceSection>
         // Section header
         GestureDetector(
           onTap: _toggleExpanded,
-          onLongPress: widget.onLongPress,
+          onLongPressStart: widget.onLongPressAt == null
+              ? null
+              : (details) => widget.onLongPressAt!(details.globalPosition),
           behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.symmetric(
