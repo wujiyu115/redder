@@ -63,46 +63,64 @@ class ArticleListItem extends ConsumerStatefulWidget {
 class _ArticleListItemState extends ConsumerState<ArticleListItem>
     with SingleTickerProviderStateMixin {
   bool _isPressed = false;
-  late AnimationController _appearController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+
+  /// Entrance animation. Only created when this item actually animates —
+  /// recycled items (the vast majority while scrolling) skip the ticker.
+  AnimationController? _appearController;
+  Animation<double>? _fadeAnimation;
+  Animation<Offset>? _slideAnimation;
+
+  static const Animation<double> _visible =
+      AlwaysStoppedAnimation<double>(1.0);
+  static const Animation<Offset> _noSlide =
+      AlwaysStoppedAnimation<Offset>(Offset.zero);
 
   @override
   void initState() {
     super.initState();
-    _appearController = AnimationController(
+    if (!widget.animate) return;
+
+    final controller = AnimationController(
       duration: AppDurations.listItemAppear,
       vsync: this,
     );
+    _appearController = controller;
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _appearController, curve: Curves.easeOut),
+      CurvedAnimation(parent: controller, curve: Curves.easeOut),
     );
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.08),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(parent: _appearController, curve: Curves.easeOut),
+      CurvedAnimation(parent: controller, curve: Curves.easeOut),
     );
 
-    if (!widget.animate) {
-      // Already animated once; show immediately without replaying on recycle.
-      _appearController.value = 1.0;
-    } else {
-      // Stagger the animation based on index (max 10 items staggered)
-      final delay = Duration(
-        milliseconds: (widget.index.clamp(0, 10)) * 30,
-      );
-      Future.delayed(delay, () {
-        if (mounted) _appearController.forward();
-      });
-    }
+    // Stagger the animation based on index (max 10 items staggered)
+    final delay = Duration(
+      milliseconds: (widget.index.clamp(0, 10)) * 30,
+    );
+    Future.delayed(delay, () {
+      if (mounted) controller.forward();
+    });
   }
 
   @override
   void dispose() {
-    _appearController.dispose();
+    _appearController?.dispose();
     super.dispose();
   }
+
+  /// Alpha multiplier applied to read articles.
+  double get _readAlpha => widget.item.isRead ? 0.6 : 1.0;
+
+  /// Fades [color] by the read-article alpha.
+  ///
+  /// The item used to be wrapped in `Opacity(0.6)`, which pushes an opacity
+  /// layer for every read article — i.e. for most rows of a long list, on
+  /// every frame while scrolling. Fading the colors instead produces the same
+  /// pixels (the item background matches the list background) without a layer.
+  Color _fade(Color color) =>
+      _readAlpha == 1.0 ? color : color.withValues(alpha: color.a * _readAlpha);
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +128,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
     final showThumbnails = ref.watch(showThumbnailsProvider);
     final cacheImages = ref.watch(cacheImagesProvider);
     final cacheManager = ref.read(reederImageCacheManagerProvider);
-    final isRead = widget.item.isRead;
-    final opacity = isRead ? 0.6 : 1.0;
+    final readAlpha = _readAlpha;
     final dpr = MediaQuery.devicePixelRatioOf(context);
 
     return Semantics(
@@ -120,9 +137,9 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
       enabled: true,
       onTap: widget.onTap,
       child: FadeTransition(
-      opacity: _fadeAnimation,
+      opacity: _fadeAnimation ?? _visible,
       child: SlideTransition(
-        position: _slideAnimation,
+        position: _slideAnimation ?? _noSlide,
         child: GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
@@ -136,9 +153,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
         color: _isPressed
             ? theme.separatorColor.withValues(alpha: 0.3)
             : theme.backgroundColor,
-        child: Opacity(
-          opacity: opacity,
-          child: Column(
+        child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -161,7 +176,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                           Text(
                             widget.item.title,
                             style: theme.typography.listTitle.copyWith(
-                              color: theme.primaryTextColor,
+                              color: _fade(theme.primaryTextColor),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -174,7 +189,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                             Text(
                               widget.item.summary!,
                               style: theme.typography.summary.copyWith(
-                                color: theme.secondaryTextColor,
+                                color: _fade(theme.secondaryTextColor),
                               ),
                               maxLines: AppDimensions.summaryMaxLines,
                               overflow: TextOverflow.ellipsis,
@@ -187,7 +202,11 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                     // Thumbnail
                     if (showThumbnails && widget.item.imageUrl != null) ...[
                       const SizedBox(width: AppDimensions.spacingM),
-                      ClipRRect(
+                      // Only the thumbnail is dimmed (not the text) for read
+                      // items, so the opacity layer stays small.
+                      Opacity(
+                        opacity: readAlpha,
+                        child: ClipRRect(
                         borderRadius: BorderRadius.circular(
                           AppDimensions.radiusM,
                         ),
@@ -195,6 +214,9 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                             ? CachedNetworkImage(
                                 imageUrl: widget.item.imageUrl!,
                                 cacheManager: cacheManager,
+                                // No fade-in: a fade per thumbnail starts an
+                                // animation for every image scrolled in.
+                                fadeInDuration: Duration.zero,
                                 width: AppDimensions.thumbnailWidth,
                                 height: AppDimensions.thumbnailHeight,
                                 fit: BoxFit.cover,
@@ -219,6 +241,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                                         ? child
                                         : const SizedBox.shrink(),
                               ),
+                        ),
                       ),
                     ],
                   ],
@@ -232,13 +255,12 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                 ),
                 child: Container(
                   height: AppDimensions.separatorThickness,
-                  color: theme.separatorColor,
+                  color: _fade(theme.separatorColor),
                 ),
               ),
             ],
           ),
         ),
-      ),
       ),
       ),
       ),
@@ -262,6 +284,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
                 ? CachedNetworkImage(
                     imageUrl: widget.feedIconUrl!,
                     cacheManager: cacheManager,
+                    fadeInDuration: Duration.zero,
                     width: 14,
                     height: 14,
                     fit: BoxFit.cover,
@@ -294,7 +317,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
             child: Text(
               widget.feedTitle!,
               style: theme.typography.caption.copyWith(
-                color: theme.secondaryTextColor,
+                color: _fade(theme.secondaryTextColor),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -311,7 +334,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
               '·',
               style: TextStyle(
                 fontSize: 12,
-                color: theme.tertiaryTextColor,
+                color: _fade(theme.tertiaryTextColor),
               ),
             ),
           ),
@@ -320,7 +343,7 @@ class _ArticleListItemState extends ConsumerState<ArticleListItem>
         Text(
           widget.item.publishedAt.timeAgoCompact,
           style: theme.typography.caption.copyWith(
-            color: theme.tertiaryTextColor,
+            color: _fade(theme.tertiaryTextColor),
           ),
         ),
 

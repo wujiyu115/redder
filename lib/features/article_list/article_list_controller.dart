@@ -86,10 +86,13 @@ class ArticleListController
 
   /// Loads more articles (infinite scroll).
   Future<void> loadMore() async {
-    _log.info('loadMore: offset=$_currentOffset');
+    // Guard first: this is called from the scroll listener on every frame while
+    // the user is near the bottom, so anything above the guards runs per tick.
     if (_isLoadingMore) return;
     final currentState = state.valueOrNull;
     if (currentState == null || !currentState.hasMore) return;
+
+    _log.info('loadMore: offset=$_currentOffset');
 
     _isLoadingMore = true;
     _currentOffset += _pageSize;

@@ -55,13 +55,25 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   /// scroll-recycling doesn't replay it.
   final Set<int> _animatedItemIds = {};
 
+  /// Maximum index that plays the entrance animation (roughly one screen of
+  /// items). Everything below the fold appears instantly — animating an item
+  /// that enters the viewport *during* a scroll just adds frames to draw
+  /// while the list is already moving.
+  static const int _animatedItemLimit = 12;
+
   /// Cached reference to avoid using ref after dispose.
   late final ScrollPositionService _scrollService;
+
+  /// Cached notifier: `_onScroll` runs on every scroll tick, and each
+  /// `ref.read` rebuilds the provider handle.
+  late final ArticleListController _listController;
 
   @override
   void initState() {
     super.initState();
     _scrollService = ref.read(scrollPositionServiceProvider);
+    _listController =
+        ref.read(articleListControllerProvider(widget.timelineId).notifier);
     _scrollController.addListener(_onScroll);
     _restoreScrollPosition();
   }
@@ -96,19 +108,19 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
   }
 
   void _onScroll() {
-    // Infinite scroll: load more when near bottom
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      ref
-          .read(articleListControllerProvider(widget.timelineId).notifier)
-          .loadMore();
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+
+    // Infinite scroll: load more when near bottom.
+    // `loadMore` guards itself, so this is cheap once a page is in flight.
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      _listController.loadMore();
     }
 
-    // Save scroll position with debouncing (500ms)
-    final scrollService = ref.read(scrollPositionServiceProvider);
-    scrollService.savePositionDebounced(
+    // Save scroll position with debouncing (500ms).
+    _scrollService.savePositionDebounced(
       timelineId: widget.timelineId,
-      scrollOffset: _scrollController.offset,
+      scrollOffset: position.pixels,
     );
   }
 
@@ -246,8 +258,10 @@ class _ArticleListPageState extends ConsumerState<ArticleListPage> {
             );
 
         // Set.add returns true only the first time this id is seen, so each
-        // item animates once and stays put through scroll-recycling.
-        final animate = _animatedItemIds.add(item.id);
+        // item animates once and stays put through scroll-recycling. Items
+        // that first appear below the fold skip the animation entirely.
+        final animate = index < _animatedItemLimit &&
+            _animatedItemIds.add(item.id);
 
         final listItemWidget = isCompact
             ? ArticleListItemCompact(

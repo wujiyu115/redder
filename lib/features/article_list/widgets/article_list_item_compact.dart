@@ -43,11 +43,20 @@ class ArticleListItemCompact extends StatefulWidget {
 class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
   bool _isPressed = false;
 
+  /// Alpha multiplier applied to read articles.
+  double get _readAlpha => widget.item.isRead ? 0.6 : 1.0;
+
+  /// Fades [color] by the read-article alpha.
+  ///
+  /// Fading the colors keeps the item free of the `Opacity` layer that used to
+  /// wrap every read row (most rows of a long list).
+  Color _fade(Color color) =>
+      _readAlpha == 1.0 ? color : color.withValues(alpha: color.a * _readAlpha);
+
   @override
   Widget build(BuildContext context) {
     final theme = ReederTheme.of(context);
     final isRead = widget.item.isRead;
-    final opacity = isRead ? 0.6 : 1.0;
 
     return Semantics(
       label: '${widget.feedTitle ?? ""}, ${widget.item.title}, ${widget.item.publishedAt.timeAgoCompact}',
@@ -67,9 +76,7 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
         color: _isPressed
             ? theme.separatorColor.withValues(alpha: 0.3)
             : theme.backgroundColor,
-        child: Opacity(
-          opacity: opacity,
-          child: Column(
+        child: Column(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -101,7 +108,7 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
                           Text(
                             widget.item.title,
                             style: theme.typography.body.copyWith(
-                              color: theme.primaryTextColor,
+                              color: _fade(theme.primaryTextColor),
                               fontWeight:
                                   isRead ? FontWeight.w400 : FontWeight.w500,
                             ),
@@ -118,7 +125,7 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
                                   child: Text(
                                     widget.feedTitle!,
                                     style: theme.typography.caption.copyWith(
-                                      color: theme.secondaryTextColor,
+                                      color: _fade(theme.secondaryTextColor),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -132,7 +139,7 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
                                     '·',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme.tertiaryTextColor,
+                                      color: _fade(theme.tertiaryTextColor),
                                     ),
                                   ),
                                 ),
@@ -140,7 +147,7 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
                               Text(
                                 widget.item.publishedAt.timeAgoCompact,
                                 style: theme.typography.caption.copyWith(
-                                  color: theme.tertiaryTextColor,
+                                  color: _fade(theme.tertiaryTextColor),
                                 ),
                               ),
 
@@ -174,13 +181,12 @@ class _ArticleListItemCompactState extends State<ArticleListItemCompact> {
                 ),
                 child: Container(
                   height: AppDimensions.separatorThickness,
-                  color: theme.separatorColor,
+                  color: _fade(theme.separatorColor),
                 ),
               ),
             ],
           ),
         ),
-      ),
       ),
       ),
     );

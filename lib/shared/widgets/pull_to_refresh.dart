@@ -132,6 +132,9 @@ class _PullToRefreshState extends State<PullToRefresh>
     ));
     _bounceController.forward(from: 0.0);
 
+    // Guard against stacking listeners: `_resetDrag` runs after every pull,
+    // and a duplicate listener would setState once per tick per pull.
+    _bounceController.removeListener(_onBounceUpdate);
     _bounceController.addListener(_onBounceUpdate);
   }
 
