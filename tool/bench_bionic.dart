@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print — this is a developer benchmark script; its
+// whole output is printed to the console.
 import 'package:reeder/core/utils/bionic_reading.dart';
 
 String buildArticle(int targetChars) {

@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 
 import 'package:reeder/core/database/app_database.dart';
-import 'package:reeder/data/datasources/local/feed_local_ds.dart';
 import 'package:reeder/data/datasources/remote/rss_remote_ds.dart';
 import 'package:reeder/data/repositories/feed_repository.dart';
 import 'package:reeder/data/services/sync/sync_models.dart';

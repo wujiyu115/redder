@@ -338,9 +338,9 @@ class _DefaultPlaceholder extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               '📖',
-              style: const TextStyle(fontSize: 48),
+              style: TextStyle(fontSize: 48),
             ),
             const SizedBox(height: AppDimensions.spacing),
             Text(

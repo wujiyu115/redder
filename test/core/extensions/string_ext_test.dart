@@ -14,7 +14,7 @@ void main() {
     test('does not split a surrogate pair', () {
       // '😀' is a surrogate pair (2 UTF-16 code units). Truncating at an odd
       // boundary must not leave a lone (broken) surrogate.
-      final s = 'ab😀cd';
+      const s = 'ab😀cd';
       final result = s.truncate(3); // would land between the surrogate halves
       // The last kept character must be the complete 'b', not half an emoji.
       expect(result, 'ab…');

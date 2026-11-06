@@ -88,8 +88,8 @@ void main() {
 
   group('saveSettings', () {
     test('should delegate to localDs.saveSettings', () async {
-      final companion = AppSettingsTableCompanion(
-        bionicReading: const Value(true),
+      const companion = AppSettingsTableCompanion(
+        bionicReading: Value(true),
       );
       when(mockLocalDs.saveSettings(any)).thenAnswer((_) async {});
 
@@ -113,7 +113,7 @@ void main() {
 
   group('watchSettings', () {
     test('should delegate to localDs.watchSettings', () {
-      final mockStream = Stream<AppSettingsTableData>.empty();
+      const mockStream = Stream<AppSettingsTableData>.empty();
       when(mockLocalDs.watchSettings()).thenAnswer((_) => mockStream);
 
       final result = repository.watchSettings();

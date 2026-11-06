@@ -126,9 +126,9 @@ class _SourceSectionState extends State<SourceSection>
 
                 // Folder icon
                 if (widget.showIcon && widget.iconName != null) ...[
-                  Text(
+                  const Text(
                     '📁',
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(width: AppDimensions.spacingS),
                 ],

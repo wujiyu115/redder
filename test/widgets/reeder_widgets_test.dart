@@ -69,7 +69,7 @@ void main() {
       bool tapped = false;
 
       await tester.pumpWidget(wrapWithTheme(
-        ReederButton.text(
+        const ReederButton.text(
           label: 'Disabled',
           onPressed: null,
         ),
@@ -121,7 +121,7 @@ void main() {
   group('ReederNavBar', () {
     testWidgets('displays title', (WidgetTester tester) async {
       await tester.pumpWidget(wrapWithTheme(
-        ReederNavBar(
+        const ReederNavBar(
           title: 'Settings',
         ),
       ));
@@ -141,14 +141,16 @@ void main() {
         ),
       ));
 
-      // Find and tap the back button
-      final backButton = find.byWidgetPredicate(
-        (widget) => widget is GestureDetector,
-      );
-      if (backButton.evaluate().isNotEmpty) {
-        await tester.tap(backButton.first);
-        await tester.pump();
-      }
+      // The back chevron is the only '‹' on screen; tapping it must fire the
+      // callback (previously this test tapped "the first GestureDetector" and
+      // asserted nothing).
+      final backButton = find.text('‹');
+      expect(backButton, findsOneWidget);
+
+      await tester.tap(backButton);
+      await tester.pump();
+
+      expect(backPressed, isTrue);
     });
   });
 

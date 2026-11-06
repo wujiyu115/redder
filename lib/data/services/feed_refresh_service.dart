@@ -123,7 +123,7 @@ class FeedRefreshService {
     if (!feed.feedUrl.startsWith('http://') && !feed.feedUrl.startsWith('https://')) {
       _log.error('_refreshSingleFeed: invalid feedUrl "${feed.feedUrl}" for "${feed.title}", skipping');
       stopwatch.stop();
-      return _SingleFeedResult(newItemCount: 0);
+      return const _SingleFeedResult(newItemCount: 0);
     }
 
     try {

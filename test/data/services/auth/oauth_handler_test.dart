@@ -173,7 +173,7 @@ void main() {
 
     test('should handle null expires_in', () {
       // This tests the case where expires_in is not provided
-      final expiresAt = null;
+      const expiresAt = null;
 
       expect(expiresAt, isNull);
     });

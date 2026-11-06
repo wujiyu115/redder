@@ -1210,7 +1210,7 @@ class _FolderOptionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text('📁', style: const TextStyle(fontSize: 16)),
+            const Text('📁', style: TextStyle(fontSize: 16)),
             const SizedBox(width: AppDimensions.spacingS),
             Expanded(
               child: Text(

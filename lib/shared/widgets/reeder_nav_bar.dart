@@ -131,22 +131,22 @@ class _BackButton extends StatelessWidget {
       button: true,
       label: 'Back',
       child: GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Center(
-          child: Text(
-            '‹',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w300,
-              color: theme.accentColor,
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Text(
+              '‹',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w300,
+                color: theme.accentColor,
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

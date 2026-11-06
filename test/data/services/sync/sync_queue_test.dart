@@ -1,10 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:reeder/core/database/app_database.dart';
-import 'package:reeder/data/datasources/local/sync_local_ds.dart';
 import 'package:reeder/data/services/sync/sync_models.dart';
 import 'package:reeder/data/services/sync/sync_queue.dart';
-import 'package:reeder/data/services/sync/sync_service.dart';
 
 import '../../../test_mocks.mocks.dart';
 
@@ -23,7 +21,7 @@ void main() {
     const testAccountId = 1;
 
     test('enqueue() - 正确调用 _localDataSource.enqueueAction()', () async {
-      final action = SyncQueueAction.markRead;
+      const action = SyncQueueAction.markRead;
       final itemIds = ['article1', 'article2'];
 
       when(mockLocalDataSource.enqueueAction(any))
@@ -266,7 +264,7 @@ void main() {
         return dequeueCallCount == 1 ? queueItem : null;
       });
       when(mockSyncService.addFeed('https://example.com/feed'))
-          .thenAnswer((_) async => SyncFeed(
+          .thenAnswer((_) async => const SyncFeed(
                 remoteId: 'r1',
                 title: 'Example',
                 feedUrl: 'https://example.com/feed',

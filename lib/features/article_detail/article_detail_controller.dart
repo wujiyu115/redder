@@ -129,24 +129,28 @@ class ArticleDetailController
   /// Marks the article as read (with remote sync).
   Future<void> markAsRead() async {
     await _syncBridge.markAsReadWithSync([articleId]);
+    // Refresh the in-memory article too: without it the action bar kept showing
+    // the pre-open state ("标为未读" highlighted on a just-read article).
+    await _refreshArticle();
     // Coalesced: the source list is not visible while reading, and reloading it
     // here would compete with the article's own load / HTML parse / image
     // decode. `scheduleReload` folds a burst of opens into one refresh.
     _ref.read(sourceListControllerProvider.notifier).scheduleReload();
   }
 
+  /// Re-reads the article row and folds it back into state.
+  Future<void> _refreshArticle() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+    final updatedArticle = await _articleRepo.getArticleById(articleId);
+    if (updatedArticle == null) return;
+    state = AsyncValue.data(currentState.copyWith(article: updatedArticle));
+  }
+
   /// Marks the article as unread (with remote sync).
   Future<void> markAsUnread() async {
     await _syncBridge.markAsUnreadWithSync([articleId]);
-    final currentState = state.valueOrNull;
-    if (currentState != null) {
-      final updatedArticle = await _articleRepo.getArticleById(articleId);
-      if (updatedArticle != null) {
-        state = AsyncValue.data(currentState.copyWith(
-          article: updatedArticle,
-        ));
-      }
-    }
+    await _refreshArticle();
     _ref.read(sourceListControllerProvider.notifier).scheduleReload();
   }
 

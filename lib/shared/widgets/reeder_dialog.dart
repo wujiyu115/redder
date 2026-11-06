@@ -63,11 +63,11 @@ class ReederDialog extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.cardBackgroundColor,
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: const Color(0x33000000),
+              color: Color(0x33000000),
               blurRadius: 20,
-              offset: const Offset(0, 10),
+              offset: Offset(0, 10),
             ),
           ],
         ),

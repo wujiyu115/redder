@@ -56,7 +56,7 @@ void main() {
 
     group('SyncFeed', () {
       test('can be constructed with required parameters', () {
-        final feed = SyncFeed(
+        const feed = SyncFeed(
           remoteId: 'feed-123',
           title: 'Test Feed',
           feedUrl: 'https://example.com/feed.xml',
@@ -67,7 +67,7 @@ void main() {
       });
 
       test('can be constructed with optional parameters', () {
-        final feed = SyncFeed(
+        const feed = SyncFeed(
           remoteId: 'feed-123',
           title: 'Test Feed',
           feedUrl: 'https://example.com/feed.xml',
@@ -83,7 +83,7 @@ void main() {
       });
 
       test('toString returns formatted string', () {
-        final feed = SyncFeed(
+        const feed = SyncFeed(
           remoteId: 'feed-123',
           title: 'Test Feed',
           feedUrl: 'https://example.com/feed.xml',
@@ -95,7 +95,7 @@ void main() {
 
     group('SyncFolder', () {
       test('can be constructed with required parameters', () {
-        final folder = SyncFolder(
+        const folder = SyncFolder(
           remoteId: 'folder-123',
           name: 'Tech',
         );
@@ -104,7 +104,7 @@ void main() {
       });
 
       test('toString returns formatted string', () {
-        final folder = SyncFolder(
+        const folder = SyncFolder(
           remoteId: 'folder-123',
           name: 'Tech',
         );
@@ -287,7 +287,7 @@ void main() {
 
     group('SyncCredentials', () {
       test('can be constructed with required parameters', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedbin,
         );
         expect(credentials.serviceType, equals(SyncServiceType.feedbin));
@@ -312,7 +312,7 @@ void main() {
       });
 
       test('isBasicAuth returns true when username and password are set', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedbin,
           username: 'test@example.com',
           password: 'password',
@@ -321,7 +321,7 @@ void main() {
       });
 
       test('isBasicAuth returns false when username or password is missing', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedbin,
           username: 'test@example.com',
         );
@@ -329,7 +329,7 @@ void main() {
       });
 
       test('isOAuth returns true when accessToken is set', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedly,
           accessToken: 'access-token',
         );
@@ -337,7 +337,7 @@ void main() {
       });
 
       test('isOAuth returns false when accessToken is not set', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedly,
         );
         expect(credentials.isOAuth, isFalse);
@@ -364,7 +364,7 @@ void main() {
       });
 
       test('isTokenExpired returns false when tokenExpiresAt is null', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedly,
           accessToken: 'access-token',
         );
@@ -390,7 +390,7 @@ void main() {
       });
 
       test('copyWithTokens preserves unchanged fields', () {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedbin,
           username: 'test@example.com',
           password: 'password',
@@ -596,7 +596,7 @@ void main() {
       });
 
       test('enum values are unique', () {
-        final values = SyncQueueAction.values;
+        const values = SyncQueueAction.values;
         final uniqueValues = values.toSet();
         expect(values.length, equals(uniqueValues.length));
       });

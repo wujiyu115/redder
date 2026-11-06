@@ -17,7 +17,7 @@ void main() {
 
     group('saveCredentials()', () {
       test('should serialize and write to secure storage', () async {
-        final credentials = SyncCredentials(
+        const credentials = SyncCredentials(
           serviceType: SyncServiceType.feedbin,
           username: 'user',
           password: 'pass',
@@ -99,11 +99,6 @@ void main() {
 
     group('updateTokens()', () {
       test('should update OAuth tokens', () async {
-        final existingCredentials = SyncCredentials(
-          serviceType: SyncServiceType.feedly,
-          username: 'user',
-        );
-
         final json = jsonEncode({
           'serviceType': 2,
           'serverUrl': null,

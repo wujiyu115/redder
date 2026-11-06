@@ -58,10 +58,10 @@ void main() {
 
     test('flatten produces feeds with their folder name', () {
       final outlines = [
-        OpmlOutline(
+        const OpmlOutline(
           title: 'News',
           isFolder: true,
-          children: const [
+          children: [
             OpmlOutline(title: 'A', feedUrl: 'https://a.com/feed'),
           ],
         ),

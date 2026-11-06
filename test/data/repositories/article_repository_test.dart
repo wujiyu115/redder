@@ -163,7 +163,7 @@ void main() {
 
     test('generate produces valid OPML 2.0', () {
       final outlines = [
-        OpmlOutline(
+        const OpmlOutline(
           title: 'Test Blog',
           feedUrl: 'https://test.com/feed.xml',
           siteUrl: 'https://test.com',

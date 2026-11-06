@@ -500,7 +500,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountItems = await dataSource.getAll(accountId: accountId);
@@ -645,7 +645,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       await dataSource.markAllAsRead(accountId: accountId);
@@ -721,7 +721,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       await dataSource.markAllAsReadForFeed(1, accountId: accountId);
@@ -870,7 +870,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final results = await dataSource.search('Flutter', accountId: accountId);
@@ -1008,8 +1008,8 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[1].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[1].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[2]);
 
       final totalCount = await dataSource.count();
@@ -1081,7 +1081,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountUnreadCount = await dataSource.unreadCountForFeed(1, accountId: accountId);
@@ -1348,7 +1348,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountStarred = await dataSource.getStarred(accountId: accountId);
@@ -1455,7 +1455,7 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountUnreadIds = await dataSource.getUnreadIds(accountId: accountId);
@@ -1644,9 +1644,9 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[1].copyWith(accountId: Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[2].copyWith(accountId: Value(otherAccountId)), accountId: otherAccountId);
+      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[1].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(items[2].copyWith(accountId: const Value(otherAccountId)), accountId: otherAccountId);
 
       await dataSource.deleteByAccountId(accountId);
 

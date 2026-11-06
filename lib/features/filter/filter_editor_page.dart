@@ -459,13 +459,15 @@ class _FilterEditorPageState extends ConsumerState<FilterEditorPage> {
             label: l10n.delete,
             isDestructive: true,
             onPressed: () async {
+              // Capture the page navigator and close the dialog before the
+              // await: no BuildContext is then touched across the async gap.
+              final navigator = Navigator.of(context);
+              Navigator.of(ctx).pop();
               await ref
                   .read(filtersProvider.notifier)
                   .deleteFilter(widget.filterId!);
-              if (mounted) {
-                Navigator.of(ctx).pop();
-                context.pop(true);
-              }
+              if (!mounted) return;
+              navigator.pop(true);
             },
           ),
         ],

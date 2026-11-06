@@ -27,7 +27,7 @@ void main() {
   group('FeedDiscoveryService - discover', () {
     test('discover: 直接 Feed URL 成功解析', () async {
       // Arrange
-      final feedUrl = 'https://example.com/feed.xml';
+      const feedUrl = 'https://example.com/feed.xml';
       final parsedFeed = ParsedFeed()
         ..title = 'Test Feed'
         ..description = 'Test Description'
@@ -63,8 +63,8 @@ void main() {
 
     test('discover: URL 不是 Feed，但 HTML 页面包含 feed link 标签', () async {
       // Arrange
-      final url = 'https://example.com';
-      final htmlContent = '''
+      const url = 'https://example.com';
+      const htmlContent = '''
         <html>
           <head>
             <link rel="alternate" type="application/rss+xml" 
@@ -111,7 +111,7 @@ void main() {
 
     test('discover: URL 不是 Feed，HTML 无 feed link，尝试常见路径', () async {
       // Arrange
-      final url = 'https://example.com';
+      const url = 'https://example.com';
 
       final parsedFeed = ParsedFeed()
         ..title = 'Example Feed'
@@ -149,7 +149,7 @@ void main() {
 
     test('discover: 完全找不到 Feed 返回空列表', () async {
       // Arrange
-      final url = 'https://example.com';
+      const url = 'https://example.com';
 
       when(mockRemoteDs.fetchFeed(any))
           .thenThrow(Exception('Not a feed'));
@@ -169,8 +169,8 @@ void main() {
 
     test('URL 规范化：自动添加 https:// 前缀', () async {
       // Arrange
-      final urlWithoutScheme = 'example.com/feed.xml';
-      final normalizedUrl = 'https://example.com/feed.xml';
+      const urlWithoutScheme = 'example.com/feed.xml';
+      const normalizedUrl = 'https://example.com/feed.xml';
 
       final parsedFeed = ParsedFeed()
         ..title = 'Test Feed'
@@ -197,8 +197,8 @@ void main() {
 
     test('discover: HTML 包含多个 feed link 标签', () async {
       // Arrange
-      final url = 'https://example.com';
-      final htmlContent = '''
+      const url = 'https://example.com';
+      const htmlContent = '''
         <html>
           <head>
             <link rel="alternate" type="application/rss+xml" 
@@ -252,8 +252,8 @@ void main() {
 
     test('discover: HTML feed link 但无法解析，跳过该 feed', () async {
       // Arrange
-      final url = 'https://example.com';
-      final htmlContent = '''
+      const url = 'https://example.com';
+      const htmlContent = '''
         <html>
           <head>
             <link rel="alternate" type="application/rss+xml" 
@@ -295,7 +295,7 @@ void main() {
 
     test('discover: 常见路径按顺序尝试，找到后停止', () async {
       // Arrange
-      final url = 'https://example.com';
+      const url = 'https://example.com';
 
       final parsedFeed = ParsedFeed()
         ..title = 'Feed'
@@ -330,8 +330,8 @@ void main() {
 
     test('discover: 相对 URL 正确解析为绝对 URL', () async {
       // Arrange
-      final url = 'https://example.com/blog';
-      final htmlContent = '''
+      const url = 'https://example.com/blog';
+      const htmlContent = '''
         <html>
           <head>
             <link rel="alternate" type="application/rss+xml" 
@@ -368,7 +368,7 @@ void main() {
 
     test('discover: 已有 http:// 前缀的 URL 不再添加', () async {
       // Arrange
-      final url = 'http://example.com/feed.xml';
+      const url = 'http://example.com/feed.xml';
 
       final parsedFeed = ParsedFeed()
         ..title = 'Feed'
@@ -395,7 +395,7 @@ void main() {
 
     test('discover: 已有 https:// 前缀的 URL 不再添加', () async {
       // Arrange
-      final url = 'https://example.com/feed.xml';
+      const url = 'https://example.com/feed.xml';
 
       final parsedFeed = ParsedFeed()
         ..title = 'Feed'

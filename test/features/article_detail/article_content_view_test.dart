@@ -144,7 +144,7 @@ void main() {
 
   testWidgets('bionic reading on a large document renders via isolate',
       (tester) async {
-    final paragraph = '<p>' + ('lorem ipsum dolor sit amet ' * 4) + '</p>';
+    final paragraph = '<p>${'lorem ipsum dolor sit amet ' * 4}</p>';
     final html = List.filled(300, paragraph).join();
     // Sanity: this must exceed the synchronous transform limit.
     expect(html.length, greaterThan(20000));

@@ -104,11 +104,11 @@ class ReederPopupMenu extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.cardBackgroundColor,
         borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0x33000000),
+            color: Color(0x33000000),
             blurRadius: 16,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),

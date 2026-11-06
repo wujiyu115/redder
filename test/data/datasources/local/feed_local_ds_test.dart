@@ -23,8 +23,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -43,8 +43,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Original Title',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -57,8 +57,8 @@ void main() {
         id: Value(id),
         title: const Value('Updated Title'),
         feedUrl: const Value('https://example.com/feed'),
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: Value(DateTime(2025, 1, 1)),
         updatedAt: Value(DateTime(2025, 1, 1)),
       );
@@ -75,8 +75,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Account Feed',
         feedUrl: 'https://example.com/account-feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -93,16 +93,16 @@ void main() {
         FeedsCompanion.insert(
           title: 'Feed 1',
           feedUrl: 'https://example.com/feed1',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Feed 2',
           feedUrl: 'https://example.com/feed2',
-          type: Value(FeedType.podcast),
-          defaultViewer: Value(ViewerType.reader),
+          type: const Value(FeedType.podcast),
+          defaultViewer: const Value(ViewerType.reader),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -119,16 +119,16 @@ void main() {
         FeedsCompanion.insert(
           title: 'Account Feed 1',
           feedUrl: 'https://example.com/account-feed1',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Account Feed 2',
           feedUrl: 'https://example.com/account-feed2',
-          type: Value(FeedType.video),
-          defaultViewer: Value(ViewerType.browser),
+          type: const Value(FeedType.video),
+          defaultViewer: const Value(ViewerType.browser),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -152,8 +152,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -169,8 +169,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -192,8 +192,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -209,8 +209,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -232,16 +232,16 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Feed 1',
         feedUrl: 'https://example.com/feed1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Feed 2',
         feedUrl: 'https://example.com/feed2',
-        type: Value(FeedType.podcast),
-        defaultViewer: Value(ViewerType.reader),
+        type: const Value(FeedType.podcast),
+        defaultViewer: const Value(ViewerType.reader),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -254,16 +254,16 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Account 1 Feed',
         feedUrl: 'https://example.com/feed1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 1);
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Account 2 Feed',
         feedUrl: 'https://example.com/feed2',
-        type: Value(FeedType.podcast),
-        defaultViewer: Value(ViewerType.reader),
+        type: const Value(FeedType.podcast),
+        defaultViewer: const Value(ViewerType.reader),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 2);
@@ -283,16 +283,16 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Blog Feed',
         feedUrl: 'https://example.com/blog',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Podcast Feed',
         feedUrl: 'https://example.com/podcast',
-        type: Value(FeedType.podcast),
-        defaultViewer: Value(ViewerType.reader),
+        type: const Value(FeedType.podcast),
+        defaultViewer: const Value(ViewerType.reader),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -310,16 +310,16 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Blog Feed 1',
         feedUrl: 'https://example.com/blog1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 1);
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Blog Feed 2',
         feedUrl: 'https://example.com/blog2',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 2);
@@ -335,17 +335,17 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Folder Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        folderId: Value(10),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        folderId: const Value(10),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Root Feed',
         feedUrl: 'https://example.com/root',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -359,18 +359,18 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Folder Feed 1',
         feedUrl: 'https://example.com/feed1',
-        type: Value(FeedType.blog),
-        folderId: Value(10),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        folderId: const Value(10),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 1);
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Folder Feed 2',
         feedUrl: 'https://example.com/feed2',
-        type: Value(FeedType.blog),
-        folderId: Value(10),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        folderId: const Value(10),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 2);
@@ -386,25 +386,25 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Root Feed 1',
         feedUrl: 'https://example.com/root1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Folder Feed',
         feedUrl: 'https://example.com/folder',
-        type: Value(FeedType.blog),
-        folderId: Value(10),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        folderId: const Value(10),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Root Feed 2',
         feedUrl: 'https://example.com/root2',
-        type: Value(FeedType.podcast),
-        defaultViewer: Value(ViewerType.reader),
+        type: const Value(FeedType.podcast),
+        defaultViewer: const Value(ViewerType.reader),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -418,16 +418,16 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Root Feed 1',
         feedUrl: 'https://example.com/root1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 1);
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Root Feed 2',
         feedUrl: 'https://example.com/root2',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 2);
@@ -449,24 +449,24 @@ void main() {
         FeedsCompanion.insert(
           title: 'Feed 1',
           feedUrl: 'https://example.com/feed1',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Feed 2',
           feedUrl: 'https://example.com/feed2',
-          type: Value(FeedType.podcast),
-          defaultViewer: Value(ViewerType.reader),
+          type: const Value(FeedType.podcast),
+          defaultViewer: const Value(ViewerType.reader),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Feed 3',
           feedUrl: 'https://example.com/feed3',
-          type: Value(FeedType.video),
-          defaultViewer: Value(ViewerType.browser),
+          type: const Value(FeedType.video),
+          defaultViewer: const Value(ViewerType.browser),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -481,16 +481,16 @@ void main() {
         FeedsCompanion.insert(
           title: 'Feed 1',
           feedUrl: 'https://example.com/feed1',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Feed 2',
           feedUrl: 'https://example.com/feed2',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -499,8 +499,8 @@ void main() {
         FeedsCompanion.insert(
           title: 'Feed 3',
           feedUrl: 'https://example.com/feed3',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -519,8 +519,8 @@ void main() {
       final feed = FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       );
@@ -547,8 +547,8 @@ void main() {
         final id = await dataSource.upsert(FeedsCompanion.insert(
           title: 'Feed $i',
           feedUrl: 'https://example.com/feed$i',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ));
@@ -558,8 +558,8 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Keep Feed',
         feedUrl: 'https://example.com/keep',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -588,8 +588,8 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ));
@@ -602,8 +602,8 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 100);
@@ -616,8 +616,8 @@ void main() {
       await dataSource.upsert(FeedsCompanion.insert(
         title: 'Test Feed',
         feedUrl: 'https://example.com/feed',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 100);
@@ -633,8 +633,8 @@ void main() {
       final account1Id = await dataSource.upsert(FeedsCompanion.insert(
         title: 'Account 1 Feed',
         feedUrl: 'https://example.com/account1',
-        type: Value(FeedType.blog),
-        defaultViewer: Value(ViewerType.article),
+        type: const Value(FeedType.blog),
+        defaultViewer: const Value(ViewerType.article),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 1);
@@ -642,8 +642,8 @@ void main() {
       final account2Id = await dataSource.upsert(FeedsCompanion.insert(
         title: 'Account 2 Feed',
         feedUrl: 'https://example.com/account2',
-        type: Value(FeedType.podcast),
-        defaultViewer: Value(ViewerType.reader),
+        type: const Value(FeedType.podcast),
+        defaultViewer: const Value(ViewerType.reader),
         createdAt: DateTime(2025, 1, 1),
         updatedAt: DateTime(2025, 1, 1),
       ), accountId: 2);
@@ -687,32 +687,32 @@ void main() {
         FeedsCompanion.insert(
           title: 'Blog Feed',
           feedUrl: 'https://example.com/blog',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Podcast Feed',
           feedUrl: 'https://example.com/podcast',
-          type: Value(FeedType.podcast),
-          defaultViewer: Value(ViewerType.reader),
+          type: const Value(FeedType.podcast),
+          defaultViewer: const Value(ViewerType.reader),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Video Feed',
           feedUrl: 'https://example.com/video',
-          type: Value(FeedType.video),
-          defaultViewer: Value(ViewerType.browser),
+          type: const Value(FeedType.video),
+          defaultViewer: const Value(ViewerType.browser),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Mixed Feed',
           feedUrl: 'https://example.com/mixed',
-          type: Value(FeedType.mixed),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.mixed),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
@@ -733,24 +733,24 @@ void main() {
         FeedsCompanion.insert(
           title: 'Article Viewer Feed',
           feedUrl: 'https://example.com/article',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.article),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.article),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Reader Viewer Feed',
           feedUrl: 'https://example.com/reader',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.reader),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.reader),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),
         FeedsCompanion.insert(
           title: 'Browser Viewer Feed',
           feedUrl: 'https://example.com/browser',
-          type: Value(FeedType.blog),
-          defaultViewer: Value(ViewerType.browser),
+          type: const Value(FeedType.blog),
+          defaultViewer: const Value(ViewerType.browser),
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
         ),

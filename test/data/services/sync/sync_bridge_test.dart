@@ -1,13 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:reeder/core/database/app_database.dart';
-import 'package:reeder/data/datasources/local/sync_local_ds.dart';
 import 'package:reeder/data/models/feed.dart';
 import 'package:reeder/data/services/sync/sync_bridge.dart';
 import 'package:reeder/data/services/sync/sync_models.dart';
 import 'package:reeder/data/services/sync/sync_queue.dart';
-import 'package:reeder/data/services/sync/sync_service.dart';
-import 'package:reeder/data/services/sync/sync_service_registry.dart';
 
 import '../../../test_mocks.mocks.dart';
 
@@ -87,7 +84,7 @@ void main() {
             isActive: true,
             createdAt: DateTime.now(),
           ));
-      final syncFeed = SyncFeed(remoteId: 'remote-1', title: 'Test Feed', feedUrl: testFeedUrl);
+      const syncFeed = SyncFeed(remoteId: 'remote-1', title: 'Test Feed', feedUrl: testFeedUrl);
       when(mockSyncService.addFeed(testFeedUrl, title: anyNamed('title')))
           .thenAnswer((_) async => syncFeed);
       when(mockSyncLocalDs.upsertMapping(any)).thenAnswer((_) async => 0);
