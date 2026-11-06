@@ -708,6 +708,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showFolderIconsDesc => 'Draw a folder icon next to folder names';
 
   @override
+  String get podcastPlayback => 'Podcast Playback';
+
+  @override
+  String get playbackSpeedDefault => 'Default Playback Speed';
+
+  @override
+  String get skipForward => 'Skip Forward';
+
+  @override
+  String get skipBackward => 'Skip Backward';
+
+  @override
   String get contentExpiryHint =>
       'Articles older than the selected period will be hidden from timelines. They can still be found via search.';
 

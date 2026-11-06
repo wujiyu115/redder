@@ -17,6 +17,7 @@ import '../../shared/widgets/reeder_list_tile.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_switch.dart';
 import '../../shared/widgets/reeder_dialog.dart';
+import '../../shared/widgets/reeder_option_tile.dart';
 import '../../shared/widgets/reeder_toast.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../core/database/app_database.dart';
@@ -255,7 +256,7 @@ class DataSettingsPage extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final minutes in options)
-              _OptionTile(
+              ReederOptionTile(
                 label: _refreshIntervalLabel(minutes, l10n),
                 isSelected: settings.autoRefreshIntervalMinutes == minutes,
                 onTap: () {
@@ -286,7 +287,7 @@ class DataSettingsPage extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final days in options)
-              _OptionTile(
+              ReederOptionTile(
                 label: _expiryLabel(days, l10n),
                 isSelected: settings.contentExpiryDays == days,
                 onTap: () {
@@ -317,7 +318,7 @@ class DataSettingsPage extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final mb in options)
-              _OptionTile(
+              ReederOptionTile(
                 label: '$mb MB',
                 isSelected: settings.maxCacheSizeMB == mb,
                 onTap: () {
@@ -389,51 +390,3 @@ class DataSettingsPage extends ConsumerWidget {
 }
 
 /// A selectable option tile used in picker dialogs.
-class _OptionTile extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback? onTap;
-
-  const _OptionTile({
-    required this.label,
-    required this.isSelected,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ReederTheme.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDimensions.spacingS,
-          horizontal: AppDimensions.spacing,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: theme.typography.body.copyWith(
-                  color: theme.primaryTextColor,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Text(
-                '✓',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: theme.accentColor,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}

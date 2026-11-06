@@ -261,4 +261,22 @@ class SettingsRepository {
       ),
     );
   }
+
+  /// Sets how many seconds the player skips forward.
+  Future<void> setSkipForwardSeconds(int seconds) async {
+    await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        skipForwardSeconds: Value(seconds.clamp(5, 300)),
+      ),
+    );
+  }
+
+  /// Sets how many seconds the player skips backward.
+  Future<void> setSkipBackwardSeconds(int seconds) async {
+    await _localDs.updateSettings(
+      (s) => AppSettingsTableCompanion(
+        skipBackwardSeconds: Value(seconds.clamp(5, 300)),
+      ),
+    );
+  }
 }

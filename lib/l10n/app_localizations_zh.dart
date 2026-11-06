@@ -696,6 +696,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get showFolderIconsDesc => '在文件夹名称前显示图标';
 
   @override
+  String get podcastPlayback => '播客播放';
+
+  @override
+  String get playbackSpeedDefault => '默认播放速度';
+
+  @override
+  String get skipForward => '快进';
+
+  @override
+  String get skipBackward => '快退';
+
+  @override
   String get contentExpiryHint => '超过所选时间段的文章将从时间线中隐藏。仍可通过搜索找到。';
 
   @override

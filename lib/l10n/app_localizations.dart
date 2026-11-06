@@ -1376,6 +1376,30 @@ abstract class AppLocalizations {
   /// **'Draw a folder icon next to folder names'**
   String get showFolderIconsDesc;
 
+  /// No description provided for @podcastPlayback.
+  ///
+  /// In en, this message translates to:
+  /// **'Podcast Playback'**
+  String get podcastPlayback;
+
+  /// No description provided for @playbackSpeedDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Playback Speed'**
+  String get playbackSpeedDefault;
+
+  /// No description provided for @skipForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Forward'**
+  String get skipForward;
+
+  /// No description provided for @skipBackward.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Backward'**
+  String get skipBackward;
+
   /// No description provided for @contentExpiryHint.
   ///
   /// In en, this message translates to:

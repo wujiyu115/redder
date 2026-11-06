@@ -10,6 +10,7 @@ import '../../data/services/podcast_service.dart';
 import '../../shared/widgets/reeder_scaffold.dart';
 import '../../shared/widgets/reeder_nav_bar.dart';
 import '../../shared/widgets/reeder_slider.dart';
+import '../../shared/providers/settings_provider.dart';
 import 'podcast_controller.dart';
 
 /// Full-screen podcast player page.
@@ -189,10 +190,16 @@ class _FullPlayerPageState extends ConsumerState<FullPlayerPage> {
                   final speed = ref.watch(
                       podcastControllerProvider.select((s) => s.speed));
                   return GestureDetector(
-                    onTap: () {
-                      ref
+                    onTap: () async {
+                      await ref
                           .read(podcastControllerProvider.notifier)
                           .cycleSpeed();
+                      // Persist so the next episode starts at this speed.
+                      final newSpeed =
+                          ref.read(podcastControllerProvider).speed;
+                      await ref
+                          .read(settingsProvider.notifier)
+                          .setPlaybackSpeed(newSpeed);
                     },
                     behavior: HitTestBehavior.opaque,
                     child: Container(

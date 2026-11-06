@@ -11,6 +11,8 @@ import '../../shared/widgets/reeder_slider.dart';
 import '../../shared/widgets/reeder_section_header.dart';
 import '../../shared/widgets/reeder_list_tile.dart';
 import '../../shared/widgets/reeder_switch.dart';
+import '../../shared/widgets/reeder_option_tile.dart';
+import '../../shared/widgets/reeder_dialog.dart';
 import '../../shared/providers/settings_provider.dart';
 import '../../core/database/app_database.dart';
 import '../../data/models/app_settings_helpers.dart';
@@ -41,6 +43,80 @@ class ReadingSettingsPage extends ConsumerWidget {
             _buildContent(context, ref, settings, theme, l10n),
         loading: () => Center(child: Text(l10n.loading)),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage(e.toString()))),
+      ),
+    );
+  }
+
+  /// `1.0` → `1`, `1.25` → `1.25` — keeps the trailing row compact.
+  static String _formatSpeed(double speed) {
+    final text = speed.toStringAsFixed(2);
+    return text.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+
+  static String _seconds(int seconds) => '${seconds}s';
+
+  void _showPlaybackSpeedPicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettingsTableData settings,
+    AppLocalizations l10n,
+  ) {
+    const options = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    ReederDialog.show(
+      context: context,
+      builder: (ctx) => ReederDialog(
+        title: l10n.playbackSpeedDefault,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final speed in options)
+              ReederOptionTile(
+                label: '${_formatSpeed(speed)}x',
+                isSelected: (settings.playbackSpeed - speed).abs() < 0.01,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setPlaybackSpeed(speed);
+                  Navigator.of(ctx).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSkipPicker(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettingsTableData settings,
+    AppLocalizations l10n, {
+    required bool forward,
+  }) {
+    final options = forward ? const [10, 15, 30, 45, 60] : const [5, 10, 15, 30];
+    final current =
+        forward ? settings.skipForwardSeconds : settings.skipBackwardSeconds;
+    ReederDialog.show(
+      context: context,
+      builder: (ctx) => ReederDialog(
+        title: forward ? l10n.skipForward : l10n.skipBackward,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final seconds in options)
+              ReederOptionTile(
+                label: _seconds(seconds),
+                isSelected: current == seconds,
+                onTap: () {
+                  final notifier = ref.read(settingsProvider.notifier);
+                  if (forward) {
+                    notifier.setSkipForwardSeconds(seconds);
+                  } else {
+                    notifier.setSkipBackwardSeconds(seconds);
+                  }
+                  Navigator.of(ctx).pop();
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -163,6 +239,52 @@ class ReadingSettingsPage extends ConsumerWidget {
                   .read(settingsProvider.notifier)
                   .toggleDefaultFullscreenReading();
             },
+          ),
+        ),
+
+        // ─── PODCAST PLAYBACK ───────────────────────────────
+        ReederSectionHeader(title: l10n.podcastPlayback),
+
+        ReederListTile(
+          title: l10n.playbackSpeedDefault,
+          trailing: Text(
+            '${_formatSpeed(settings.playbackSpeed)}x',
+            style: theme.typography.body.copyWith(
+              color: theme.secondaryTextColor,
+            ),
+          ),
+          onTap: () => _showPlaybackSpeedPicker(context, ref, settings, l10n),
+        ),
+        ReederListTile(
+          title: l10n.skipForward,
+          trailing: Text(
+            _seconds(settings.skipForwardSeconds),
+            style: theme.typography.body.copyWith(
+              color: theme.secondaryTextColor,
+            ),
+          ),
+          onTap: () => _showSkipPicker(
+            context,
+            ref,
+            settings,
+            l10n,
+            forward: true,
+          ),
+        ),
+        ReederListTile(
+          title: l10n.skipBackward,
+          trailing: Text(
+            _seconds(settings.skipBackwardSeconds),
+            style: theme.typography.body.copyWith(
+              color: theme.secondaryTextColor,
+            ),
+          ),
+          onTap: () => _showSkipPicker(
+            context,
+            ref,
+            settings,
+            l10n,
+            forward: false,
           ),
         ),
 

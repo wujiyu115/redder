@@ -116,6 +116,18 @@ class SettingsNotifier extends StateNotifier<AsyncValue<AppSettingsTableData>> {
     await _loadSettings();
   }
 
+  /// Persists the skip-forward duration.
+  Future<void> setSkipForwardSeconds(int seconds) async {
+    await _repository.setSkipForwardSeconds(seconds);
+    await _loadSettings();
+  }
+
+  /// Persists the skip-backward duration.
+  Future<void> setSkipBackwardSeconds(int seconds) async {
+    await _repository.setSkipBackwardSeconds(seconds);
+    await _loadSettings();
+  }
+
   /// Toggles folder icons in the source list sidebar.
   Future<void> toggleShowFolderIcons() async {
     await _repository.toggleShowFolderIcons();
