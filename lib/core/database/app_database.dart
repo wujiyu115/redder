@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   static bool get isInitialized => _instance != null;
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,13 +73,20 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             // Add accountId column to all core tables for multi-account data isolation
-            await customStatement('ALTER TABLE feeds ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE feed_items ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE folders ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE tags ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE tagged_items ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE filters ADD COLUMN account_id INTEGER');
-            await customStatement('ALTER TABLE scroll_positions ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE feeds ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE feed_items ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE folders ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE tags ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE tagged_items ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE filters ADD COLUMN account_id INTEGER');
+            await customStatement(
+                'ALTER TABLE scroll_positions ADD COLUMN account_id INTEGER');
 
             // Recreate tables that had unique constraints removed
             // For folders: remove unique constraint on name
@@ -89,28 +96,37 @@ class AppDatabase extends _$AppDatabase {
             // Note: SQLite doesn't support DROP CONSTRAINT, so we recreate tables
 
             // Recreate folders table without unique constraint on name
-            await customStatement('CREATE TABLE folders_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, sort_order INTEGER NOT NULL DEFAULT 0, is_expanded INTEGER NOT NULL DEFAULT 1, unread_count INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
-            await customStatement('INSERT INTO folders_new SELECT id, name, icon_name, account_id, sort_order, is_expanded, unread_count, created_at, updated_at FROM folders');
+            await customStatement(
+                'CREATE TABLE folders_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, sort_order INTEGER NOT NULL DEFAULT 0, is_expanded INTEGER NOT NULL DEFAULT 1, unread_count INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
+            await customStatement(
+                'INSERT INTO folders_new SELECT id, name, icon_name, account_id, sort_order, is_expanded, unread_count, created_at, updated_at FROM folders');
             await customStatement('DROP TABLE folders');
             await customStatement('ALTER TABLE folders_new RENAME TO folders');
 
             // Recreate tags table without unique constraint on name
-            await customStatement('CREATE TABLE tags_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, is_built_in INTEGER NOT NULL DEFAULT 0, is_shared INTEGER NOT NULL DEFAULT 0, shared_feed_url TEXT, item_count INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)');
-            await customStatement('INSERT INTO tags_new SELECT id, name, icon_name, account_id, is_built_in, is_shared, shared_feed_url, item_count, sort_order, created_at FROM tags');
+            await customStatement(
+                'CREATE TABLE tags_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, icon_name TEXT, account_id INTEGER, is_built_in INTEGER NOT NULL DEFAULT 0, is_shared INTEGER NOT NULL DEFAULT 0, shared_feed_url TEXT, item_count INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)');
+            await customStatement(
+                'INSERT INTO tags_new SELECT id, name, icon_name, account_id, is_built_in, is_shared, shared_feed_url, item_count, sort_order, created_at FROM tags');
             await customStatement('DROP TABLE tags');
             await customStatement('ALTER TABLE tags_new RENAME TO tags');
 
             // Recreate filters table without unique constraint on name
-            await customStatement('CREATE TABLE filters_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, account_id INTEGER, include_keywords TEXT NOT NULL DEFAULT \'[]\', exclude_keywords TEXT NOT NULL DEFAULT \'[]\', media_types TEXT NOT NULL DEFAULT \'[]\', feed_types TEXT NOT NULL DEFAULT \'[]\', match_whole_word INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
-            await customStatement('INSERT INTO filters_new SELECT id, name, account_id, include_keywords, exclude_keywords, media_types, feed_types, match_whole_word, sort_order, created_at, updated_at FROM filters');
+            await customStatement(
+                'CREATE TABLE filters_new (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, account_id INTEGER, include_keywords TEXT NOT NULL DEFAULT \'[]\', exclude_keywords TEXT NOT NULL DEFAULT \'[]\', media_types TEXT NOT NULL DEFAULT \'[]\', feed_types TEXT NOT NULL DEFAULT \'[]\', match_whole_word INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)');
+            await customStatement(
+                'INSERT INTO filters_new SELECT id, name, account_id, include_keywords, exclude_keywords, media_types, feed_types, match_whole_word, sort_order, created_at, updated_at FROM filters');
             await customStatement('DROP TABLE filters');
             await customStatement('ALTER TABLE filters_new RENAME TO filters');
 
             // Recreate scroll_positions table without unique constraint on timeline_id
-            await customStatement('CREATE TABLE scroll_positions_new (id INTEGER PRIMARY KEY AUTOINCREMENT, timeline_id TEXT NOT NULL, account_id INTEGER, last_item_id INTEGER, scroll_offset REAL NOT NULL DEFAULT 0.0, saved_at INTEGER NOT NULL)');
-            await customStatement('INSERT INTO scroll_positions_new SELECT id, timeline_id, account_id, last_item_id, scroll_offset, saved_at FROM scroll_positions');
+            await customStatement(
+                'CREATE TABLE scroll_positions_new (id INTEGER PRIMARY KEY AUTOINCREMENT, timeline_id TEXT NOT NULL, account_id INTEGER, last_item_id INTEGER, scroll_offset REAL NOT NULL DEFAULT 0.0, saved_at INTEGER NOT NULL)');
+            await customStatement(
+                'INSERT INTO scroll_positions_new SELECT id, timeline_id, account_id, last_item_id, scroll_offset, saved_at FROM scroll_positions');
             await customStatement('DROP TABLE scroll_positions');
-            await customStatement('ALTER TABLE scroll_positions_new RENAME TO scroll_positions');
+            await customStatement(
+                'ALTER TABLE scroll_positions_new RENAME TO scroll_positions');
           }
           if (from < 4) {
             await customStatement(
@@ -160,9 +176,12 @@ class AppDatabase extends _$AppDatabase {
             // have them — guard each ALTER or startup fails with
             // "duplicate column name".
             Future<bool> hasColumn(String table) async {
-              final info = await customSelect('PRAGMA table_info($table)').get();
-              return info.any((row) => row.read<String>('name') == 'notifications_enabled');
+              final info =
+                  await customSelect('PRAGMA table_info($table)').get();
+              return info.any(
+                  (row) => row.read<String>('name') == 'notifications_enabled');
             }
+
             if (!await hasColumn('feeds')) {
               await customStatement(
                   'ALTER TABLE feeds ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 0');
@@ -173,6 +192,50 @@ class AppDatabase extends _$AppDatabase {
             }
           }
           if (from < 9) {
+            await _createIndexes();
+          }
+          if (from < 10) {
+            // v10: one mapping row per local entity.
+            //
+            // `remote_id_mappings` had no unique key, and `upsertMapping` used
+            // `insertOnConflictUpdate`, which only matches the auto-increment
+            // primary key — so every sync appended another row per feed /
+            // article / folder (seen on device: 3 and 6 duplicates for the same
+            // remote id). Lookups then returned an arbitrary row.
+            //
+            // Collapse the duplicates, then let the unique index make the
+            // upsert in SyncLocalDataSource work as intended.
+            await customStatement(
+              'DELETE FROM remote_id_mappings WHERE id NOT IN '
+              '(SELECT MAX(id) FROM remote_id_mappings '
+              'GROUP BY account_id, local_type, local_id)',
+            );
+            final index = allSchemaEntities.whereType<Index>().firstWhere(
+                (i) => i.entityName == 'idx_remote_id_mappings_entity');
+            await m.create(index);
+          }
+          if (from < 11) {
+            // v11: feed / article URLs are unique *per account*.
+            //
+            // `feeds.feed_url` and `feed_items.url` carried a global UNIQUE, so
+            // a second account subscribing to the same feed died during its
+            // full sync with "UNIQUE constraint failed: feeds.feed_url" — and
+            // the rows it left behind then broke the first account's
+            // incremental sync as well (reproduced on device). Recreate both
+            // tables from the current Drift definition (no inline UNIQUE) and
+            // add per-account unique indexes; local-mode rows (NULL account)
+            // keep their uniqueness through the partial indexes created in
+            // [_createIndexes].
+            //
+            // `TableMigration` is flagged experimental, but it is the supported
+            // way to change constraints without hand-copying 20+ columns.
+            // ignore: experimental_member_use
+            await m.alterTable(TableMigration(feeds));
+            // ignore: experimental_member_use
+            await m.alterTable(TableMigration(feedItems));
+
+            // Recreating the tables dropped their secondary indexes; this also
+            // creates the partial unique indexes for local-mode rows.
             await _createIndexes();
           }
         },
@@ -205,6 +268,18 @@ class AppDatabase extends _$AppDatabase {
       // tag_* timelines: join tagged_items, then order by published_at.
       'CREATE INDEX IF NOT EXISTS idx_tagged_items_tag_item '
           'ON tagged_items (tag_id, item_id)',
+      // Feeds and articles are unique per account, not globally: two accounts
+      // can subscribe to the same feed / store the same article link.
+      // SQLite treats NULLs as distinct, so local-mode rows (NULL account) need
+      // their own partial indexes or a re-fetch would duplicate them.
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_feeds_account_feed_url '
+          'ON feeds (account_id, feed_url) WHERE account_id IS NOT NULL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_feeds_local_feed_url '
+          'ON feeds (feed_url) WHERE account_id IS NULL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_feed_items_account_url '
+          'ON feed_items (account_id, url) WHERE account_id IS NOT NULL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_feed_items_local_url '
+          'ON feed_items (url) WHERE account_id IS NULL',
     ];
     for (final sql in statements) {
       await customStatement(sql);
@@ -311,12 +386,26 @@ class AppDatabase extends _$AppDatabase {
   /// Returns database statistics for debugging.
   Future<Map<String, int>> getStats() async {
     return {
-      'feeds': (await (selectOnly(feeds)..addColumns([feeds.id.count()])).getSingle()).read(feeds.id.count())!,
-      'feedItems': (await (selectOnly(feedItems)..addColumns([feedItems.id.count()])).getSingle()).read(feedItems.id.count())!,
-      'tags': (await (selectOnly(tags)..addColumns([tags.id.count()])).getSingle()).read(tags.id.count())!,
-      'taggedItems': (await (selectOnly(taggedItems)..addColumns([taggedItems.id.count()])).getSingle()).read(taggedItems.id.count())!,
-      'folders': (await (selectOnly(folders)..addColumns([folders.id.count()])).getSingle()).read(folders.id.count())!,
-      'filters': (await (selectOnly(filters)..addColumns([filters.id.count()])).getSingle()).read(filters.id.count())!,
+      'feeds': (await (selectOnly(feeds)..addColumns([feeds.id.count()]))
+              .getSingle())
+          .read(feeds.id.count())!,
+      'feedItems': (await (selectOnly(feedItems)
+                ..addColumns([feedItems.id.count()]))
+              .getSingle())
+          .read(feedItems.id.count())!,
+      'tags':
+          (await (selectOnly(tags)..addColumns([tags.id.count()])).getSingle())
+              .read(tags.id.count())!,
+      'taggedItems': (await (selectOnly(taggedItems)
+                ..addColumns([taggedItems.id.count()]))
+              .getSingle())
+          .read(taggedItems.id.count())!,
+      'folders': (await (selectOnly(folders)..addColumns([folders.id.count()]))
+              .getSingle())
+          .read(folders.id.count())!,
+      'filters': (await (selectOnly(filters)..addColumns([filters.id.count()]))
+              .getSingle())
+          .read(filters.id.count())!,
     };
   }
 }

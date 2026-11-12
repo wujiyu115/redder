@@ -15,6 +15,18 @@ class SyncLocalDataSource {
     return _db.into(_db.syncAccounts).insertOnConflictUpdate(account);
   }
 
+  /// Advances the sync watermark of one account, touching nothing else.
+  ///
+  /// This has to be an UPDATE: `insertOnConflictUpdate` rejects a partial
+  /// companion (`serviceType`/`username` missing) with an
+  /// `InvalidDataException`, which used to abort every sync right after it
+  /// finished — so `lastSyncAt` never moved and every launch re-ran a full
+  /// sync instead of an incremental one.
+  Future<void> updateLastSyncAt(int accountId, DateTime lastSyncAt) {
+    return (_db.update(_db.syncAccounts)..where((t) => t.id.equals(accountId)))
+        .write(SyncAccountsCompanion(lastSyncAt: Value(lastSyncAt)));
+  }
+
   /// Gets a sync account by its ID.
   Future<SyncAccount?> getAccountById(int id) async {
     final query = _db.select(_db.syncAccounts)..where((t) => t.id.equals(id));
@@ -41,10 +53,9 @@ class SyncLocalDataSource {
       await (_db.update(_db.syncAccounts)
             ..where((t) => t.isActive.equals(true)))
           .write(const SyncAccountsCompanion(isActive: Value(false)));
-      
+
       // Activate the specified account
-      await (_db.update(_db.syncAccounts)
-            ..where((t) => t.id.equals(accountId)))
+      await (_db.update(_db.syncAccounts)..where((t) => t.id.equals(accountId)))
           .write(const SyncAccountsCompanion(isActive: Value(true)));
     });
   }
@@ -101,6 +112,20 @@ class SyncLocalDataSource {
     ));
   }
 
+  /// Moves a repeatedly failing queue item to the back of the queue.
+  ///
+  /// Used when an operation has burned its retries: older ordering is what
+  /// keeps a broken item from blocking newer user actions, so we only bump
+  /// `created_at` and reset the counter instead of dropping the row.
+  Future<void> deferQueueItem(int queueItemId) async {
+    await (_db.update(_db.syncQueueItems)
+          ..where((t) => t.id.equals(queueItemId)))
+        .write(SyncQueueItemsCompanion(
+      createdAt: Value(DateTime.now()),
+      retryCount: const Value(0),
+    ));
+  }
+
   /// Deletes a specific queue item.
   Future<bool> deleteQueueItem(int queueItemId) async {
     final rows = await (_db.delete(_db.syncQueueItems)
@@ -112,12 +137,24 @@ class SyncLocalDataSource {
   // ==================== RemoteIdMappings Operations ====================
 
   /// Inserts or updates a remote ID mapping.
+  ///
+  /// Upserts on `(account_id, local_type, local_id)`: the plain
+  /// `insertOnConflictUpdate` targeted the auto-increment primary key, so every
+  /// sync appended another row and lookups became ambiguous.
   Future<int> upsertMapping(RemoteIdMappingsCompanion mapping) async {
-    return _db.into(_db.remoteIdMappings).insertOnConflictUpdate(mapping);
+    final table = _db.remoteIdMappings;
+    return _db.into(table).insert(
+          mapping,
+          onConflict: DoUpdate(
+            (old) => mapping,
+            target: [table.accountId, table.localType, table.localId],
+          ),
+        );
   }
 
   /// Gets the remote ID for a local entity.
-  Future<String?> getRemoteId(int accountId, String localType, int localId) async {
+  Future<String?> getRemoteId(
+      int accountId, String localType, int localId) async {
     final query = _db.select(_db.remoteIdMappings)
       ..where((t) => t.accountId.equals(accountId))
       ..where((t) => t.localType.equals(localType))
@@ -128,7 +165,8 @@ class SyncLocalDataSource {
   }
 
   /// Gets the local ID for a remote entity.
-  Future<int?> getLocalId(int accountId, String localType, String remoteId) async {
+  Future<int?> getLocalId(
+      int accountId, String localType, String remoteId) async {
     final query = _db.select(_db.remoteIdMappings)
       ..where((t) => t.accountId.equals(accountId))
       ..where((t) => t.localType.equals(localType))
@@ -171,16 +209,14 @@ class SyncLocalDataSource {
             ..where((t) => t.accountId.equals(accountId)))
           .go();
       // Delete feeds
-      await (_db.delete(_db.feeds)
-            ..where((t) => t.accountId.equals(accountId)))
+      await (_db.delete(_db.feeds)..where((t) => t.accountId.equals(accountId)))
           .go();
       // Delete folders
       await (_db.delete(_db.folders)
             ..where((t) => t.accountId.equals(accountId)))
           .go();
       // Delete tags
-      await (_db.delete(_db.tags)
-            ..where((t) => t.accountId.equals(accountId)))
+      await (_db.delete(_db.tags)..where((t) => t.accountId.equals(accountId)))
           .go();
       // Delete filters
       await (_db.delete(_db.filters)

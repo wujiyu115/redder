@@ -17,35 +17,88 @@ class ArticleLocalDataSource {
 
   AppDatabase get _db => _dbOverride ?? AppDatabase.instance;
 
-  /// Inserts or updates a feed item.
-  Future<int> upsert(FeedItemsCompanion item, {int? accountId}) {
+  /// Inserts or updates a feed item, keyed by `(account, url)`.
+  ///
+  /// Article URLs are unique per account — the same link may arrive through two
+  /// accounts — so this cannot be a plain `insertOnConflictUpdate`: drift
+  /// targets a single constraint, and local-mode rows carry a NULL account
+  /// (NULLs never conflict in SQLite). Look the existing row up first instead.
+  Future<int> upsert(FeedItemsCompanion item, {int? accountId}) async {
     var companion = item;
     if (accountId != null) {
       companion = companion.copyWith(accountId: Value(accountId));
     }
-    return _db.into(_db.feedItems).insertOnConflictUpdate(companion);
+
+    final existing = await _findByUrl(companion.url.value, accountId);
+    if (existing == null) {
+      return _db.into(_db.feedItems).insert(companion);
+    }
+
+    await (_db.update(_db.feedItems)..where((t) => t.id.equals(existing.id)))
+        .write(companion);
+    return existing.id;
   }
 
-  /// Inserts or updates multiple feed items.
-  ///
-  /// Uses `url` as the conflict target since it has a UNIQUE constraint.
-  Future<void> upsertAll(List<FeedItemsCompanion> items, {int? accountId}) async {
+  /// Inserts or updates multiple feed items. See [upsert] for the conflict
+  /// rules; later duplicates in [items] win.
+  Future<void> upsertAll(List<FeedItemsCompanion> items,
+      {int? accountId}) async {
+    if (items.isEmpty) return;
+
+    final byUrl = <String, FeedItemsCompanion>{};
+    for (final item in items) {
+      var companion = item;
+      if (accountId != null) {
+        companion = companion.copyWith(accountId: Value(accountId));
+      }
+      byUrl[companion.url.value] = companion;
+    }
+
+    final existingIds = await _idsByUrl(byUrl.keys.toList(), accountId);
+
     await _db.batch((batch) {
-      for (final item in items) {
-        var companion = item;
-        if (accountId != null) {
-          companion = companion.copyWith(accountId: Value(accountId));
+      for (final entry in byUrl.entries) {
+        final id = existingIds[entry.key];
+        if (id == null) {
+          batch.insert(_db.feedItems, entry.value);
+        } else {
+          batch.update(_db.feedItems, entry.value,
+              where: (t) => t.id.equals(id));
         }
-        batch.insert(
-          _db.feedItems,
-          companion,
-          onConflict: DoUpdate(
-            (_) => companion,
-            target: [_db.feedItems.url],
-          ),
-        );
       }
     });
+  }
+
+  /// Item ids for [urls] under exactly [accountId] (`null` = local-only rows).
+  Future<Map<String, int>> _idsByUrl(List<String> urls, int? accountId) async {
+    final result = <String, int>{};
+    // Stay well below the SQLite variable limit for one statement.
+    const chunkSize = 400;
+    for (var start = 0; start < urls.length; start += chunkSize) {
+      final end =
+          (start + chunkSize < urls.length) ? start + chunkSize : urls.length;
+      final query = _db.selectOnly(_db.feedItems)
+        ..addColumns([_db.feedItems.id, _db.feedItems.url])
+        ..where(_db.feedItems.url.isIn(urls.sublist(start, end)));
+      query.where(accountId == null
+          ? _db.feedItems.accountId.isNull()
+          : _db.feedItems.accountId.equals(accountId));
+      for (final row in await query.get()) {
+        result[row.read(_db.feedItems.url)!] = row.read(_db.feedItems.id)!;
+      }
+    }
+    return result;
+  }
+
+  /// The item with [url] for exactly [accountId] (`null` = local-only rows).
+  Future<FeedItem?> _findByUrl(String url, int? accountId) {
+    final query = _db.select(_db.feedItems)
+      ..where((t) => t.url.equals(url))
+      ..where((t) => accountId == null
+          ? t.accountId.isNull()
+          : t.accountId.equals(accountId))
+      ..limit(1);
+    return query.getSingleOrNull();
   }
 
   /// Gets a feed item by its ID.
@@ -59,8 +112,7 @@ class ArticleLocalDataSource {
 
   /// Gets a feed item by its URL.
   Future<FeedItem?> getByUrl(String url, {int? accountId}) async {
-    final query = _db.select(_db.feedItems)
-      ..where((t) => t.url.equals(url));
+    final query = _db.select(_db.feedItems)..where((t) => t.url.equals(url));
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -78,9 +130,11 @@ class ArticleLocalDataSource {
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.feedId.equals(feedId))
-      ..orderBy([(t) => oldestFirst
-          ? OrderingTerm.asc(t.publishedAt)
-          : OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([
+        (t) => oldestFirst
+            ? OrderingTerm.asc(t.publishedAt)
+            : OrderingTerm.desc(t.publishedAt)
+      ]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -100,9 +154,11 @@ class ArticleLocalDataSource {
     int? accountId,
   }) {
     final query = _db.select(_db.feedItems)
-      ..orderBy([(t) => oldestFirst
-          ? OrderingTerm.asc(t.publishedAt)
-          : OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([
+        (t) => oldestFirst
+            ? OrderingTerm.asc(t.publishedAt)
+            : OrderingTerm.desc(t.publishedAt)
+      ]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -158,9 +214,11 @@ class ArticleLocalDataSource {
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.contentType.equalsValue(type))
-      ..orderBy([(t) => oldestFirst
-          ? OrderingTerm.asc(t.publishedAt)
-          : OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([
+        (t) => oldestFirst
+            ? OrderingTerm.asc(t.publishedAt)
+            : OrderingTerm.desc(t.publishedAt)
+      ]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -182,9 +240,11 @@ class ArticleLocalDataSource {
   }) {
     final query = _db.select(_db.feedItems)
       ..where((t) => t.feedId.isIn(feedIds))
-      ..orderBy([(t) => oldestFirst
-          ? OrderingTerm.asc(t.publishedAt)
-          : OrderingTerm.desc(t.publishedAt)]);
+      ..orderBy([
+        (t) => oldestFirst
+            ? OrderingTerm.asc(t.publishedAt)
+            : OrderingTerm.desc(t.publishedAt)
+      ]);
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -196,7 +256,8 @@ class ArticleLocalDataSource {
   }
 
   /// Full-text search across title, optionally filtered by [accountId].
-  Future<List<FeedItem>> search(String query, {int limit = 50, int? accountId}) {
+  Future<List<FeedItem>> search(String query,
+      {int limit = 50, int? accountId}) {
     final q = _db.select(_db.feedItems)
       ..where((t) => t.title.like('%$query%'))
       ..orderBy([(t) => OrderingTerm.desc(t.publishedAt)])
@@ -237,7 +298,8 @@ class ArticleLocalDataSource {
   /// Returns a map of `feedId -> unread count` for feeds that have at least
   /// one unread item. Feeds with zero unread items are omitted from the map.
   /// Callers should treat a missing feedId as 0.
-  Future<Map<int, int>> unreadCountsForFeeds(Set<int> feedIds, {int? accountId}) async {
+  Future<Map<int, int>> unreadCountsForFeeds(Set<int> feedIds,
+      {int? accountId}) async {
     if (feedIds.isEmpty) return <int, int>{};
     final feedIdCol = _db.feedItems.feedId;
     final countExp = _db.feedItems.id.count();
@@ -260,7 +322,8 @@ class ArticleLocalDataSource {
   /// Returns a map of `contentType -> unread count` for types that still have
   /// unread items. Missing types should be treated as 0. Feeds the 文章 /
   /// 播客 / 视频 rows of the source list.
-  Future<Map<ContentType, int>> unreadCountsByContentType({int? accountId}) async {
+  Future<Map<ContentType, int>> unreadCountsByContentType(
+      {int? accountId}) async {
     final typeCol = _db.feedItems.contentType;
     final countExp = _db.feedItems.id.count();
     final query = _db.selectOnly(_db.feedItems)
@@ -541,16 +604,14 @@ class ArticleLocalDataSource {
 
   /// Deletes a feed item by its ID.
   Future<bool> delete(int id) async {
-    final rows = await (_db.delete(_db.feedItems)
-          ..where((t) => t.id.equals(id)))
-        .go();
+    final rows =
+        await (_db.delete(_db.feedItems)..where((t) => t.id.equals(id))).go();
     return rows > 0;
   }
 
   /// Deletes all items for a specific feed.
   Future<void> deleteByFeedId(int feedId) async {
-    await (_db.delete(_db.feedItems)
-          ..where((t) => t.feedId.equals(feedId)))
+    await (_db.delete(_db.feedItems)..where((t) => t.feedId.equals(feedId)))
         .go();
   }
 

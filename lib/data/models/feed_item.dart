@@ -24,8 +24,13 @@ class FeedItems extends Table {
   TextColumn get title => text()();
   TextColumn get summary => text().nullable()();
   TextColumn get content => text().nullable()();
-  TextColumn get url => text().unique()();
+
+  /// Not globally unique: the same article can arrive through two accounts.
+  /// Uniqueness is per account (see `idx_feed_items_account_url`) plus a
+  /// partial index for local-mode rows with a NULL account.
+  TextColumn get url => text()();
   TextColumn get imageUrl => text().nullable()();
+
   /// JSON-serialized list of additional image URLs.
   TextColumn get imageUrls => text().nullable()();
   TextColumn get audioUrl => text().nullable()();
@@ -34,7 +39,8 @@ class FeedItems extends Table {
   TextColumn get author => text().nullable()();
   DateTimeColumn get publishedAt => dateTime()();
   DateTimeColumn get fetchedAt => dateTime()();
-  IntColumn get contentType => intEnum<ContentType>().withDefault(const Constant(0))();
+  IntColumn get contentType =>
+      intEnum<ContentType>().withDefault(const Constant(0))();
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
   BoolColumn get isStarred => boolean().withDefault(const Constant(false))();
   IntColumn get readingTimeMinutes => integer().nullable()();

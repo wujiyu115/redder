@@ -33,9 +33,7 @@ class $FeedsTable extends Feeds with TableInfo<$FeedsTable, Feed> {
   @override
   late final GeneratedColumn<String> feedUrl = GeneratedColumn<String>(
       'feed_url', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _siteUrlMeta =
       const VerificationMeta('siteUrl');
   @override
@@ -329,6 +327,10 @@ class Feed extends DataClass implements Insertable<Feed> {
   final int id;
   final String title;
   final String? description;
+
+  /// Not globally unique: two accounts can subscribe to the same URL.
+  /// Uniqueness is per account (see `idx_feeds_account_feed_url`) plus a
+  /// partial index for local-mode rows with a NULL account.
   final String feedUrl;
   final String? siteUrl;
   final String? iconUrl;
@@ -938,9 +940,7 @@ class $FeedItemsTable extends FeedItems
   @override
   late final GeneratedColumn<String> url = GeneratedColumn<String>(
       'url', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _imageUrlMeta =
       const VerificationMeta('imageUrl');
   @override
@@ -1239,6 +1239,10 @@ class FeedItem extends DataClass implements Insertable<FeedItem> {
   final String title;
   final String? summary;
   final String? content;
+
+  /// Not globally unique: the same article can arrive through two accounts.
+  /// Uniqueness is per account (see `idx_feed_items_account_url`) plus a
+  /// partial index for local-mode rows with a NULL account.
   final String url;
   final String? imageUrl;
 
@@ -6350,6 +6354,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncQueueItemsTable syncQueueItems = $SyncQueueItemsTable(this);
   late final $RemoteIdMappingsTable remoteIdMappings =
       $RemoteIdMappingsTable(this);
+  late final Index idxRemoteIdMappingsEntity = Index(
+      'idx_remote_id_mappings_entity',
+      'CREATE UNIQUE INDEX idx_remote_id_mappings_entity ON remote_id_mappings (account_id, local_type, local_id)');
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6365,7 +6372,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         appSettingsTable,
         syncAccounts,
         syncQueueItems,
-        remoteIdMappings
+        remoteIdMappings,
+        idxRemoteIdMappingsEntity
       ];
 }
 

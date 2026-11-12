@@ -14,31 +14,73 @@ class FeedLocalDataSource {
 
   AppDatabase get _db => _dbOverride ?? AppDatabase.instance;
 
-  /// Inserts or updates a feed.
+  /// Inserts or updates a feed, keyed by `(account, feed URL)`.
+  ///
+  /// Feed URLs are unique per account — two accounts may subscribe to the same
+  /// feed — so this cannot be a plain `insertOnConflictUpdate`: drift targets a
+  /// single constraint, and local-mode rows carry a NULL account (NULLs never
+  /// conflict in SQLite). Look the existing row up first instead.
   Future<int> upsert(FeedsCompanion feed, {int? accountId}) async {
     var companion = feed.copyWith(updatedAt: Value(DateTime.now()));
     if (accountId != null) {
       companion = companion.copyWith(accountId: Value(accountId));
     }
-    return _db.into(_db.feeds).insertOnConflictUpdate(companion);
+
+    final existing = await _findByUrl(companion.feedUrl.value, accountId);
+    if (existing == null) {
+      return _db.into(_db.feeds).insert(companion);
+    }
+
+    await (_db.update(_db.feeds)..where((t) => t.id.equals(existing.id)))
+        .write(companion);
+    return existing.id;
   }
 
-  /// Inserts or updates multiple feeds.
+  /// Inserts or updates multiple feeds. See [upsert] for the conflict rules.
   Future<void> upsertAll(List<FeedsCompanion> feeds, {int? accountId}) async {
+    if (feeds.isEmpty) return;
     final now = DateTime.now();
+    final byUrl = <String, FeedsCompanion>{};
+    for (final feed in feeds) {
+      var companion = feed.copyWith(updatedAt: Value(now));
+      if (accountId != null) {
+        companion = companion.copyWith(accountId: Value(accountId));
+      }
+      byUrl[companion.feedUrl.value] = companion;
+    }
+
+    final existingIds = <String, int>{};
+    final query = _db.selectOnly(_db.feeds)
+      ..addColumns([_db.feeds.id, _db.feeds.feedUrl])
+      ..where(_db.feeds.feedUrl.isIn(byUrl.keys.toList()));
+    query.where(accountId == null
+        ? _db.feeds.accountId.isNull()
+        : _db.feeds.accountId.equals(accountId));
+    for (final row in await query.get()) {
+      existingIds[row.read(_db.feeds.feedUrl)!] = row.read(_db.feeds.id)!;
+    }
+
     await _db.batch((batch) {
-      for (final feed in feeds) {
-        var companion = feed.copyWith(updatedAt: Value(now));
-        if (accountId != null) {
-          companion = companion.copyWith(accountId: Value(accountId));
+      for (final entry in byUrl.entries) {
+        final id = existingIds[entry.key];
+        if (id == null) {
+          batch.insert(_db.feeds, entry.value);
+        } else {
+          batch.update(_db.feeds, entry.value, where: (t) => t.id.equals(id));
         }
-        batch.insert(
-          _db.feeds,
-          companion,
-          onConflict: DoUpdate((_) => companion),
-        );
       }
     });
+  }
+
+  /// Feeds with [feedUrl] for exactly [accountId] (`null` = local-only rows).
+  Future<Feed?> _findByUrl(String feedUrl, int? accountId) {
+    final query = _db.select(_db.feeds)
+      ..where((t) => t.feedUrl.equals(feedUrl))
+      ..where((t) => accountId == null
+          ? t.accountId.isNull()
+          : t.accountId.equals(accountId))
+      ..limit(1);
+    return query.getSingleOrNull();
   }
 
   /// Gets a feed by its ID.
@@ -84,8 +126,7 @@ class FeedLocalDataSource {
 
   /// Gets all feeds of a specific type, optionally filtered by [accountId].
   Future<List<Feed>> getByType(FeedType type, {int? accountId}) {
-    final query = _db.select(_db.feeds)
-      ..where((t) => t.type.equalsValue(type));
+    final query = _db.select(_db.feeds)..where((t) => t.type.equalsValue(type));
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -104,8 +145,7 @@ class FeedLocalDataSource {
 
   /// Gets all feeds without a folder (root level), optionally filtered by [accountId].
   Future<List<Feed>> getRootFeeds({int? accountId}) {
-    final query = _db.select(_db.feeds)
-      ..where((t) => t.folderId.isNull());
+    final query = _db.select(_db.feeds)..where((t) => t.folderId.isNull());
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -125,23 +165,19 @@ class FeedLocalDataSource {
 
   /// Deletes a feed by its ID.
   Future<bool> delete(int id) async {
-    final rows = await (_db.delete(_db.feeds)
-          ..where((t) => t.id.equals(id)))
-        .go();
+    final rows =
+        await (_db.delete(_db.feeds)..where((t) => t.id.equals(id))).go();
     return rows > 0;
   }
 
   /// Deletes multiple feeds by their IDs.
   Future<int> deleteAll(List<int> ids) {
-    return (_db.delete(_db.feeds)
-          ..where((t) => t.id.isIn(ids)))
-        .go();
+    return (_db.delete(_db.feeds)..where((t) => t.id.isIn(ids))).go();
   }
 
   /// Deletes all feeds for a specific account.
   Future<int> deleteByAccountId(int accountId) {
-    return (_db.delete(_db.feeds)
-          ..where((t) => t.accountId.equals(accountId)))
+    return (_db.delete(_db.feeds)..where((t) => t.accountId.equals(accountId)))
         .go();
   }
 

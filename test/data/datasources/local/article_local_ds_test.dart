@@ -149,6 +149,43 @@ void main() {
         expect(item.accountId, equals(accountId));
       }
     });
+
+    test('keeps the same URL for two accounts, updates within one', () async {
+      FeedItemsCompanion item(String title) => FeedItemsCompanion.insert(
+            feedId: 1,
+            title: title,
+            url: 'https://example.com/shared',
+            publishedAt: DateTime(2024, 1, 1),
+            fetchedAt: DateTime.now(),
+            createdAt: DateTime.now(),
+          );
+
+      await dataSource.upsertAll([item('first')], accountId: 1);
+      await dataSource.upsertAll([item('second account')], accountId: 2);
+      // Same account, same URL: update the existing row, do not duplicate it.
+      await dataSource.upsertAll([item('updated')], accountId: 1);
+
+      final accountOne = await dataSource.getAll(accountId: 1);
+      final accountTwo = await dataSource.getAll(accountId: 2);
+      expect(accountOne.single.title, 'updated');
+      expect(accountTwo.single.title, 'second account');
+    });
+
+    test('collapses duplicate URLs inside one batch', () async {
+      FeedItemsCompanion item(String title) => FeedItemsCompanion.insert(
+            feedId: 1,
+            title: title,
+            url: 'https://example.com/dup',
+            publishedAt: DateTime(2024, 1, 1),
+            fetchedAt: DateTime.now(),
+            createdAt: DateTime.now(),
+          );
+
+      await dataSource.upsertAll([item('old'), item('new')], accountId: 1);
+
+      final items = await dataSource.getAll(accountId: 1);
+      expect(items.single.title, 'new');
+    });
   });
 
   group('getById', () {
@@ -226,13 +263,15 @@ void main() {
 
       await dataSource.upsert(item);
 
-      final retrieved = await dataSource.getByUrl('https://example.com/article1');
+      final retrieved =
+          await dataSource.getByUrl('https://example.com/article1');
       expect(retrieved, isNotNull);
       expect(retrieved!.title, equals('Test Article'));
     });
 
     test('should return null for non-existent URL', () async {
-      final retrieved = await dataSource.getByUrl('https://example.com/nonexistent');
+      final retrieved =
+          await dataSource.getByUrl('https://example.com/nonexistent');
       expect(retrieved, isNull);
     });
 
@@ -395,7 +434,8 @@ void main() {
       await dataSource.upsert(items[0], accountId: accountId);
       await dataSource.upsert(items[1]);
 
-      final accountItems = await dataSource.getByFeedId(1, accountId: accountId);
+      final accountItems =
+          await dataSource.getByFeedId(1, accountId: accountId);
       expect(accountItems.length, equals(1));
       expect(accountItems[0].accountId, equals(accountId));
     });
@@ -500,7 +540,9 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountItems = await dataSource.getAll(accountId: accountId);
@@ -645,7 +687,9 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
       await dataSource.markAllAsRead(accountId: accountId);
@@ -698,7 +742,8 @@ void main() {
       }
     });
 
-    test('should mark all items for a feed as read for specific account', () async {
+    test('should mark all items for a feed as read for specific account',
+        () async {
       const accountId = 1;
       final items = [
         FeedItemsCompanion.insert(
@@ -721,12 +766,15 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
       await dataSource.markAllAsReadForFeed(1, accountId: accountId);
 
-      final accountItems = await dataSource.getByFeedId(1, accountId: accountId);
+      final accountItems =
+          await dataSource.getByFeedId(1, accountId: accountId);
       expect(accountItems.length, equals(1));
       expect(accountItems[0].isRead, isTrue);
 
@@ -870,7 +918,9 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final results = await dataSource.search('Flutter', accountId: accountId);
@@ -1008,8 +1058,12 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[1].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
+      await dataSource.upsert(
+          items[1].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[2]);
 
       final totalCount = await dataSource.count();
@@ -1081,10 +1135,13 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
-      final accountUnreadCount = await dataSource.unreadCountForFeed(1, accountId: accountId);
+      final accountUnreadCount =
+          await dataSource.unreadCountForFeed(1, accountId: accountId);
       expect(accountUnreadCount, equals(1));
 
       final totalUnreadCount = await dataSource.unreadCountForFeed(1);
@@ -1348,7 +1405,9 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
       final accountStarred = await dataSource.getStarred(accountId: accountId);
@@ -1455,10 +1514,13 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
       await dataSource.upsert(items[1]);
 
-      final accountUnreadIds = await dataSource.getUnreadIds(accountId: accountId);
+      final accountUnreadIds =
+          await dataSource.getUnreadIds(accountId: accountId);
       expect(accountUnreadIds.length, equals(1));
     });
   });
@@ -1526,10 +1588,12 @@ void main() {
 
       await dataSource.upsertAll(items);
 
-      final page1 = await dataSource.getByContentType(ContentType.audio, limit: 3, offset: 0);
+      final page1 = await dataSource.getByContentType(ContentType.audio,
+          limit: 3, offset: 0);
       expect(page1.length, equals(3));
 
-      final page2 = await dataSource.getByContentType(ContentType.audio, limit: 3, offset: 3);
+      final page2 = await dataSource.getByContentType(ContentType.audio,
+          limit: 3, offset: 3);
       expect(page2.length, equals(2));
     });
   });
@@ -1644,9 +1708,15 @@ void main() {
         ),
       ];
 
-      await dataSource.upsert(items[0].copyWith(accountId: const Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[1].copyWith(accountId: const Value(accountId)), accountId: accountId);
-      await dataSource.upsert(items[2].copyWith(accountId: const Value(otherAccountId)), accountId: otherAccountId);
+      await dataSource.upsert(
+          items[0].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
+      await dataSource.upsert(
+          items[1].copyWith(accountId: const Value(accountId)),
+          accountId: accountId);
+      await dataSource.upsert(
+          items[2].copyWith(accountId: const Value(otherAccountId)),
+          accountId: otherAccountId);
 
       await dataSource.deleteByAccountId(accountId);
 
@@ -1792,7 +1862,8 @@ void main() {
 
     setUp(() async {
       tagId = await testDb.into(testDb.tags).insert(
-            TagsCompanion.insert(name: 'Saved', createdAt: DateTime(2024, 1, 1)),
+            TagsCompanion.insert(
+                name: 'Saved', createdAt: DateTime(2024, 1, 1)),
           );
       taggedIds = [];
       for (var i = 0; i < 5; i++) {
@@ -1848,7 +1919,8 @@ void main() {
     test('paging through everything yields each item exactly once', () async {
       final seen = <int>[];
       for (var offset = 0; offset < taggedIds.length; offset += 2) {
-        final page = await dataSource.getByTagId(tagId, limit: 2, offset: offset);
+        final page =
+            await dataSource.getByTagId(tagId, limit: 2, offset: offset);
         seen.addAll(page.map((i) => i.id));
       }
       expect(seen.toSet(), taggedIds.toSet());

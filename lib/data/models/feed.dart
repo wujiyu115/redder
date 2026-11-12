@@ -35,7 +35,11 @@ class Feeds extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
-  TextColumn get feedUrl => text().unique()();
+
+  /// Not globally unique: two accounts can subscribe to the same URL.
+  /// Uniqueness is per account (see `idx_feeds_account_feed_url`) plus a
+  /// partial index for local-mode rows with a NULL account.
+  TextColumn get feedUrl => text()();
   TextColumn get siteUrl => text().nullable()();
   TextColumn get iconUrl => text().nullable()();
   IntColumn get type => intEnum<FeedType>().withDefault(const Constant(0))();
@@ -43,9 +47,12 @@ class Feeds extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   DateTimeColumn get lastFetched => dateTime().nullable()();
   IntColumn get fetchDurationMs => integer().nullable()();
-  IntColumn get defaultViewer => intEnum<ViewerType>().withDefault(const Constant(0))();
-  BoolColumn get autoReaderView => boolean().withDefault(const Constant(false))();
-  BoolColumn get notificationsEnabled => boolean().withDefault(const Constant(false))();
+  IntColumn get defaultViewer =>
+      intEnum<ViewerType>().withDefault(const Constant(0))();
+  BoolColumn get autoReaderView =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get notificationsEnabled =>
+      boolean().withDefault(const Constant(false))();
   IntColumn get accountId => integer().nullable()();
   IntColumn get unreadCount => integer().withDefault(const Constant(0))();
   IntColumn get totalCount => integer().withDefault(const Constant(0))();

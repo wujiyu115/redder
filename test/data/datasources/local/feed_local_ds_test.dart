@@ -114,7 +114,8 @@ void main() {
       expect(all.length, 2);
     });
 
-    test('should insert multiple feeds with accountId using upsertAll', () async {
+    test('should insert multiple feeds with accountId using upsertAll',
+        () async {
       final feeds = [
         FeedsCompanion.insert(
           title: 'Account Feed 1',
@@ -139,6 +140,43 @@ void main() {
       final all = await dataSource.getAll(accountId: 456);
       expect(all.length, 2);
       expect(all.every((f) => f.accountId == 456), isTrue);
+    });
+
+    test('keeps the same feed URL for two accounts, updates within one',
+        () async {
+      FeedsCompanion feed(String title) => FeedsCompanion.insert(
+            title: title,
+            feedUrl: 'https://example.com/shared',
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          );
+
+      // Two Reader accounts may subscribe to the same URL.
+      await dataSource.upsert(feed('first'), accountId: 1);
+      await dataSource.upsert(feed('second account'), accountId: 2);
+      // Same account and URL: update in place instead of inserting a duplicate.
+      final id = await dataSource.upsert(feed('updated'), accountId: 1);
+
+      final accountOne = await dataSource.getAll(accountId: 1);
+      final accountTwo = await dataSource.getAll(accountId: 2);
+      expect(accountOne.single.title, 'updated');
+      expect(accountOne.single.id, id);
+      expect(accountTwo.single.title, 'second account');
+    });
+
+    test('deduplicates local-mode rows (no account) by URL', () async {
+      FeedsCompanion feed(String title) => FeedsCompanion.insert(
+            title: title,
+            feedUrl: 'https://example.com/local',
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          );
+
+      await dataSource.upsert(feed('first'));
+      await dataSource.upsert(feed('second'));
+
+      final all = await dataSource.getAll();
+      expect(all.single.title, 'second');
     });
   });
 
@@ -217,7 +255,8 @@ void main() {
 
       await dataSource.upsert(feed, accountId: 100);
 
-      final result = await dataSource.getByUrl('https://example.com/feed', accountId: 200);
+      final result =
+          await dataSource.getByUrl('https://example.com/feed', accountId: 200);
       expect(result, isNull);
     });
   });
@@ -251,22 +290,26 @@ void main() {
     });
 
     test('should filter by accountId', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Account 1 Feed',
-        feedUrl: 'https://example.com/feed1',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 1);
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Account 2 Feed',
-        feedUrl: 'https://example.com/feed2',
-        type: const Value(FeedType.podcast),
-        defaultViewer: const Value(ViewerType.reader),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 2);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Account 1 Feed',
+            feedUrl: 'https://example.com/feed1',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 1);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Account 2 Feed',
+            feedUrl: 'https://example.com/feed2',
+            type: const Value(FeedType.podcast),
+            defaultViewer: const Value(ViewerType.reader),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 2);
 
       final result1 = await dataSource.getAll(accountId: 1);
       final result2 = await dataSource.getAll(accountId: 2);
@@ -307,22 +350,26 @@ void main() {
     });
 
     test('should filter by accountId when getting by type', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Blog Feed 1',
-        feedUrl: 'https://example.com/blog1',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 1);
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Blog Feed 2',
-        feedUrl: 'https://example.com/blog2',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 2);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Blog Feed 1',
+            feedUrl: 'https://example.com/blog1',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 1);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Blog Feed 2',
+            feedUrl: 'https://example.com/blog2',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 2);
 
       final result = await dataSource.getByType(FeedType.blog, accountId: 1);
       expect(result.length, 1);
@@ -356,24 +403,28 @@ void main() {
     });
 
     test('should filter by accountId when getting by folder', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Folder Feed 1',
-        feedUrl: 'https://example.com/feed1',
-        type: const Value(FeedType.blog),
-        folderId: const Value(10),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 1);
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Folder Feed 2',
-        feedUrl: 'https://example.com/feed2',
-        type: const Value(FeedType.blog),
-        folderId: const Value(10),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 2);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Folder Feed 1',
+            feedUrl: 'https://example.com/feed1',
+            type: const Value(FeedType.blog),
+            folderId: const Value(10),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 1);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Folder Feed 2',
+            feedUrl: 'https://example.com/feed2',
+            type: const Value(FeedType.blog),
+            folderId: const Value(10),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 2);
 
       final result = await dataSource.getByFolderId(10, accountId: 1);
       expect(result.length, 1);
@@ -415,22 +466,26 @@ void main() {
     });
 
     test('should filter by accountId when getting root feeds', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Root Feed 1',
-        feedUrl: 'https://example.com/root1',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 1);
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Root Feed 2',
-        feedUrl: 'https://example.com/root2',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 2);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Root Feed 1',
+            feedUrl: 'https://example.com/root1',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 1);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Root Feed 2',
+            feedUrl: 'https://example.com/root2',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 2);
 
       final result = await dataSource.getRootFeeds(accountId: 1);
       expect(result.length, 1);
@@ -599,30 +654,36 @@ void main() {
     });
 
     test('should return false when accountId does not match', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Test Feed',
-        feedUrl: 'https://example.com/feed',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 100);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Test Feed',
+            feedUrl: 'https://example.com/feed',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 100);
 
-      final exists = await dataSource.exists('https://example.com/feed', accountId: 200);
+      final exists =
+          await dataSource.exists('https://example.com/feed', accountId: 200);
       expect(exists, isFalse);
     });
 
     test('should return true when accountId matches', () async {
-      await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Test Feed',
-        feedUrl: 'https://example.com/feed',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 100);
+      await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Test Feed',
+            feedUrl: 'https://example.com/feed',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 100);
 
-      final exists = await dataSource.exists('https://example.com/feed', accountId: 100);
+      final exists =
+          await dataSource.exists('https://example.com/feed', accountId: 100);
       expect(exists, isTrue);
     });
   });
@@ -630,23 +691,27 @@ void main() {
   group('FeedLocalDataSource - accountId isolation', () {
     test('should isolate data by accountId across all operations', () async {
       // Create feeds for different accounts
-      final account1Id = await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Account 1 Feed',
-        feedUrl: 'https://example.com/account1',
-        type: const Value(FeedType.blog),
-        defaultViewer: const Value(ViewerType.article),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 1);
+      final account1Id = await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Account 1 Feed',
+            feedUrl: 'https://example.com/account1',
+            type: const Value(FeedType.blog),
+            defaultViewer: const Value(ViewerType.article),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 1);
 
-      final account2Id = await dataSource.upsert(FeedsCompanion.insert(
-        title: 'Account 2 Feed',
-        feedUrl: 'https://example.com/account2',
-        type: const Value(FeedType.podcast),
-        defaultViewer: const Value(ViewerType.reader),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-      ), accountId: 2);
+      final account2Id = await dataSource.upsert(
+          FeedsCompanion.insert(
+            title: 'Account 2 Feed',
+            feedUrl: 'https://example.com/account2',
+            type: const Value(FeedType.podcast),
+            defaultViewer: const Value(ViewerType.reader),
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+          accountId: 2);
 
       // Verify getById isolates by accountId
       expect(await dataSource.getById(account1Id, accountId: 1), isNotNull);
@@ -655,8 +720,14 @@ void main() {
       expect(await dataSource.getById(account2Id, accountId: 1), isNull);
 
       // Verify getByUrl isolates by accountId
-      expect(await dataSource.getByUrl('https://example.com/account1', accountId: 1), isNotNull);
-      expect(await dataSource.getByUrl('https://example.com/account1', accountId: 2), isNull);
+      expect(
+          await dataSource.getByUrl('https://example.com/account1',
+              accountId: 1),
+          isNotNull);
+      expect(
+          await dataSource.getByUrl('https://example.com/account1',
+              accountId: 2),
+          isNull);
 
       // Verify getAll isolates by accountId
       final account1Feeds = await dataSource.getAll(accountId: 1);
@@ -671,8 +742,12 @@ void main() {
       expect(await dataSource.count(accountId: 2), 1);
 
       // Verify exists isolates by accountId
-      expect(await dataSource.exists('https://example.com/account1', accountId: 1), isTrue);
-      expect(await dataSource.exists('https://example.com/account1', accountId: 2), isFalse);
+      expect(
+          await dataSource.exists('https://example.com/account1', accountId: 1),
+          isTrue);
+      expect(
+          await dataSource.exists('https://example.com/account1', accountId: 2),
+          isFalse);
 
       // Verify delete only affects specified account's feed
       await dataSource.delete(account1Id);
