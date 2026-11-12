@@ -302,6 +302,9 @@ class GoogleReaderApi {
   // ─── Stream Contents (Articles) ─────────────────────────────────────
 
   /// GET /reader/api/0/stream/contents/{streamId}
+  ///
+  /// [sinceTimestamp] must be a unix timestamp in **seconds** — it is sent as
+  /// the `ot` parameter, which bounds the result to items newer than it.
   Future<GReaderStreamContents> getStreamContents(
     String streamId, {
     int? count,
@@ -433,20 +436,33 @@ class GoogleReaderApi {
 
   // ─── Item IDs ───────────────────────────────────────────────────────
 
-  /// Gets unread item IDs.
-  /// Uses stream: user/-/state/com.google/reading-list
-  /// Excludes: user/-/state/com.google/read
-  Future<List<String>> getUnreadItemIds({int? count}) async {
-    try {
-      _log.info('getUnreadItemIds: start');
+  /// Maximum number of pages followed by [_getAllItemIds].
+  static const int _maxIdPages = 50;
+
+  /// Collects item ids for [streamId].
+  ///
+  /// Without [count] every page is followed via the `c` continuation, so the
+  /// returned list is complete and "id not in the list" can be trusted (the
+  /// read-state diff depends on that). With [count] only one page is read.
+  Future<List<String>> _getAllItemIds(
+    String streamId, {
+    int? count,
+    String? excludeTarget,
+  }) async {
+    final ids = <String>[];
+    String? continuation;
+
+    for (var page = 0; page < _maxIdPages; page++) {
       final queryParameters = <String, dynamic>{
         'output': 'json',
-        's': 'user/-/state/com.google/reading-list',
-        'xt': 'user/-/state/com.google/read',
+        's': streamId,
+        'n': (count ?? 1000).toString(),
       };
-
-      if (count != null) {
-        queryParameters['n'] = count.toString();
+      if (excludeTarget != null) {
+        queryParameters['xt'] = excludeTarget;
+      }
+      if (continuation != null) {
+        queryParameters['c'] = continuation;
       }
 
       final response = await _dio.get(
@@ -457,10 +473,29 @@ class GoogleReaderApi {
 
       final json = response.data as Map<String, dynamic>;
       final itemRefs = json['itemRefs'] as List<dynamic>? ?? [];
-      
-      return itemRefs.map((ref) {
-        return ref['id'] as String;
-      }).toList();
+      ids.addAll(itemRefs.map((ref) => (ref as Map<String, dynamic>)['id'] as String));
+
+      final next = json['continuation'] as String?;
+      if (count != null || itemRefs.isEmpty || next == null || next.isEmpty) {
+        break;
+      }
+      continuation = next;
+    }
+
+    return ids;
+  }
+
+  /// Gets unread item IDs.
+  /// Uses stream: user/-/state/com.google/reading-list
+  /// Excludes: user/-/state/com.google/read
+  Future<List<String>> getUnreadItemIds({int? count}) async {
+    try {
+      _log.info('getUnreadItemIds: start');
+      return await _getAllItemIds(
+        'user/-/state/com.google/reading-list',
+        count: count,
+        excludeTarget: 'user/-/state/com.google/read',
+      );
     } on DioException catch (e) {
       _log.error('getUnreadItemIds: failed', error: e);
       throw DioException(
@@ -477,27 +512,10 @@ class GoogleReaderApi {
   Future<List<String>> getStarredItemIds({int? count}) async {
     try {
       _log.info('getStarredItemIds: start');
-      final queryParameters = <String, dynamic>{
-        'output': 'json',
-        's': 'user/-/state/com.google/starred',
-      };
-
-      if (count != null) {
-        queryParameters['n'] = count.toString();
-      }
-
-      final response = await _dio.get(
-        _apiUrl('/reader/api/0/stream/items/ids'),
-        queryParameters: queryParameters,
-        options: _authOptions(),
+      return await _getAllItemIds(
+        'user/-/state/com.google/starred',
+        count: count,
       );
-
-      final json = response.data as Map<String, dynamic>;
-      final itemRefs = json['itemRefs'] as List<dynamic>? ?? [];
-      
-      return itemRefs.map((ref) {
-        return ref['id'] as String;
-      }).toList();
     } on DioException catch (e) {
       _log.error('getStarredItemIds: failed', error: e);
       throw DioException(
@@ -732,6 +750,8 @@ class GReaderItem {
   final GReaderItemContent? summary;
   final GReaderItemContent? content;
   final String? canonical; // URL
+  /// Fallback URL: some servers only send `alternate` (no `canonical`).
+  final String? alternateUrl;
   final List<String> categories;
   final int? published; // Unix timestamp
   final int? updated;
@@ -745,6 +765,7 @@ class GReaderItem {
     this.summary,
     this.content,
     this.canonical,
+    this.alternateUrl,
     required this.categories,
     this.published,
     this.updated,
@@ -777,6 +798,14 @@ class GReaderItem {
       }
     }
 
+    String? alternateUrl;
+    if (json['alternate'] != null) {
+      final alternateList = json['alternate'] as List<dynamic>;
+      if (alternateList.isNotEmpty) {
+        alternateUrl = alternateList[0]['href'] as String?;
+      }
+    }
+
     return GReaderItem(
       id: json['id'] as String,
       title: json['title'] as String?,
@@ -788,6 +817,7 @@ class GReaderItem {
           ? GReaderItemContent.fromJson(json['content'] as Map<String, dynamic>)
           : null,
       canonical: canonicalUrl,
+      alternateUrl: alternateUrl,
       categories: categories,
       published: json['published'] as int?,
       updated: json['updated'] as int?,

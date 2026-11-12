@@ -81,18 +81,7 @@ class SyncRepository {
   ///
   /// Called after a successful sync operation.
   Future<void> updateLastSyncAt(int accountId) async {
-    final account = await _localDs.getAccountById(accountId);
-    if (account != null) {
-      await _localDs.upsertAccount(SyncAccountsCompanion(
-        id: Value(account.id),
-        serviceType: Value(account.serviceType),
-        serverUrl: Value(account.serverUrl),
-        username: Value(account.username),
-        isActive: Value(account.isActive),
-        lastSyncAt: Value(DateTime.now()),
-        createdAt: Value(account.createdAt),
-      ));
-    }
+    await _localDs.updateLastSyncAt(accountId, DateTime.now());
   }
 
   /// Updates an existing sync account's details.

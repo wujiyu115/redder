@@ -137,26 +137,15 @@ void main() {
     });
 
     group('updateLastSyncAt()', () {
-      test('should get account then update sync time', () async {
-        final account = SyncAccount(
-          id: 1,
-          serviceType: 1,
-          serverUrl: null,
-          username: 'test@example.com',
-          isActive: true,
-          lastSyncAt: null,
-          syncState: null,
-          createdAt: DateTime(2024, 1, 1),
-        );
-
-        when(mockLocalDs.getAccountById(1)).thenAnswer((_) async => account);
-        when(mockLocalDs.upsertAccount(any))
-            .thenAnswer((_) async => 1);
+      test('should update only the sync watermark', () async {
+        when(mockLocalDs.updateLastSyncAt(any, any)).thenAnswer((_) async {});
 
         await repository.updateLastSyncAt(1);
 
-        verify(mockLocalDs.getAccountById(1)).called(1);
-        verify(mockLocalDs.upsertAccount(any)).called(1);
+        // Delegates to the UPDATE statement: a partial `upsertAccount`
+        // companion is rejected by Drift at runtime.
+        verify(mockLocalDs.updateLastSyncAt(1, any)).called(1);
+        verifyNever(mockLocalDs.upsertAccount(any));
       });
     });
 

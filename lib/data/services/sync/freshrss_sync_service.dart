@@ -221,7 +221,9 @@ class FreshRssSyncService implements SyncService {
 
     // Get articles from reading list
     const streamId = 'user/-/state/com.google/reading-list';
-    final sinceTimestamp = since?.millisecondsSinceEpoch;
+    // `ot` is a unix timestamp in seconds (see Google Reader API).
+    final sinceTimestamp =
+        since == null ? null : since.millisecondsSinceEpoch ~/ 1000;
 
     final contents = await _remoteDataSource!.getStreamContents(
       streamId,
@@ -432,12 +434,13 @@ class FreshRssSyncService implements SyncService {
 
     // Check if article is starred
     final isStarred = item.categories.any(
-      (category) => category == 'user/-/state/com.google/starred',
+      (category) => category.endsWith('/state/com.google/starred'),
     );
 
-    // Check if article is read (not in unread state)
-    final isRead = !item.categories.any(
-      (category) => category == 'user/-/state/com.google/unread',
+    // A read item carries the `read` state tag; unread is the default state
+    // and is not reliably echoed as an explicit `unread` tag.
+    final isRead = item.categories.any(
+      (category) => category.endsWith('/state/com.google/read'),
     );
 
     // Extract image URL from content
@@ -468,7 +471,7 @@ class FreshRssSyncService implements SyncService {
       title: item.title ?? '',
       summary: item.summary?.content,
       content: item.content?.content,
-      url: item.canonical ?? '',
+      url: item.canonical ?? item.alternateUrl ?? '',
       author: item.author,
       publishedAt: DateTime.fromMillisecondsSinceEpoch((item.published ?? 0) * 1000),
       isRead: isRead,

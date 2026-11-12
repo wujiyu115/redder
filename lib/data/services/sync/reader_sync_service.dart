@@ -15,7 +15,7 @@ import 'sync_service.dart';
 /// Reader is a self-hosted RSS reader that provides a Google Reader API
 /// compatible interface. This service handles authentication, feed management,
 /// folder management, article retrieval, and sync operations.
-class ReaderSyncService implements SyncService {
+class ReaderSyncService implements SyncService, AccountScopedSyncService {
   static const _log = AppLogger('ReaderSync');
   
   ReaderRemoteDataSource? _remoteDataSource;
@@ -49,6 +49,11 @@ class ReaderSyncService implements SyncService {
 
   @override
   bool get isAuthenticated => _credentials != null && _remoteDataSource != null;
+
+  @override
+  void bindAccount(int accountId) {
+    this.accountId = accountId;
+  }
 
   @override
   Future<bool> authenticate(SyncCredentials credentials) async {
@@ -268,7 +273,11 @@ class ReaderSyncService implements SyncService {
 
     // Get articles from reading list
     const streamId = 'user/-/state/com.google/reading-list';
-    final sinceTimestamp = since?.millisecondsSinceEpoch;
+    // The Google Reader API takes unix *seconds* for `ot`; sending
+    // milliseconds puts the bound decades in the future, which makes the
+    // server return nothing and leaves the local timeline frozen.
+    final sinceTimestamp =
+        since == null ? null : since.millisecondsSinceEpoch ~/ 1000;
 
     final contents = await _remoteDataSource!.getStreamContents(
       streamId,
@@ -479,6 +488,10 @@ class ReaderSyncService implements SyncService {
       _log.info('fullSync: syncing ${remoteArticles.length} articles');
 
       for (final article in remoteArticles) {
+        // `url` is the dedupe/unique key; an item without one would collide
+        // with every other URL-less item, so skip it instead of inserting junk.
+        if (article.url.isEmpty) continue;
+
         // Resolve feed remote ID to local feed ID
         final localFeedId = await _syncLocalDs.getLocalId(acctId, 'feed', 'feed/${article.feedRemoteId}');
         if (localFeedId == null) continue; // Skip if feed not found locally
@@ -535,8 +548,10 @@ class ReaderSyncService implements SyncService {
       // 4. Sync unread/starred state from remote
       try {
         _log.info('fullSync: syncing unread/starred state');
-        final unreadRemoteIds = await getUnreadArticleIds();
-        final starredRemoteIds = await getStarredArticleIds();
+        // Both lists are paged to exhaustion by the data source, so an id
+        // missing from them really means "read/unstarred remotely".
+        final unreadRemoteIds = (await getUnreadArticleIds()).toSet();
+        final starredRemoteIds = (await getStarredArticleIds()).toSet();
 
         // Update local articles based on remote unread/starred state
         final allLocalArticles = await _articleLocalDs.getAll(accountId: acctId);
@@ -544,16 +559,16 @@ class ReaderSyncService implements SyncService {
           final remoteId = await _syncLocalDs.getRemoteId(acctId, 'article', localArticle.id);
           if (remoteId == null) continue;
 
-          final shouldBeUnread = unreadRemoteIds.contains(remoteId);
+          final shouldBeRead = !unreadRemoteIds.contains(remoteId);
           final shouldBeStarred = starredRemoteIds.contains(remoteId);
 
-          if (localArticle.isRead == shouldBeUnread || localArticle.isStarred != shouldBeStarred) {
-            if (localArticle.isRead == shouldBeUnread) {
-              // isRead is opposite of unread
-              if (shouldBeUnread) {
-                await _articleLocalDs.markAsUnread(localArticle.id);
-              } else {
+          if (localArticle.isRead != shouldBeRead ||
+              localArticle.isStarred != shouldBeStarred) {
+            if (localArticle.isRead != shouldBeRead) {
+              if (shouldBeRead) {
                 await _articleLocalDs.markAsRead(localArticle.id);
+              } else {
+                await _articleLocalDs.markAsUnread(localArticle.id);
               }
             }
             if (localArticle.isStarred != shouldBeStarred) {
@@ -667,6 +682,8 @@ class ReaderSyncService implements SyncService {
       _log.info('incrementalSync: syncing ${remoteArticles.length} new articles');
 
       for (final article in remoteArticles) {
+        if (article.url.isEmpty) continue;
+
         final localFeedId = await _syncLocalDs.getLocalId(acctId, 'feed', 'feed/${article.feedRemoteId}');
         if (localFeedId == null) continue;
 
@@ -806,12 +823,17 @@ class ReaderSyncService implements SyncService {
 
     // Check if article is starred
     final isStarred = item.categories.any(
-      (category) => category == 'user/-/state/com.google/starred',
+      (category) => category.endsWith('/state/com.google/starred'),
     );
 
-    // Check if article is read (not in unread state)
-    final isRead = !item.categories.any(
-      (category) => category == 'user/-/state/com.google/unread',
+    // State is expressed as tags: a read item carries
+    // `…/state/com.google/read`, a starred one `…/starred`. Unread is the
+    // default state and servers only sometimes echo it as an explicit
+    // `unread` tag (FreshRSS-style ones don't), so keying off the absence of
+    // `unread` marked every imported article as read — with the default
+    // "hide read articles" setting the new content then never showed up.
+    final isRead = item.categories.any(
+      (category) => category.endsWith('/state/com.google/read'),
     );
 
     // Extract image URL from content
@@ -842,7 +864,7 @@ class ReaderSyncService implements SyncService {
       title: item.title ?? '',
       summary: item.summary?.content,
       content: item.content?.content,
-      url: item.canonical ?? '',
+      url: item.canonical ?? item.alternateUrl ?? '',
       author: item.author,
       publishedAt: DateTime.fromMillisecondsSinceEpoch((item.published ?? 0) * 1000),
       isRead: isRead,

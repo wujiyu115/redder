@@ -81,10 +81,12 @@ class SyncBridge {
             localId: feed.id,
             remoteId: syncFeed.remoteId,
           ));
-_log.info('addFeedWithSync: remote push succeeded for feed ${feed.id}');
+          _log.info(
+              'addFeedWithSync: remote push succeeded for feed ${feed.id}');
         } catch (e) {
-_log.warning('addFeedWithSync: remote push failed, enqueuing');
-          await _syncQueue.enqueue(activeAccountId, SyncQueueAction.addFeed, [feedUrl]);
+          _log.warning('addFeedWithSync: remote push failed, enqueuing');
+          await _syncQueue
+              .enqueue(activeAccountId, SyncQueueAction.addFeed, [feedUrl]);
         }
       });
     }
@@ -111,17 +113,20 @@ _log.warning('addFeedWithSync: remote push failed, enqueuing');
       _pushRemoteAsync(() async {
         try {
           await service.removeFeed(remoteId!);
-_log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
+          _log.info(
+              'removeFeedWithSync: remote push succeeded for feed $feedId');
         } catch (e) {
           _log.warning('removeFeedWithSync: remote push failed, enqueuing');
-          await _syncQueue.enqueue(activeAccountId, SyncQueueAction.removeFeed, [remoteId!]);
+          await _syncQueue.enqueue(
+              activeAccountId, SyncQueueAction.removeFeed, [remoteId!]);
         }
       });
     }
   }
 
   /// Renames a feed locally and syncs to remote service.
-  Future<void> renameFeedWithSync(int feedId, String newTitle, {int? accountId}) async {
+  Future<void> renameFeedWithSync(int feedId, String newTitle,
+      {int? accountId}) async {
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Rename locally
@@ -135,7 +140,8 @@ _log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
         _pushRemoteAsync(() async {
           try {
             await service.renameFeed(remoteId, newTitle);
-            _log.info('renameFeedWithSync: remote push succeeded for feed $feedId');
+            _log.info(
+                'renameFeedWithSync: remote push succeeded for feed $feedId');
           } catch (e) {
             _log.error('renameFeedWithSync: remote push failed', error: e);
           }
@@ -145,11 +151,13 @@ _log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
   }
 
   /// Moves a feed to a folder locally and syncs to remote service.
-  Future<void> moveFeedWithSync(int feedId, int? folderId, {int? accountId}) async {
+  Future<void> moveFeedWithSync(int feedId, int? folderId,
+      {int? accountId}) async {
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Move locally
-    await _feedRepo.moveFeedToFolder(feedId, folderId, accountId: activeAccountId);
+    await _feedRepo.moveFeedToFolder(feedId, folderId,
+        accountId: activeAccountId);
 
     // 2. Push to remote
     final service = _activeService;
@@ -157,13 +165,15 @@ _log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
       final feedRemoteId = await _getRemoteId(activeAccountId, 'feed', feedId);
       String? folderRemoteId;
       if (folderId != null) {
-        folderRemoteId = await _getRemoteId(activeAccountId, 'folder', folderId);
+        folderRemoteId =
+            await _getRemoteId(activeAccountId, 'folder', folderId);
       }
       if (feedRemoteId != null) {
         _pushRemoteAsync(() async {
           try {
             await service.moveFeed(feedRemoteId, folderRemoteId);
-            _log.info('moveFeedWithSync: remote push succeeded for feed $feedId');
+            _log.info(
+                'moveFeedWithSync: remote push succeeded for feed $feedId');
           } catch (e) {
             _log.error('moveFeedWithSync: remote push failed', error: e);
           }
@@ -183,13 +193,15 @@ _log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
 
     // 1. Create locally
     final folderId = await db.into(db.folders).insert(
-      FoldersCompanion.insert(
-        name: name,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ).copyWith(accountId: Value(activeAccountId)),
-    );
-    final folder = await (db.select(db.folders)..where((t) => t.id.equals(folderId))).getSingle();
+          FoldersCompanion.insert(
+            name: name,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ).copyWith(accountId: Value(activeAccountId)),
+        );
+    final folder = await (db.select(db.folders)
+          ..where((t) => t.id.equals(folderId)))
+        .getSingle();
 
     // 2. Push to remote
     final service = _activeService;
@@ -203,7 +215,8 @@ _log.info('removeFeedWithSync: remote push succeeded for feed $feedId');
             localId: folderId,
             remoteId: syncFolder.remoteId,
           ));
-_log.info('createFolderWithSync: remote push succeeded for folder $folderId');
+          _log.info(
+              'createFolderWithSync: remote push succeeded for folder $folderId');
         } catch (e) {
           _log.error('createFolderWithSync: remote push failed', error: e);
         }
@@ -233,7 +246,8 @@ _log.info('createFolderWithSync: remote push succeeded for folder $folderId');
       _pushRemoteAsync(() async {
         try {
           await service.deleteFolder(remoteId!);
-_log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
+          _log.info(
+              'deleteFolderWithSync: remote push succeeded for folder $folderId');
         } catch (e) {
           _log.error('deleteFolderWithSync: remote push failed', error: e);
         }
@@ -242,7 +256,8 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
   }
 
   /// Renames a folder locally and syncs to remote service.
-  Future<void> renameFolderWithSync(int folderId, String newName, {int? accountId}) async {
+  Future<void> renameFolderWithSync(int folderId, String newName,
+      {int? accountId}) async {
     final db = AppDatabase.instance;
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
@@ -262,7 +277,8 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
         _pushRemoteAsync(() async {
           try {
             await service.renameFolder(remoteId, newName);
-            _log.info('renameFolderWithSync: remote push succeeded for folder $folderId');
+            _log.info(
+                'renameFolderWithSync: remote push succeeded for folder $folderId');
           } catch (e) {
             _log.error('renameFolderWithSync: remote push failed', error: e);
           }
@@ -274,16 +290,21 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
   // ─── Article State Operations ─────────────────────────────
 
   /// Marks articles as read locally and syncs to remote service.
-  Future<void> markAsReadWithSync(List<int> articleIds, {int? accountId}) async {
-    _log.info('markAsReadWithSync: marking ${articleIds.length} articles as read');
+  Future<void> markAsReadWithSync(List<int> articleIds,
+      {int? accountId}) async {
+    _log.info(
+        'markAsReadWithSync: marking ${articleIds.length} articles as read');
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Mark as read locally
     await _articleRepo.markMultipleAsRead(articleIds);
 
     // 2. Push to remote
-    if (_activeService != null && activeAccountId != null) {
-      final remoteIds = await _resolveRemoteIds(activeAccountId, 'article', articleIds);
+    // 不再要求内存里有服务实例：冷启动 / 离线时由 SyncEngine 先入队，
+    // 等下次同步（启动、回前台、定时、网络恢复）补推。
+    if (activeAccountId != null) {
+      final remoteIds =
+          await _resolveRemoteIds(activeAccountId, 'article', articleIds);
       if (remoteIds.isNotEmpty) {
         await _syncEngine.pushStateChange(SyncQueueAction.markRead, remoteIds);
       }
@@ -291,25 +312,31 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
   }
 
   /// Marks articles as unread locally and syncs to remote service.
-  Future<void> markAsUnreadWithSync(List<int> articleIds, {int? accountId}) async {
-    _log.info('markAsUnreadWithSync: marking ${articleIds.length} articles as unread');
+  Future<void> markAsUnreadWithSync(List<int> articleIds,
+      {int? accountId}) async {
+    _log.info(
+        'markAsUnreadWithSync: marking ${articleIds.length} articles as unread');
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Mark as unread locally
     await _articleRepo.markMultipleAsUnread(articleIds);
 
     // 2. Push to remote
-    if (_activeService != null && activeAccountId != null) {
-      final remoteIds = await _resolveRemoteIds(activeAccountId, 'article', articleIds);
+    if (activeAccountId != null) {
+      final remoteIds =
+          await _resolveRemoteIds(activeAccountId, 'article', articleIds);
       if (remoteIds.isNotEmpty) {
-        await _syncEngine.pushStateChange(SyncQueueAction.markUnread, remoteIds);
+        await _syncEngine.pushStateChange(
+            SyncQueueAction.markUnread, remoteIds);
       }
     }
   }
 
   /// Marks articles as starred locally and syncs to remote service.
-  Future<void> markAsStarredWithSync(List<int> articleIds, {int? accountId}) async {
-    _log.info('markAsStarredWithSync: marking ${articleIds.length} articles as starred');
+  Future<void> markAsStarredWithSync(List<int> articleIds,
+      {int? accountId}) async {
+    _log.info(
+        'markAsStarredWithSync: marking ${articleIds.length} articles as starred');
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Mark as starred locally
@@ -318,8 +345,9 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
     }
 
     // 2. Push to remote
-    if (_activeService != null && activeAccountId != null) {
-      final remoteIds = await _resolveRemoteIds(activeAccountId, 'article', articleIds);
+    if (activeAccountId != null) {
+      final remoteIds =
+          await _resolveRemoteIds(activeAccountId, 'article', articleIds);
       if (remoteIds.isNotEmpty) {
         await _syncEngine.pushStateChange(SyncQueueAction.star, remoteIds);
       }
@@ -327,8 +355,10 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
   }
 
   /// Marks articles as unstarred locally and syncs to remote service.
-  Future<void> markAsUnstarredWithSync(List<int> articleIds, {int? accountId}) async {
-    _log.info('markAsUnstarredWithSync: marking ${articleIds.length} articles as unstarred');
+  Future<void> markAsUnstarredWithSync(List<int> articleIds,
+      {int? accountId}) async {
+    _log.info(
+        'markAsUnstarredWithSync: marking ${articleIds.length} articles as unstarred');
     final activeAccountId = accountId ?? await _getActiveAccountId();
 
     // 1. Mark as unstarred locally
@@ -337,8 +367,9 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
     }
 
     // 2. Push to remote
-    if (_activeService != null && activeAccountId != null) {
-      final remoteIds = await _resolveRemoteIds(activeAccountId, 'article', articleIds);
+    if (activeAccountId != null) {
+      final remoteIds =
+          await _resolveRemoteIds(activeAccountId, 'article', articleIds);
       if (remoteIds.isNotEmpty) {
         await _syncEngine.pushStateChange(SyncQueueAction.unstar, remoteIds);
       }
@@ -352,19 +383,15 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
     // 1. Mark all as read locally
     await _articleRepo.markAllAsReadForFeed(feedId, accountId: activeAccountId);
 
-    // 2. Push to remote
-    final service = _activeService;
-    if (service != null && activeAccountId != null) {
+    // 2. Push to remote — same queue-backed path as single articles, so an
+    // offline "mark feed read" is replayed instead of being silently dropped.
+    if (activeAccountId != null) {
       final remoteId = await _getRemoteId(activeAccountId, 'feed', feedId);
       if (remoteId != null) {
-        _pushRemoteAsync(() async {
-          try {
-            await service.markFeedAsRead(remoteId);
-            _log.info('markFeedAsReadWithSync: remote push succeeded for feed $feedId');
-          } catch (e) {
-            _log.error('markFeedAsReadWithSync: remote push failed', error: e);
-          }
-        });
+        _pushRemoteAsync(
+          () => _syncEngine
+              .pushStateChange(SyncQueueAction.markFeedRead, [remoteId]),
+        );
       }
     }
   }
@@ -376,23 +403,20 @@ _log.info('deleteFolderWithSync: remote push succeeded for folder $folderId');
     // 1. Mark all as read locally
     await _articleRepo.markAllAsRead(accountId: activeAccountId);
 
-    // 2. For remote, we need to mark each feed as read
-    // This is a best-effort operation
-    final service = _activeService;
-    if (service != null && activeAccountId != null) {
+    // 2. For remote, we need to mark each feed as read.
+    // One queued action carrying every remote feed id, so the whole batch is
+    // replayed on reconnect instead of being lost when offline.
+    if (activeAccountId != null) {
       _pushRemoteAsync(() async {
-        try {
-          final feeds = await _feedRepo.getAllFeeds(accountId: activeAccountId);
-          for (final feed in feeds) {
-            final remoteId = await _getRemoteId(activeAccountId, 'feed', feed.id);
-            if (remoteId != null) {
-              await service.markFeedAsRead(remoteId);
-            }
-          }
-_log.info('markAllAsReadWithSync: remote push succeeded');
-        } catch (e) {
-          _log.error('markAllAsReadWithSync: remote push failed', error: e);
+        final feeds = await _feedRepo.getAllFeeds(accountId: activeAccountId);
+        final remoteIds = <String>[];
+        for (final feed in feeds) {
+          final remoteId = await _getRemoteId(activeAccountId, 'feed', feed.id);
+          if (remoteId != null) remoteIds.add(remoteId);
         }
+        if (remoteIds.isEmpty) return;
+        await _syncEngine.pushStateChange(
+            SyncQueueAction.markFeedRead, remoteIds);
       });
     }
   }
@@ -404,6 +428,12 @@ _log.info('markAllAsReadWithSync: remote push succeeded');
     _log.info('triggerFullSync: starting full sync');
     return await _syncEngine.sync();
   }
+
+  /// Whether a remote backend is configured for the active account.
+  ///
+  /// Restores the service after a cold start when needed (the registry is
+  /// in-memory, so a fresh process starts with no active service).
+  Future<bool> canSync() => _syncEngine.ensureActiveService();
 
   /// Triggers an incremental sync with the remote service.
   ///
@@ -419,7 +449,8 @@ _log.info('markAllAsReadWithSync: remote push succeeded');
   // ─── Helper Methods ───────────────────────────────────────
 
   /// Resolves local IDs to remote IDs for a given entity type.
-  Future<List<String>> _resolveRemoteIds(int accountId, String localType, List<int> localIds) async {
+  Future<List<String>> _resolveRemoteIds(
+      int accountId, String localType, List<int> localIds) async {
     final remoteIds = <String>[];
     for (final localId in localIds) {
       final remoteId = await _getRemoteId(accountId, localType, localId);
@@ -439,7 +470,7 @@ _log.info('markAllAsReadWithSync: remote push succeeded');
       try {
         await operation();
       } catch (e) {
-_log.error('_pushRemoteAsync: unhandled error', error: e);
+        _log.error('_pushRemoteAsync: unhandled error', error: e);
       }
     });
   }

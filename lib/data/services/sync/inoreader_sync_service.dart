@@ -444,7 +444,7 @@ class InoreaderSyncService implements SyncService {
       title: item.title ?? '',
       summary: summary,
       content: content,
-      url: item.canonical ?? '',
+      url: item.canonical ?? item.alternateUrl ?? '',
       author: item.author,
       publishedAt: publishedAt,
       isRead: isRead,

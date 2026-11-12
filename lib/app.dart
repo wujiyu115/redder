@@ -8,6 +8,7 @@ import 'core/constants/app_durations.dart';
 import 'core/router/app_router.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/settings_provider.dart';
+import 'shared/widgets/sync_lifecycle_bridge.dart';
 import 'features/podcast_player/mini_player.dart';
 import 'features/podcast_player/full_player_page.dart';
 import 'features/podcast_player/podcast_controller.dart';
@@ -65,7 +66,9 @@ class ReederApp extends ConsumerWidget {
             data: mediaQuery.copyWith(textScaler: clampedTextScaler),
             child: _AppShell(
               showMiniPlayer: playerState.isActive,
-              child: child ?? const SizedBox.shrink(),
+              child: SyncLifecycleBridge(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           );
         },

@@ -24,8 +24,7 @@ void main() {
       const action = SyncQueueAction.markRead;
       final itemIds = ['article1', 'article2'];
 
-      when(mockLocalDataSource.enqueueAction(any))
-          .thenAnswer((_) async => 1);
+      when(mockLocalDataSource.enqueueAction(any)).thenAnswer((_) async => 1);
 
       await syncQueue.enqueue(testAccountId, action, itemIds);
 
@@ -33,7 +32,8 @@ void main() {
         isA<SyncQueueItemsCompanion>()
             .having((c) => c.accountId.value, 'accountId', testAccountId)
             .having((c) => c.action.value, 'action', 'markRead')
-            .having((c) => c.itemIds.value, 'itemIds', '["article1","article2"]'),
+            .having(
+                (c) => c.itemIds.value, 'itemIds', '["article1","article2"]'),
       ))).called(1);
     });
 
@@ -84,8 +84,7 @@ void main() {
         return dequeueCallCount == 1 ? queueItem : null;
       });
 
-      when(mockSyncService.markAsRead(['article1']))
-          .thenAnswer((_) async {});
+      when(mockSyncService.markAsRead(['article1'])).thenAnswer((_) async {});
 
       when(mockLocalDataSource.deleteQueueItem(1))
           .thenAnswer((_) async => true);
@@ -115,8 +114,7 @@ void main() {
       when(mockSyncService.markAsRead(['article1']))
           .thenThrow(Exception('Network error'));
 
-      when(mockLocalDataSource.incrementRetryCount(1))
-          .thenAnswer((_) async {});
+      when(mockLocalDataSource.incrementRetryCount(1)).thenAnswer((_) async {});
 
       await syncQueue.processQueue(testAccountId, mockSyncService);
 
@@ -124,7 +122,7 @@ void main() {
       verifyNever(mockLocalDataSource.deleteQueueItem(1));
     });
 
-    test('processQueue() - 超过最大重试次数后丢弃（deleteQueueItem）', () async {
+    test('processQueue() - 超过最大重试次数后挪到队尾（deferQueueItem，不丢操作）', () async {
       final queueItem = SyncQueueItem(
         id: 1,
         accountId: testAccountId,
@@ -144,13 +142,36 @@ void main() {
       when(mockSyncService.markAsRead(['article1']))
           .thenThrow(Exception('Network error'));
 
-      when(mockLocalDataSource.deleteQueueItem(1))
-          .thenAnswer((_) async => true);
+      when(mockLocalDataSource.deferQueueItem(1)).thenAnswer((_) async {});
 
       await syncQueue.processQueue(testAccountId, mockSyncService);
 
-      verify(mockLocalDataSource.deleteQueueItem(1)).called(1);
+      verify(mockLocalDataSource.deferQueueItem(1)).called(1);
+      verifyNever(mockLocalDataSource.deleteQueueItem(1));
       verifyNever(mockLocalDataSource.incrementRetryCount(1));
+    });
+
+    test('processQueue() - 失败后本轮停止（不空转耗尽重试次数）', () async {
+      final queueItem = SyncQueueItem(
+        id: 1,
+        accountId: testAccountId,
+        action: 'markRead',
+        itemIds: '["article1"]',
+        createdAt: DateTime(2024, 1, 1),
+        retryCount: 0,
+      );
+
+      when(mockLocalDataSource.dequeueAction(testAccountId))
+          .thenAnswer((_) async => queueItem);
+      when(mockSyncService.markAsRead(any))
+          .thenThrow(Exception('Network error'));
+      when(mockLocalDataSource.incrementRetryCount(1)).thenAnswer((_) async {});
+
+      await syncQueue.processQueue(testAccountId, mockSyncService);
+
+      // 只出队一次、只试一次：反复循环会在一个瞬间烧光重试次数
+      verify(mockLocalDataSource.dequeueAction(testAccountId)).called(1);
+      verify(mockLocalDataSource.incrementRetryCount(1)).called(1);
     });
 
     test('processQueue() - 空队列时直接返回（dequeueAction 返回 null）', () async {
@@ -164,7 +185,8 @@ void main() {
       verifyNever(mockLocalDataSource.deleteQueueItem(any));
     });
 
-    test('processQueue() - markRead action 调用 syncService.markAsRead()', () async {
+    test('processQueue() - markRead action 调用 syncService.markAsRead()',
+        () async {
       final queueItem = SyncQueueItem(
         id: 1,
         accountId: testAccountId,
@@ -192,7 +214,8 @@ void main() {
       verify(mockSyncService.markAsRead(['article1', 'article2'])).called(1);
     });
 
-    test('processQueue() - star action 调用 syncService.markAsStarred()', () async {
+    test('processQueue() - star action 调用 syncService.markAsStarred()',
+        () async {
       final queueItem = SyncQueueItem(
         id: 1,
         accountId: testAccountId,
@@ -220,7 +243,8 @@ void main() {
       verify(mockSyncService.markAsStarred(['article1'])).called(1);
     });
 
-    test('processQueue() - removeFeed action 调用 syncService.removeFeed()', () async {
+    test('processQueue() - removeFeed action 调用 syncService.removeFeed()',
+        () async {
       final queueItem = SyncQueueItem(
         id: 1,
         accountId: testAccountId,
@@ -238,7 +262,8 @@ void main() {
       });
       when(mockSyncService.removeFeed('remote-feed-1'))
           .thenAnswer((_) async {});
-      when(mockLocalDataSource.deleteQueueItem(1)).thenAnswer((_) async => true);
+      when(mockLocalDataSource.deleteQueueItem(1))
+          .thenAnswer((_) async => true);
 
       await syncQueue.processQueue(testAccountId, mockSyncService);
 
@@ -269,7 +294,8 @@ void main() {
                 title: 'Example',
                 feedUrl: 'https://example.com/feed',
               ));
-      when(mockLocalDataSource.deleteQueueItem(1)).thenAnswer((_) async => true);
+      when(mockLocalDataSource.deleteQueueItem(1))
+          .thenAnswer((_) async => true);
 
       await syncQueue.processQueue(testAccountId, mockSyncService);
 

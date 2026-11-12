@@ -408,7 +408,7 @@ void main() {
 
       // Assert
       verify(mockArticleRepo.markAllAsReadForFeed(testFeedId, accountId: null)).called(1);
-      verifyNever(mockSyncService.markFeedAsRead(any));
+      verifyNever(mockSyncEngine.pushStateChange(any, any));
     });
 
     test('should mark feed as read locally and push to remote when active service exists', () async {
@@ -425,7 +425,8 @@ void main() {
           .thenAnswer((_) async => testRemoteId);
       when(mockArticleRepo.markAllAsReadForFeed(testFeedId, accountId: anyNamed('accountId')))
           .thenAnswer((_) async {});
-      when(mockSyncService.markFeedAsRead(testRemoteId)).thenAnswer((_) async {});
+      when(mockSyncEngine.pushStateChange(SyncQueueAction.markFeedRead, [testRemoteId]))
+          .thenAnswer((_) async {});
 
       // Act
       await syncBridge.markFeedAsReadWithSync(testFeedId);
@@ -433,7 +434,8 @@ void main() {
 
       // Assert
       verify(mockArticleRepo.markAllAsReadForFeed(testFeedId, accountId: testAccountId)).called(1);
-      verify(mockSyncService.markFeedAsRead(testRemoteId)).called(1);
+      // Queue-backed path: an offline "mark feed read" is replayed, not dropped.
+      verify(mockSyncEngine.pushStateChange(SyncQueueAction.markFeedRead, [testRemoteId])).called(1);
     });
   });
 
@@ -487,7 +489,8 @@ void main() {
       when(mockFeedRepo.getAllFeeds(accountId: testAccountId)).thenAnswer((_) async => [testFeed]);
       when(mockSyncLocalDs.getRemoteId(testAccountId, 'feed', testFeedId))
           .thenAnswer((_) async => testRemoteId);
-      when(mockSyncService.markFeedAsRead(testRemoteId)).thenAnswer((_) async {});
+      when(mockSyncEngine.pushStateChange(SyncQueueAction.markFeedRead, [testRemoteId]))
+          .thenAnswer((_) async {});
 
       // Act
       await syncBridge.markAllAsReadWithSync();
@@ -497,7 +500,7 @@ void main() {
       // Assert
       verify(mockArticleRepo.markAllAsRead(accountId: testAccountId)).called(1);
       verify(mockFeedRepo.getAllFeeds(accountId: testAccountId)).called(1);
-      verify(mockSyncService.markFeedAsRead(testRemoteId)).called(1);
+      verify(mockSyncEngine.pushStateChange(SyncQueueAction.markFeedRead, [testRemoteId])).called(1);
     });
   });
 

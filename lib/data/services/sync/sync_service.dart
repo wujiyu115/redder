@@ -119,3 +119,13 @@ abstract class SyncService {
   /// Used for subsequent syncs after the initial full sync.
   Future<SyncResult> incrementalSync({DateTime? since});
 }
+
+/// Capability for sync services that write account-scoped rows straight into
+/// the local database: they need to know which account they act for.
+///
+/// Kept out of [SyncService] so services that only talk to their API don't
+/// have to implement it.
+abstract interface class AccountScopedSyncService {
+  /// Binds this instance to the given local sync-account id.
+  void bindAccount(int accountId);
+}

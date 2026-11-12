@@ -181,6 +181,9 @@ class ArticleListController
       final items = await _loadItems(offset: 0, limit: _pageSize);
       final feedMeta = await _loadFeedMetadata(items);
 
+      // A sync-completed refresh can invalidate this notifier mid-load; writing
+      // state after dispose throws in debug builds.
+      if (!mounted) return;
       state = AsyncValue.data(ArticleListState(
         items: items,
         feedTitles: feedMeta.titles,
@@ -188,7 +191,7 @@ class ArticleListController
         hasMore: items.length >= _pageSize,
       ));
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
     }
   }
 
@@ -212,6 +215,8 @@ class ArticleListController
       );
       final feedMeta = await _loadFeedMetadata(newItems);
 
+      // Another refresh may have invalidated this notifier while we loaded.
+      if (!mounted) return;
       state = AsyncValue.data(ArticleListState(
         items: [...currentState.items, ...newItems],
         feedTitles: {...currentState.feedTitles, ...feedMeta.titles},
@@ -233,20 +238,32 @@ class ArticleListController
 
   /// Refreshes the timeline (pull-to-refresh).
   ///
-  /// If an active sync account exists, triggers an incremental sync
-  /// to fetch new articles from the remote service.
+  /// With a sync account the remote service is the source of truth, so this
+  /// runs a sync and nothing else — fetching every feed's RSS URL directly
+  /// used to import articles that had no remote id mapping (their read/star
+  /// state could then never be pushed back).
   Future<void> refresh() async {
     _log.info('refresh: timelineId=$timelineId, activeAccountId=$_activeAccountId');
-    // If there's an active sync account, trigger incremental sync
+
+    var syncedRemotely = false;
     if (_activeAccountId != null) {
-      try {
-        await _syncBridge.triggerIncrementalSync();
-      } catch (_) {
-        // Fall back to local refresh on sync failure
+      syncedRemotely = await _syncBridge.canSync();
+      if (syncedRemotely) {
+        try {
+          await _syncBridge.triggerIncrementalSync();
+        } catch (e) {
+          _log.error('refresh: remote sync failed, keeping local data', error: e);
+        }
       }
     }
-    // Refresh feeds locally
-    await _refreshService.refreshAll();
+
+    // Local-only mode (no remote backend): fetch the feeds ourselves.
+    if (!syncedRemotely) {
+      await _refreshService.refreshAll();
+    }
+
+    if (!mounted) return;
+
     // Then reload the list
     await _loadInitial();
   }

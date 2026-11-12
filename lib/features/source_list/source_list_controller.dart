@@ -49,8 +49,7 @@ final feedRefreshServiceProvider = Provider<FeedRefreshService>((ref) {
 /// Handles feed refresh, subscription management, folder operations,
 /// OPML import/export, and auto-grouping.
 /// All operations go through [SyncBridge] for local+remote dual sync.
-class SourceListController
-    extends StateNotifier<AsyncValue<SourceListState>> {
+class SourceListController extends StateNotifier<AsyncValue<SourceListState>> {
   static const _log = AppLogger('SourceList');
 
   final Ref _ref;
@@ -79,7 +78,16 @@ class SourceListController
       _ref.read(settingsProvider).valueOrNull?.hideReadFeeds ?? false;
 
   /// Gets the current active account ID.
-  int? get _activeAccountId => _ref.read(accountSwitchProvider);
+  /// Active account resolved from the database when this controller was built.
+  ///
+  /// `accountSwitchProvider` is async-initialized and therefore null for a
+  /// moment during startup; reading it here made the source list load *every*
+  /// account's feeds and folders (seen on device with two accounts: two folders
+  /// with the same name). The switch path invalidates this provider, so the
+  /// controller is rebuilt with the new account.
+  int? _accountId;
+
+  int? get _activeAccountId => _accountId ?? _ref.read(accountSwitchProvider);
 
   /// Toggles the persisted "unread only" filter and reloads.
   Future<void> toggleHideRead() async {
@@ -95,7 +103,9 @@ class SourceListController
       // syncAccountsProvider, which flips loading→data during startup and
       // invalidates it. With no persistent listener, awaiting its `.future`
       // can hang forever, leaving the source list stuck on its loading state.
-      await _ref.read(syncRepositoryProvider).getActiveAccount();
+      final activeAccount =
+          await _ref.read(syncRepositoryProvider).getActiveAccount();
+      _accountId = activeAccount?.id;
       // Built-in tags (Later/Bookmarks/Favorites) are app-global, not per
       // account — initialize without an accountId scope.
       await _tagRepo.initializeBuiltInTags();
@@ -124,7 +134,8 @@ class SourceListController
       // trusting the incrementally maintained `itemCount` column, which drifts
       // as soon as articles are deleted. Built-in tags are global, so their
       // badges stay unscoped to match the rows above.
-      final scopedTagCounts = await _tagRepo.getTagItemCounts(accountId: accountId);
+      final scopedTagCounts =
+          await _tagRepo.getTagItemCounts(accountId: accountId);
       final globalTagCounts = accountId == null
           ? scopedTagCounts
           : await _tagRepo.getTagItemCounts();
@@ -200,6 +211,9 @@ class SourceListController
       final unreadByContentType =
           await _articleRepo.getUnreadCountsByContentType(accountId: accountId);
 
+      // A sync-completed refresh can invalidate this notifier mid-load; writing
+      // state after dispose throws in debug builds.
+      if (!mounted) return;
       state = AsyncValue.data(SourceListState(
         feeds: feeds,
         folders: folders,
@@ -213,7 +227,7 @@ class SourceListController
         hideRead: _hideRead,
       ));
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
     }
   }
 
@@ -244,7 +258,8 @@ class SourceListController
   /// Adds a new feed subscription (with remote sync).
   Future<Feed> addFeed(String feedUrl) async {
     _log.info('addFeed: feedUrl=$feedUrl');
-    final feed = await _syncBridge.addFeedWithSync(feedUrl, accountId: _activeAccountId);
+    final feed =
+        await _syncBridge.addFeedWithSync(feedUrl, accountId: _activeAccountId);
     await _loadData();
     return feed;
   }
@@ -261,13 +276,15 @@ class SourceListController
 
   /// Renames a feed (with remote sync).
   Future<void> renameFeed(int feedId, String newTitle) async {
-    await _syncBridge.renameFeedWithSync(feedId, newTitle, accountId: _activeAccountId);
+    await _syncBridge.renameFeedWithSync(feedId, newTitle,
+        accountId: _activeAccountId);
     await _loadData();
   }
 
   /// Moves a feed to a folder (or root if folderId is null) (with remote sync).
   Future<void> moveFeedToFolder(int feedId, int? folderId) async {
-    await _syncBridge.moveFeedWithSync(feedId, folderId, accountId: _activeAccountId);
+    await _syncBridge.moveFeedWithSync(feedId, folderId,
+        accountId: _activeAccountId);
     await _loadData();
   }
 
@@ -293,27 +310,32 @@ class SourceListController
 
   /// Creates a new folder (with remote sync).
   Future<Folder> createFolder(String name, {String? iconName}) async {
-    final folder = await _syncBridge.createFolderWithSync(name, accountId: _activeAccountId);
+    final folder = await _syncBridge.createFolderWithSync(name,
+        accountId: _activeAccountId);
     await _loadData();
     return folder;
   }
 
   /// Renames a folder (with remote sync).
   Future<void> renameFolder(int folderId, String newName) async {
-    await _syncBridge.renameFolderWithSync(folderId, newName, accountId: _activeAccountId);
+    await _syncBridge.renameFolderWithSync(folderId, newName,
+        accountId: _activeAccountId);
     await _loadData();
   }
 
   /// Deletes a folder and moves its feeds to root (with remote sync).
   Future<void> deleteFolder(int folderId) async {
     // Move all feeds in this folder to root
-    final feedsInFolder = await _feedRepo.getFeedsByFolder(folderId, accountId: _activeAccountId);
+    final feedsInFolder =
+        await _feedRepo.getFeedsByFolder(folderId, accountId: _activeAccountId);
     for (final feed in feedsInFolder) {
-      await _syncBridge.moveFeedWithSync(feed.id, null, accountId: _activeAccountId);
+      await _syncBridge.moveFeedWithSync(feed.id, null,
+          accountId: _activeAccountId);
     }
 
     // Delete the folder (with remote sync)
-    await _syncBridge.deleteFolderWithSync(folderId, accountId: _activeAccountId);
+    await _syncBridge.deleteFolderWithSync(folderId,
+        accountId: _activeAccountId);
     await _loadData();
   }
 
@@ -550,15 +572,18 @@ class SourceListController
   /// (local-only RSS), falls back to fetching all feeds locally so the
   /// refresh button still does something and surfaces new articles.
   Future<void> triggerSync() async {
-    if (_activeAccountId != null) {
+    final useRemote = _activeAccountId != null && await _syncBridge.canSync();
+    if (useRemote) {
       _log.info('triggerSync: starting remote full sync');
       final result = await _syncBridge.triggerFullSync();
-      _log.info('triggerSync: completed — newFeeds=${result.newFeeds}, newArticles=${result.newArticles}');
+      _log.info(
+          'triggerSync: completed — newFeeds=${result.newFeeds}, newArticles=${result.newArticles}');
     } else {
       _log.info('triggerSync: no account, refreshing feeds locally');
       final result = await _refreshService.refreshAll();
       _log.info('triggerSync: local refresh done — $result');
     }
+    if (!mounted) return;
     await _loadData();
   }
 

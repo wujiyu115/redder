@@ -43,18 +43,22 @@ void main() {
   group('sync()', () {
     test('should return empty result when no active service', () async {
       when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => null);
 
       final result = await syncEngine.sync();
 
       expect(result.hasChanges, isFalse);
-      verifyNever(mockLocalDataSource.getActiveAccount());
+      // The registry is in-memory, so a cold start has to retry the restore.
+      verify(mockLocalDataSource.getActiveAccount()).called(1);
       verifyNever(mockSyncQueue.processQueue(any, any));
       verifyNever(mockSyncService.fullSync());
       verifyNever(mockSyncService.incrementalSync(since: anyNamed('since')));
     });
 
     test('should return empty result when no active account', () async {
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => null);
 
       final result = await syncEngine.sync();
 
@@ -77,9 +81,11 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
-      when(mockSyncService.fullSync()).thenAnswer((_) async => SyncResult.empty());
+      when(mockSyncService.fullSync())
+          .thenAnswer((_) async => SyncResult.empty());
       when(mockLocalDataSource.upsertAccount(any)).thenAnswer((_) async => 1);
 
       await syncEngine.sync();
@@ -102,7 +108,8 @@ void main() {
         createdAt: DateTime(2023, 12, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
       when(mockSyncService.incrementalSync(since: anyNamed('since')))
           .thenAnswer((_) async => SyncResult.empty());
@@ -111,7 +118,13 @@ void main() {
       await syncEngine.sync();
 
       verify(mockSyncQueue.processQueue(1, mockSyncService)).called(1);
-      verify(mockSyncService.incrementalSync(since: lastSyncTime)).called(1);
+      // The incremental window is widened by 10 minutes so items the server
+      // crawled after our last sync are not missed; duplicates dedupe by URL.
+      verify(
+        mockSyncService.incrementalSync(
+          since: lastSyncTime.subtract(const Duration(minutes: 10)),
+        ),
+      ).called(1);
       verifyNever(mockSyncService.fullSync());
     });
 
@@ -127,16 +140,52 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
-      when(mockSyncService.fullSync()).thenAnswer((_) async => SyncResult.empty());
-      when(mockLocalDataSource.upsertAccount(any)).thenAnswer((_) async => 1);
+      when(mockSyncService.fullSync())
+          .thenAnswer((_) async => SyncResult.empty());
+      when(mockLocalDataSource.updateLastSyncAt(any, any))
+          .thenAnswer((_) async {});
 
       await syncEngine.sync();
 
-      final captured = verify(mockLocalDataSource.upsertAccount(captureAny)).captured.single as SyncAccountsCompanion;
-      expect(captured.id.value, equals(1));
-      expect(captured.lastSyncAt.value, isNotNull);
+      // A partial `upsertAccount` companion made Drift throw, so the old code
+      // never advanced the watermark: every launch re-ran a full sync.
+      final captured =
+          verify(mockLocalDataSource.updateLastSyncAt(1, captureAny)).captured;
+      expect(captured.single, isA<DateTime>());
+    });
+
+    test('keeps lastSyncAt when the sync reports errors', () async {
+      final mockAccount = SyncAccount(
+        id: 1,
+        serviceType: 0,
+        serverUrl: null,
+        username: 'test',
+        isActive: true,
+        lastSyncAt: null,
+        syncState: null,
+        createdAt: DateTime(2024, 1, 1),
+      );
+
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
+      when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
+      // Services report recoverable failures through SyncResult.errors
+      // instead of throwing.
+      when(mockSyncService.fullSync()).thenAnswer(
+        (_) async => SyncResult(
+          errors: {'full_sync': 'boom'},
+          completedAt: DateTime(2024, 1, 2),
+          duration: Duration.zero,
+        ),
+      );
+
+      await syncEngine.sync();
+
+      // A failed window must be re-covered next time, not skipped.
+      verifyNever(mockLocalDataSource.updateLastSyncAt(any, any));
     });
 
     test('should set status to error and rethrow when sync fails', () async {
@@ -151,7 +200,8 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
       when(mockSyncService.fullSync()).thenThrow(Exception('Sync failed'));
 
@@ -177,16 +227,18 @@ void main() {
         createdAt: DateTime(2023, 12, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncService.incrementalSync())
           .thenAnswer((_) async => SyncResult.empty());
-      when(mockLocalDataSource.upsertAccount(any)).thenAnswer((_) async => 1);
+      when(mockLocalDataSource.updateLastSyncAt(any, any))
+          .thenAnswer((_) async {});
 
       await syncEngine.syncFeed(123);
 
       verify(mockSyncService.incrementalSync()).called(1);
       verifyNever(mockSyncService.fullSync());
-      verify(mockLocalDataSource.upsertAccount(argThat(isA<SyncAccountsCompanion>()))).called(1);
+      verify(mockLocalDataSource.updateLastSyncAt(any, any)).called(1);
     });
   });
 
@@ -203,12 +255,14 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.wifi]);
       when(mockSyncService.markAsRead(any)).thenAnswer((_) async {});
 
-      await syncEngine.pushStateChange(SyncQueueAction.markRead, ['article1', 'article2']);
+      await syncEngine
+          .pushStateChange(SyncQueueAction.markRead, ['article1', 'article2']);
 
       verify(mockSyncService.markAsRead(['article1', 'article2'])).called(1);
       verifyNever(mockSyncQueue.enqueue(any, any, any));
@@ -226,16 +280,76 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.none]);
       when(mockSyncQueue.enqueue(any, any, any)).thenAnswer((_) async {});
 
       await syncEngine.pushStateChange(SyncQueueAction.star, ['article1']);
 
-      verify(mockSyncQueue.enqueue(1, SyncQueueAction.star, ['article1'])).called(1);
+      verify(mockSyncQueue.enqueue(1, SyncQueueAction.star, ['article1']))
+          .called(1);
       verifyNever(mockSyncService.markAsStarred(any));
       expect(syncEngine.currentStatus, equals(SyncStatus.waitingForNetwork));
+    });
+
+    test(
+        'enqueues when the service cannot be restored (cold start, offline auth)',
+        () async {
+      final mockAccount = SyncAccount(
+        id: 1,
+        serviceType: 0,
+        serverUrl: null,
+        username: 'test',
+        isActive: true,
+        lastSyncAt: null,
+        syncState: null,
+        createdAt: DateTime(2024, 1, 1),
+      );
+
+      // Online per connectivity, but the in-memory registry is empty and no
+      // service is registered — restoring fails. The user's action must be
+      // queued rather than dropped.
+      when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
+      when(mockConnectivity.checkConnectivity())
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      when(mockSyncQueue.enqueue(any, any, any)).thenAnswer((_) async {});
+
+      await syncEngine.pushStateChange(SyncQueueAction.markRead, ['article1']);
+
+      verify(mockSyncQueue.enqueue(1, SyncQueueAction.markRead, ['article1']))
+          .called(1);
+      verifyNever(mockSyncService.markAsRead(any));
+    });
+
+    test('should call markFeedAsRead when action is markFeedRead', () async {
+      final mockAccount = SyncAccount(
+        id: 1,
+        serviceType: 0,
+        serverUrl: null,
+        username: 'test',
+        isActive: true,
+        lastSyncAt: null,
+        syncState: null,
+        createdAt: DateTime(2024, 1, 1),
+      );
+
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
+      when(mockConnectivity.checkConnectivity())
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      when(mockSyncService.markFeedAsRead(any)).thenAnswer((_) async {});
+
+      await syncEngine.pushStateChange(
+        SyncQueueAction.markFeedRead,
+        ['feed/1', 'feed/2'],
+      );
+
+      verify(mockSyncService.markFeedAsRead('feed/1')).called(1);
+      verify(mockSyncService.markFeedAsRead('feed/2')).called(1);
     });
 
     test('should call markAsUnread when action is markUnread', () async {
@@ -250,12 +364,14 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.wifi]);
       when(mockSyncService.markAsUnread(any)).thenAnswer((_) async {});
 
-      await syncEngine.pushStateChange(SyncQueueAction.markUnread, ['article1']);
+      await syncEngine
+          .pushStateChange(SyncQueueAction.markUnread, ['article1']);
 
       verify(mockSyncService.markAsUnread(['article1'])).called(1);
     });
@@ -272,7 +388,8 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.wifi]);
       when(mockSyncService.markAsStarred(any)).thenAnswer((_) async {});
@@ -294,7 +411,8 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => [ConnectivityResult.wifi]);
       when(mockSyncService.markAsUnstarred(any)).thenAnswer((_) async {});
@@ -348,10 +466,13 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
-      when(mockSyncService.fullSync()).thenAnswer((_) async => SyncResult.empty());
-      when(mockLocalDataSource.upsertAccount(any)).thenAnswer((_) async => 1);
+      when(mockSyncService.fullSync())
+          .thenAnswer((_) async => SyncResult.empty());
+      when(mockLocalDataSource.updateLastSyncAt(any, any))
+          .thenAnswer((_) async {});
 
       final streamFuture = expectLater(
         syncEngine.syncStatusStream,
@@ -374,7 +495,8 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
       );
 
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => mockAccount);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => mockAccount);
       when(mockSyncQueue.processQueue(any, any)).thenAnswer((_) async {});
       when(mockSyncService.fullSync()).thenThrow(Exception('Sync failed'));
 
@@ -392,24 +514,129 @@ void main() {
   });
 
   group('edge cases', () {
-    test('should return early when no active service in pushStateChange', () async {
+    test('should return early when no active service in pushStateChange',
+        () async {
       when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => null);
 
       await syncEngine.pushStateChange(SyncQueueAction.markRead, ['article1']);
 
-      verifyNever(mockLocalDataSource.getActiveAccount());
       verifyNever(mockSyncService.markAsRead(any));
       verifyNever(mockSyncQueue.enqueue(any, any, any));
     });
 
-    test('should return early when no active account in pushStateChange', () async {
-      when(mockLocalDataSource.getActiveAccount()).thenAnswer((_) async => null);
+    test('should return early when no active account in pushStateChange',
+        () async {
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => null);
 
       await syncEngine.pushStateChange(SyncQueueAction.markRead, ['article1']);
 
       verify(mockLocalDataSource.getActiveAccount()).called(1);
       verifyNever(mockSyncService.markAsRead(any));
       verifyNever(mockSyncQueue.enqueue(any, any, any));
+    });
+  });
+
+  group('ensureActiveService()', () {
+    late MockAuthService mockAuthService;
+
+    setUp(() {
+      mockAuthService = MockAuthService();
+    });
+
+    SyncAccount readerAccount() => SyncAccount(
+          id: 7,
+          serviceType: SyncServiceType.reader.index,
+          serverUrl: 'https://reader.example.com',
+          username: 'reader-user',
+          isActive: true,
+          lastSyncAt: null,
+          syncState: null,
+          createdAt: DateTime(2024, 1, 1),
+        );
+
+    const credentials = SyncCredentials(
+      serviceType: SyncServiceType.reader,
+      serverUrl: 'https://reader.example.com',
+      username: 'reader-user',
+      password: 'secret',
+    );
+
+    SyncEngine buildEngine() => SyncEngine(
+          registry: mockRegistry,
+          localDataSource: mockLocalDataSource,
+          syncQueue: mockSyncQueue,
+          connectivity: mockConnectivity,
+          authService: mockAuthService,
+        );
+
+    test('restores, authenticates and activates the service after a restart',
+        () async {
+      // A fresh process starts with an empty in-memory registry.
+      when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => readerAccount());
+      when(mockRegistry.getService(SyncServiceType.reader))
+          .thenReturn(mockSyncService);
+      when(mockSyncService.isAuthenticated).thenReturn(false);
+      when(mockAuthService.getCredentials(7))
+          .thenAnswer((_) async => credentials);
+      when(mockSyncService.authenticate(credentials))
+          .thenAnswer((_) async => true);
+      when(mockRegistry.setActiveService(SyncServiceType.reader))
+          .thenReturn(true);
+
+      final engine = buildEngine();
+      addTearDown(engine.dispose);
+
+      expect(await engine.ensureActiveService(), isTrue);
+      verify(mockSyncService.authenticate(credentials)).called(1);
+      verify(mockRegistry.setActiveService(SyncServiceType.reader)).called(1);
+    });
+
+    test('skips re-authentication when the service is already signed in',
+        () async {
+      when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => readerAccount());
+      when(mockRegistry.getService(SyncServiceType.reader))
+          .thenReturn(mockSyncService);
+      when(mockSyncService.isAuthenticated).thenReturn(true);
+      when(mockRegistry.setActiveService(SyncServiceType.reader))
+          .thenReturn(true);
+
+      final engine = buildEngine();
+      addTearDown(engine.dispose);
+
+      expect(await engine.ensureActiveService(), isTrue);
+      verifyNever(mockSyncService.authenticate(any));
+    });
+
+    test('fails without activating when stored credentials are missing',
+        () async {
+      when(mockRegistry.activeService).thenReturn(null);
+      when(mockLocalDataSource.getActiveAccount())
+          .thenAnswer((_) async => readerAccount());
+      when(mockRegistry.getService(SyncServiceType.reader))
+          .thenReturn(mockSyncService);
+      when(mockSyncService.isAuthenticated).thenReturn(false);
+      when(mockAuthService.getCredentials(7)).thenAnswer((_) async => null);
+
+      final engine = buildEngine();
+      addTearDown(engine.dispose);
+
+      expect(await engine.ensureActiveService(), isFalse);
+      verifyNever(mockRegistry.setActiveService(any));
+    });
+
+    test('is a no-op when a service is already active', () async {
+      final engine = buildEngine();
+      addTearDown(engine.dispose);
+
+      expect(await engine.ensureActiveService(), isTrue);
+      verifyNever(mockLocalDataSource.getActiveAccount());
     });
   });
 }

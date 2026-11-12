@@ -44,7 +44,8 @@ final syncServiceRegistryProvider = Provider<SyncServiceRegistry>((ref) {
 });
 
 /// Provider for all sync accounts.
-final syncAccountsProvider = StateNotifierProvider<SyncAccountsNotifier, AsyncValue<List<SyncAccountInfo>>>(
+final syncAccountsProvider = StateNotifierProvider<SyncAccountsNotifier,
+    AsyncValue<List<SyncAccountInfo>>>(
   (ref) => SyncAccountsNotifier(ref),
 );
 
@@ -103,8 +104,18 @@ final syncStatusProvider = StreamProvider<SyncStatus>((ref) {
   return engine.syncStatusStream;
 });
 
+/// Binds [service] to [accountId] when it writes account-scoped local rows.
+void _bindAccount(SyncService service, int accountId) {
+  // Pattern match instead of `is`: Dart does not promote a value of the
+  // unrelated `SyncService` type to this capability interface.
+  if (service case final AccountScopedSyncService bound) {
+    bound.bindAccount(accountId);
+  }
+}
+
 /// Notifier that manages sync accounts state.
-class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo>>> {
+class SyncAccountsNotifier
+    extends StateNotifier<AsyncValue<List<SyncAccountInfo>>> {
   static const _log = AppLogger('Sync');
 
   final Ref _ref;
@@ -139,7 +150,8 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
     String? serverUrl,
     String? username,
   }) async {
-    _log.info('addAccount: starting for ${serviceType.displayName} (user: $username)');
+    _log.info(
+        'addAccount: starting for ${serviceType.displayName} (user: $username)');
     int? accountId;
     bool accountCleaned = false;
     try {
@@ -157,20 +169,23 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
       final registry = _ref.read(syncServiceRegistryProvider);
       final syncService = registry.getService(serviceType);
       if (syncService != null) {
-        _log.info('addAccount: authenticating with ${serviceType.displayName}…');
+        _log.info(
+            'addAccount: authenticating with ${serviceType.displayName}…');
         final authenticated = await syncService.authenticate(credentials);
         if (!authenticated) {
-          _log.warning('addAccount: authentication failed for account $accountId, cleaning up');
+          _log.warning(
+              'addAccount: authentication failed for account $accountId, cleaning up');
           await _repository.removeAccount(accountId);
           accountCleaned = true;
-          throw Exception('Authentication failed. Please check your credentials.');
+          throw Exception(
+              'Authentication failed. Please check your credentials.');
         }
-        _log.info('addAccount: authentication succeeded for account $accountId');
+        _log.info(
+            'addAccount: authentication succeeded for account $accountId');
 
-        // Set accountId on service and trigger full sync to write data to local DB
-        if (syncService is ReaderSyncService) {
-          syncService.accountId = accountId;
-        }
+        // Bind the service to the account and trigger full sync to write data
+        // to the local DB
+        _bindAccount(syncService, accountId);
 
         // Activate the sync service in the registry
         registry.setActiveService(serviceType);
@@ -178,7 +193,8 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
         // Perform full sync (writes remote data to local DB with accountId)
         await _performFullSync(syncService, accountId);
       } else {
-        _log.warning('addAccount: no SyncService registered for ${serviceType.displayName}, skipping verification');
+        _log.warning(
+            'addAccount: no SyncService registered for ${serviceType.displayName}, skipping verification');
       }
 
       await _repository.setActiveAccount(accountId);
@@ -189,13 +205,15 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
 
       await _loadAccounts();
     } catch (e, st) {
-      _log.error('addAccount: failed for ${serviceType.displayName}', error: e, stackTrace: st);
+      _log.error('addAccount: failed for ${serviceType.displayName}',
+          error: e, stackTrace: st);
       if (accountId != null && !accountCleaned) {
         try {
           await _repository.removeAccount(accountId);
           _log.info('addAccount: cleaned up partial account $accountId');
         } catch (cleanupError) {
-          _log.error('addAccount: cleanup failed for account $accountId', error: cleanupError);
+          _log.error('addAccount: cleanup failed for account $accountId',
+              error: cleanupError);
         }
       }
       state = AsyncValue.error(e, st);
@@ -212,18 +230,18 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
     try {
       _log.info('_performFullSync: starting full sync for account $accountId');
 
-      // Set accountId on the sync service if it supports it
-      if (syncService is ReaderSyncService) {
-        syncService.accountId = accountId;
-      }
+      // Bind the service to the account it is about to write for
+      _bindAccount(syncService, accountId);
 
       // Trigger full sync which now writes to local DB
       final result = await syncService.fullSync();
       _log.info('_performFullSync: completed — $result');
 
-      // Invalidate account-related providers to refresh UI
-      _ref.invalidate(activeAccountIdProvider);
-      _ref.invalidate(activeAccountInfoProvider);
+      // No manual invalidation here: `activeAccountIdProvider` and
+      // `activeAccountInfoProvider` already watch `syncAccountsProvider`, so
+      // they refresh themselves once `addAccount` updates the account list.
+      // Invalidating them from inside this notifier while it is still
+      // notifying threw CircularDependencyError on device.
     } catch (e) {
       // Don't fail the entire addAccount flow if sync fails
       _log.error('_performFullSync: failed for account $accountId', error: e);
@@ -241,12 +259,14 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
     String? serverUrl,
     String? username,
   }) async {
-    _log.info('updateAccount: starting for account $accountId (user: $username)');
+    _log.info(
+        'updateAccount: starting for account $accountId (user: $username)');
 
     // Backup existing credentials for rollback on failure
     final previousCredentials = await _authService.getCredentials(accountId);
     final previousAccount = await _repository.getAccountById(accountId);
-    _log.info('updateAccount: backed up previous credentials for account $accountId');
+    _log.info(
+        'updateAccount: backed up previous credentials for account $accountId');
 
     try {
       await _repository.updateAccount(
@@ -254,7 +274,8 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
         serverUrl: serverUrl,
         username: username,
       );
-      _log.info('updateAccount: account details updated for account $accountId');
+      _log.info(
+          'updateAccount: account details updated for account $accountId');
 
       await _authService.saveCredentials(accountId, credentials);
       _log.info('updateAccount: new credentials saved for account $accountId');
@@ -263,10 +284,12 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
       final registry = _ref.read(syncServiceRegistryProvider);
       final syncService = registry.getService(credentials.serviceType);
       if (syncService != null) {
-        _log.info('updateAccount: authenticating with ${credentials.serviceType.displayName}…');
+        _log.info(
+            'updateAccount: authenticating with ${credentials.serviceType.displayName}…');
         final authenticated = await syncService.authenticate(credentials);
         if (!authenticated) {
-          _log.warning('updateAccount: authentication failed for account $accountId, rolling back');
+          _log.warning(
+              'updateAccount: authentication failed for account $accountId, rolling back');
           // Rollback to previous credentials
           if (previousCredentials != null) {
             await _authService.saveCredentials(accountId, previousCredentials);
@@ -279,25 +302,27 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
             );
           }
           _log.info('updateAccount: rollback completed for account $accountId');
-          throw Exception('Authentication failed. Please check your credentials.');
+          throw Exception(
+              'Authentication failed. Please check your credentials.');
         }
-        _log.info('updateAccount: authentication succeeded for account $accountId');
+        _log.info(
+            'updateAccount: authentication succeeded for account $accountId');
 
-        // Set accountId on service and trigger full sync
-        if (syncService is ReaderSyncService) {
-          syncService.accountId = accountId;
-        }
+        // Bind the service to the account and trigger full sync
+        _bindAccount(syncService, accountId);
 
         // Perform full sync (writes remote data to local DB with accountId)
         await _performFullSync(syncService, accountId);
       } else {
-        _log.warning('updateAccount: no SyncService registered for ${credentials.serviceType.displayName}, skipping verification');
+        _log.warning(
+            'updateAccount: no SyncService registered for ${credentials.serviceType.displayName}, skipping verification');
       }
 
       await _loadAccounts();
       _log.info('updateAccount: completed successfully for account $accountId');
     } catch (e, st) {
-      _log.error('updateAccount: failed for account $accountId', error: e, stackTrace: st);
+      _log.error('updateAccount: failed for account $accountId',
+          error: e, stackTrace: st);
       state = AsyncValue.error(e, st);
       rethrow;
     }
@@ -328,10 +353,8 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
         if (syncService != null) {
           registry.setActiveService(account.serviceType);
 
-          // Set accountId on the sync service
-          if (syncService is ReaderSyncService) {
-            syncService.accountId = accountId;
-          }
+          // Bind the service to the account
+          _bindAccount(syncService, accountId);
 
           // Re-authenticate if credentials are available
           final credentials = await _authService.getCredentials(accountId);
@@ -345,7 +368,8 @@ class SyncAccountsNotifier extends StateNotifier<AsyncValue<List<SyncAccountInfo
       _ref.read(accountSwitchProvider.notifier).switchAccount(accountId);
 
       await _loadAccounts();
-      _log.info('setActiveAccount: account $accountId set as active successfully');
+      _log.info(
+          'setActiveAccount: account $accountId set as active successfully');
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

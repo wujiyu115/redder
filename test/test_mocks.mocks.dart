@@ -340,6 +340,23 @@ class MockSyncLocalDataSource extends _i1.Mock
       ) as _i12.Future<int>);
 
   @override
+  _i12.Future<void> updateLastSyncAt(
+    int? accountId,
+    DateTime? lastSyncAt,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateLastSyncAt,
+          [
+            accountId,
+            lastSyncAt,
+          ],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
   _i12.Future<_i4.SyncAccount?> getAccountById(int? id) => (super.noSuchMethod(
         Invocation.method(
           #getAccountById,
@@ -432,6 +449,16 @@ class MockSyncLocalDataSource extends _i1.Mock
       (super.noSuchMethod(
         Invocation.method(
           #incrementRetryCount,
+          [queueItemId],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
+  _i12.Future<void> deferQueueItem(int? queueItemId) => (super.noSuchMethod(
+        Invocation.method(
+          #deferQueueItem,
           [queueItemId],
         ),
         returnValue: _i12.Future<void>.value(),
@@ -1533,6 +1560,25 @@ class MockFeedRepository extends _i1.Mock implements _i19.FeedRepository {
       ) as _i12.Future<void>);
 
   @override
+  _i12.Future<void> setNotificationsEnabled(
+    int? feedId,
+    bool? enabled, {
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setNotificationsEnabled,
+          [
+            feedId,
+            enabled,
+          ],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
   _i12.Future<void> deleteFeed(int? feedId) => (super.noSuchMethod(
         Invocation.method(
           #deleteFeed,
@@ -1841,6 +1887,41 @@ class MockArticleRepository extends _i1.Mock implements _i22.ArticleRepository {
         ),
         returnValue: _i12.Future<Map<int, int>>.value(<int, int>{}),
       ) as _i12.Future<Map<int, int>>);
+
+  @override
+  _i12.Future<Map<_i23.ContentType, int>> getUnreadCountsByContentType(
+          {int? accountId}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUnreadCountsByContentType,
+          [],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<_i23.ContentType, int>>.value(
+            <_i23.ContentType, int>{}),
+      ) as _i12.Future<Map<_i23.ContentType, int>>);
+
+  @override
+  _i12.Future<List<_i4.FeedItem>> getArticlesByTag(
+    int? tagId, {
+    int? limit,
+    int? offset,
+    bool? oldestFirst = false,
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getArticlesByTag,
+          [tagId],
+          {
+            #limit: limit,
+            #offset: offset,
+            #oldestFirst: oldestFirst,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<List<_i4.FeedItem>>.value(<_i4.FeedItem>[]),
+      ) as _i12.Future<List<_i4.FeedItem>>);
 
   @override
   _i12.Future<List<_i4.FeedItem>> getArticlesByIds(
@@ -2305,6 +2386,15 @@ class MockSettingsRepository extends _i1.Mock
       ) as _i12.Future<bool>);
 
   @override
+  _i12.Future<bool> toggleShowFolderIcons() => (super.noSuchMethod(
+        Invocation.method(
+          #toggleShowFolderIcons,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
+
+  @override
   _i12.Future<bool> toggleMarkReadOnScroll() => (super.noSuchMethod(
         Invocation.method(
           #toggleMarkReadOnScroll,
@@ -2342,10 +2432,31 @@ class MockSettingsRepository extends _i1.Mock
       ) as _i12.Future<void>);
 
   @override
+  _i12.Future<void> setMaxCacheSizeMB(int? mb) => (super.noSuchMethod(
+        Invocation.method(
+          #setMaxCacheSizeMB,
+          [mb],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
   _i12.Future<void> setAutoRefreshInterval(int? minutes) => (super.noSuchMethod(
         Invocation.method(
           #setAutoRefreshInterval,
           [minutes],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
+  _i12.Future<void> setNotificationsEnabled(bool? enabled) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setNotificationsEnabled,
+          [enabled],
         ),
         returnValue: _i12.Future<void>.value(),
         returnValueForMissingStub: _i12.Future<void>.value(),
@@ -2365,6 +2476,26 @@ class MockSettingsRepository extends _i1.Mock
         Invocation.method(
           #setPlaybackSpeed,
           [speed],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
+  _i12.Future<void> setSkipForwardSeconds(int? seconds) => (super.noSuchMethod(
+        Invocation.method(
+          #setSkipForwardSeconds,
+          [seconds],
+        ),
+        returnValue: _i12.Future<void>.value(),
+        returnValueForMissingStub: _i12.Future<void>.value(),
+      ) as _i12.Future<void>);
+
+  @override
+  _i12.Future<void> setSkipBackwardSeconds(int? seconds) => (super.noSuchMethod(
+        Invocation.method(
+          #setSkipBackwardSeconds,
+          [seconds],
         ),
         returnValue: _i12.Future<void>.value(),
         returnValueForMissingStub: _i12.Future<void>.value(),
@@ -2598,6 +2729,17 @@ class MockTagRepository extends _i1.Mock implements _i26.TagRepository {
       ) as _i12.Future<List<int>>);
 
   @override
+  _i12.Future<Map<int, int>> getTagItemCounts({int? accountId}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getTagItemCounts,
+          [],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<int, int>>.value(<int, int>{}),
+      ) as _i12.Future<Map<int, int>>);
+
+  @override
   _i12.Future<int> getTagItemCount(
     int? tagId, {
     int? accountId,
@@ -2779,6 +2921,28 @@ class MockArticleLocalDataSource extends _i1.Mock
       ) as _i12.Future<List<_i4.FeedItem>>);
 
   @override
+  _i12.Future<List<_i4.FeedItem>> getByTagId(
+    int? tagId, {
+    int? limit,
+    int? offset,
+    bool? oldestFirst = false,
+    int? accountId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getByTagId,
+          [tagId],
+          {
+            #limit: limit,
+            #offset: offset,
+            #oldestFirst: oldestFirst,
+            #accountId: accountId,
+          },
+        ),
+        returnValue: _i12.Future<List<_i4.FeedItem>>.value(<_i4.FeedItem>[]),
+      ) as _i12.Future<List<_i4.FeedItem>>);
+
+  @override
   _i12.Future<List<_i4.FeedItem>> getByContentType(
     _i23.ContentType? type, {
     int? limit,
@@ -2881,6 +3045,19 @@ class MockArticleLocalDataSource extends _i1.Mock
         ),
         returnValue: _i12.Future<Map<int, int>>.value(<int, int>{}),
       ) as _i12.Future<Map<int, int>>);
+
+  @override
+  _i12.Future<Map<_i23.ContentType, int>> unreadCountsByContentType(
+          {int? accountId}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #unreadCountsByContentType,
+          [],
+          {#accountId: accountId},
+        ),
+        returnValue: _i12.Future<Map<_i23.ContentType, int>>.value(
+            <_i23.ContentType, int>{}),
+      ) as _i12.Future<Map<_i23.ContentType, int>>);
 
   @override
   _i12.Future<List<_i4.FeedItem>> getByIds(
@@ -3723,6 +3900,15 @@ class MockSyncBridge extends _i1.Mock implements _i30.SyncBridge {
       ) as _i12.Future<_i2.SyncResult>);
 
   @override
+  _i12.Future<bool> canSync() => (super.noSuchMethod(
+        Invocation.method(
+          #canSync,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
+
+  @override
   _i12.Future<_i2.SyncResult> triggerIncrementalSync() => (super.noSuchMethod(
         Invocation.method(
           #triggerIncrementalSync,
@@ -3766,6 +3952,15 @@ class MockSyncEngine extends _i1.Mock implements _i21.SyncEngine {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  _i12.Future<bool> ensureActiveService() => (super.noSuchMethod(
+        Invocation.method(
+          #ensureActiveService,
+          [],
+        ),
+        returnValue: _i12.Future<bool>.value(false),
+      ) as _i12.Future<bool>);
 
   @override
   _i12.Future<_i2.SyncResult> sync() => (super.noSuchMethod(
