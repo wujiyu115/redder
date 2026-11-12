@@ -1,7 +1,58 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reeder/core/database/app_database.dart';
 import 'package:reeder/data/models/tag.dart';
 import 'package:reeder/data/repositories/tag_repository.dart';
+
+/// Inserts one article (optionally owned by [accountId]) and returns its id.
+Future<int> _insertArticle(
+  AppDatabase db, {
+  int? accountId,
+  String? url,
+}) async {
+  final feedUrl = 'https://example.com/feed-$accountId.xml';
+  final existingFeed = await (db.select(db.feeds)
+        ..where((f) => f.feedUrl.equals(feedUrl)))
+      .getSingleOrNull();
+  final feedId = existingFeed?.id ??
+      await db.into(db.feeds).insert(
+            FeedsCompanion.insert(
+              title: 'Feed $accountId',
+              feedUrl: feedUrl,
+              createdAt: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ).copyWith(accountId: Value(accountId)),
+          );
+  return db.into(db.feedItems).insert(
+        FeedItemsCompanion.insert(
+          feedId: feedId,
+          title: url ?? 'Article',
+          url: url ??
+              'https://example.com/article-${DateTime.now().microsecondsSinceEpoch}',
+          publishedAt: DateTime(2024, 1, 1),
+          fetchedAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024, 1, 1),
+        ).copyWith(accountId: Value(accountId)),
+      );
+}
+
+/// Writes a tag association row directly, bypassing [TagRepository.tagItem].
+///
+/// Reproduces rows created before associations inherited the article's
+/// account: `accountId` stays null.
+Future<void> _insertLegacyAssociation(
+  AppDatabase db, {
+  required int tagId,
+  required int itemId,
+}) {
+  return db.into(db.taggedItems).insert(
+        TaggedItemsCompanion.insert(
+          tagId: tagId,
+          itemId: itemId,
+          taggedAt: DateTime(2024, 1, 1),
+        ),
+      );
+}
 
 void main() {
   late AppDatabase testDb;
@@ -10,6 +61,30 @@ void main() {
   setUp(() async {
     testDb = AppDatabase.forTesting();
     tagRepository = TagRepository(db: testDb);
+
+    // Tag queries resolve an item's account through the article row, so the
+    // fixtures need real articles. Insertion order gives them the ids 1..3 that
+    // the tests below tag.
+    final feedId = await testDb.into(testDb.feeds).insert(
+          FeedsCompanion.insert(
+            title: 'Fixture feed',
+            feedUrl: 'https://example.com/fixture.xml',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+          ),
+        );
+    for (var i = 1; i <= 3; i++) {
+      await testDb.into(testDb.feedItems).insert(
+            FeedItemsCompanion.insert(
+              feedId: feedId,
+              title: 'Fixture article $i',
+              url: 'https://example.com/article-$i',
+              publishedAt: DateTime(2024, 1, 1),
+              fetchedAt: DateTime(2024, 1, 1),
+              createdAt: DateTime(2024, 1, 1),
+            ),
+          );
+    }
   });
 
   tearDown(() async {
@@ -39,7 +114,8 @@ void main() {
       expect(favoritesTag.isBuiltIn, isTrue);
     });
 
-    test('should be idempotent - calling multiple times does not duplicate', () async {
+    test('should be idempotent - calling multiple times does not duplicate',
+        () async {
       await tagRepository.initializeBuiltInTags();
       await tagRepository.initializeBuiltInTags();
       await tagRepository.initializeBuiltInTags();
@@ -152,7 +228,8 @@ void main() {
       expect(stillExists, isNotNull);
     });
 
-    test('should remove all tagged item associations when deleting tag', () async {
+    test('should remove all tagged item associations when deleting tag',
+        () async {
       final tag = await tagRepository.createTag(name: 'CustomTag');
       const itemId = 1;
 
@@ -300,23 +377,44 @@ void main() {
       expect(tagIds, isEmpty);
     });
 
-    test('should filter by account ID', () async {
+    test('should filter by the article account', () async {
       const accountId = 1;
       final accountTag = await tagRepository.createTag(
         name: 'AccountTag',
         accountId: accountId,
       );
 
-      await tagRepository.tagItem(accountTag.id, 1, accountId: accountId);
+      final mine =
+          await _insertArticle(testDb, accountId: accountId, url: 'a1');
+      final other = await _insertArticle(testDb, accountId: 2, url: 'a2');
+      // Legacy rows: associations written without an account used to make these
+      // queries come back empty while the sidebar badge still counted them.
+      await _insertLegacyAssociation(testDb,
+          tagId: accountTag.id, itemId: mine);
+      await _insertLegacyAssociation(testDb,
+          tagId: accountTag.id, itemId: other);
 
-      final itemIds = await tagRepository.getItemIdsByTag(
-        accountTag.id,
-        accountId: accountId,
+      expect(
+        await tagRepository.getItemIdsByTag(accountTag.id,
+            accountId: accountId),
+        [mine],
       );
-      expect(itemIds, contains(1));
+      expect(
+        (await tagRepository.getItemIdsByTag(accountTag.id)).toSet(),
+        {mine, other},
+      );
+    });
 
-      final itemIdsNoFilter = await tagRepository.getItemIdsByTag(accountTag.id);
-      expect(itemIdsNoFilter, contains(1));
+    test('tagItem inherits the article account when none is given', () async {
+      final tag = await tagRepository.createTag(name: 'Inherits');
+      final item = await _insertArticle(testDb, accountId: 7, url: 'a7');
+
+      await tagRepository.tagItem(tag.id, item);
+
+      final row = await (testDb.select(testDb.taggedItems)
+            ..where((t) => t.itemId.equals(item)))
+          .getSingle();
+      expect(row.accountId, 7);
     });
   });
 
@@ -352,7 +450,8 @@ void main() {
       expect(favoritesTag.iconName, equals('heart'));
     });
 
-    test('getLaterTag resolves the global built-in tag regardless of accountId', () async {
+    test('getLaterTag resolves the global built-in tag regardless of accountId',
+        () async {
       const accountId = 1;
       await tagRepository.initializeBuiltInTags(accountId: accountId);
 
@@ -362,11 +461,13 @@ void main() {
       expect(laterTag, isNotNull);
       expect(laterTag!.accountId, isNull);
 
-      final bookmarksTag = await tagRepository.getBookmarksTag(accountId: accountId);
+      final bookmarksTag =
+          await tagRepository.getBookmarksTag(accountId: accountId);
       expect(bookmarksTag, isNotNull);
       expect(bookmarksTag!.accountId, isNull);
 
-      final favoritesTag = await tagRepository.getFavoritesTag(accountId: accountId);
+      final favoritesTag =
+          await tagRepository.getFavoritesTag(accountId: accountId);
       expect(favoritesTag, isNotNull);
       expect(favoritesTag!.accountId, isNull);
     });
@@ -415,21 +516,29 @@ void main() {
       expect(await tagRepository.getTagItemCount(customTag.id), equals(2));
     });
 
-    test('should filter by account ID', () async {
+    test('should filter by the article account', () async {
       const accountId = 1;
       final accountTag = await tagRepository.createTag(
         name: 'AccountTag',
         accountId: accountId,
       );
 
-      await tagRepository.tagItem(accountTag.id, 1, accountId: accountId);
-      await tagRepository.tagItem(accountTag.id, 2, accountId: accountId);
+      final first =
+          await _insertArticle(testDb, accountId: accountId, url: 'b1');
+      final second =
+          await _insertArticle(testDb, accountId: accountId, url: 'b2');
+      final foreign = await _insertArticle(testDb, accountId: 2, url: 'b3');
+      for (final itemId in [first, second, foreign]) {
+        await _insertLegacyAssociation(testDb,
+            tagId: accountTag.id, itemId: itemId);
+      }
 
-      final count = await tagRepository.getTagItemCount(
-        accountTag.id,
-        accountId: accountId,
+      expect(
+        await tagRepository.getTagItemCount(accountTag.id,
+            accountId: accountId),
+        equals(2),
       );
-      expect(count, equals(2));
+      expect(await tagRepository.getTagItemCount(accountTag.id), equals(3));
     });
   });
 
@@ -513,22 +622,26 @@ void main() {
       const accountId = 1;
       // accountId on initializeBuiltInTags is ignored — tags are global.
       await tagRepository.initializeBuiltInTags(accountId: accountId);
-      await tagRepository.createTag(name: 'AccountCustom1', accountId: accountId);
-      await tagRepository.createTag(name: 'AccountCustom2', accountId: accountId);
+      await tagRepository.createTag(
+          name: 'AccountCustom1', accountId: accountId);
+      await tagRepository.createTag(
+          name: 'AccountCustom2', accountId: accountId);
 
       // getAllTags(accountId) returns only account-scoped custom tags;
       // built-in tags are null-account so the account filter excludes them.
       final accountTags = await tagRepository.getAllTags(accountId: accountId);
       expect(accountTags.length, equals(2));
 
-      final accountBuiltIn = await tagRepository.getBuiltInTags(accountId: accountId);
+      final accountBuiltIn =
+          await tagRepository.getBuiltInTags(accountId: accountId);
       expect(accountBuiltIn.length, equals(0));
 
       // Unscoped getBuiltInTags returns the 3 global built-in tags.
       final allBuiltIn = await tagRepository.getBuiltInTags();
       expect(allBuiltIn.length, equals(3));
 
-      final accountCustom = await tagRepository.getCustomTags(accountId: accountId);
+      final accountCustom =
+          await tagRepository.getCustomTags(accountId: accountId);
       expect(accountCustom.length, equals(2));
     });
   });
@@ -683,8 +796,7 @@ void main() {
       await tagRepository.tagItem(tag.id, a);
       // Simulate an article deleted by content expiry / unsubscribe: the
       // taggedItems row survives, the feedItems row does not.
-      await (testDb.delete(testDb.feedItems)
-            ..where((t) => t.id.equals(a)))
+      await (testDb.delete(testDb.feedItems)..where((t) => t.id.equals(a)))
           .go();
 
       expect(await tagRepository.getTagItemCounts(), isEmpty);

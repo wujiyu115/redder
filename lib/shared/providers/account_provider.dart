@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/app_logger.dart';
 import '../../data/datasources/local/sync_local_ds.dart';
 import '../../data/services/sync/sync_models.dart';
 import '../../features/source_list/source_list_controller.dart';
@@ -31,6 +32,8 @@ final activeAccountInfoProvider = FutureProvider<SyncAccountInfo?>((ref) async {
 /// When an account is switched, this invalidates all data providers
 /// to force a reload with the new account's data.
 class AccountSwitchNotifier extends StateNotifier<int?> {
+  static const _log = AppLogger('AccountSwitch');
+
   final Ref _ref;
 
   AccountSwitchNotifier(this._ref) : super(null) {
@@ -38,9 +41,40 @@ class AccountSwitchNotifier extends StateNotifier<int?> {
   }
 
   Future<void> _initActiveAccount() async {
-    final repo = _ref.read(syncRepositoryProvider);
-    final activeAccount = await repo.getActiveAccount();
-    state = activeAccount?.id;
+    try {
+      final repo = _ref.read(syncRepositoryProvider);
+      final activeAccount = await repo.getActiveAccount();
+      state = activeAccount?.id;
+      _log.info('init: active account id=${state ?? 'none'}');
+    } catch (e, st) {
+      // Never leave the app in an unscoped state: a throw here used to keep
+      // state at null forever (nothing retried), which made every timeline
+      // show *all* accounts' articles.
+      _log.error('init: failed to resolve active account',
+          error: e, stackTrace: st);
+    }
+  }
+
+  /// Resolves the active account id, falling back to the database.
+  ///
+  /// `accountSwitchProvider` starts as null and only flips once its first
+  /// database read completes, so a read issued right after a cold start (or the
+  /// read that *constructs* the notifier) returns null. Callers that scope a
+  /// query by account used to consume that null and silently load every
+  /// account's rows — the first page of a timeline was unscoped while later
+  /// pages were scoped. Always resolve through here instead.
+  Future<int?> resolve() async {
+    final cached = state;
+    if (cached != null) return cached;
+    try {
+      final active = await _ref.read(syncRepositoryProvider).getActiveAccount();
+      if (active?.id != null && state == null) state = active!.id;
+      return active?.id;
+    } catch (e, st) {
+      _log.error('resolve: failed to read active account',
+          error: e, stackTrace: st);
+      return null;
+    }
   }
 
   /// Switches to a different account.

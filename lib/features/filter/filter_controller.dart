@@ -12,14 +12,16 @@ import '../../data/repositories/article_repository.dart';
 import '../source_list/source_list_controller.dart';
 
 /// Provider for the list of all filters.
-final filtersProvider = StateNotifierProvider<FiltersNotifier, AsyncValue<List<Filter>>>(
+final filtersProvider =
+    StateNotifierProvider<FiltersNotifier, AsyncValue<List<Filter>>>(
   (ref) => FiltersNotifier(ref),
 );
 
 /// Provider family for a single filter by ID.
 final filterByIdProvider = FutureProvider.family<Filter?, int>((ref, id) async {
   final db = AppDatabase.instance;
-  return (db.select(db.filters)..where((t) => t.id.equals(id))).getSingleOrNull();
+  return (db.select(db.filters)..where((t) => t.id.equals(id)))
+      .getSingleOrNull();
 });
 
 /// Provider for filter timeline items, keyed by filter ID.
@@ -63,18 +65,18 @@ class FiltersNotifier extends StateNotifier<AsyncValue<List<Filter>>> {
 
     final now = DateTime.now();
     final id = await _db.into(_db.filters).insert(
-      FiltersCompanion.insert(
-        name: name,
-        includeKeywords: Value(jsonEncode(includeKeywords)),
-        excludeKeywords: Value(jsonEncode(excludeKeywords)),
-        mediaTypes: Value(jsonEncode(mediaTypes)),
-        feedTypes: Value(jsonEncode(feedTypes)),
-        matchWholeWord: Value(matchWholeWord),
-        sortOrder: Value(maxOrder + 1),
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
+          FiltersCompanion.insert(
+            name: name,
+            includeKeywords: Value(jsonEncode(includeKeywords)),
+            excludeKeywords: Value(jsonEncode(excludeKeywords)),
+            mediaTypes: Value(jsonEncode(mediaTypes)),
+            feedTypes: Value(jsonEncode(feedTypes)),
+            matchWholeWord: Value(matchWholeWord),
+            sortOrder: Value(maxOrder + 1),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
 
     final filter = await (_db.select(_db.filters)
           ..where((t) => t.id.equals(id)))
@@ -174,7 +176,8 @@ class FilterTimelineController
         return;
       }
 
-      final items = await _loadFilteredItems(filter, offset: 0, limit: _pageSize);
+      final items =
+          await _loadFilteredItems(filter, offset: 0, limit: _pageSize);
       final feedMeta = await _loadFeedMetadata(items);
 
       state = AsyncValue.data(FilterTimelineState(
@@ -265,14 +268,15 @@ class FilterTimelineController
     final titles = <int, String>{};
     final icons = <int, String?>{};
     final feedIds = items.map((i) => i.feedId).toSet();
-    final accountId = _ref.read(accountSwitchProvider);
+    final accountId = await _ref.read(accountSwitchProvider.notifier).resolve();
     // Per-account session cache so pagination doesn't re-fetch feeds already
     // seen. Keyed by accountId because feeds are account-scoped.
-    final cache = _feedMetaCacheByAccount
-        .putIfAbsent(accountId ?? 0, () => <int, Feed>{});
+    final cache = _feedMetaCacheByAccount.putIfAbsent(
+        accountId ?? 0, () => <int, Feed>{});
     final missing = feedIds.where((id) => !cache.containsKey(id)).toSet();
     if (missing.isNotEmpty) {
-      final fetched = await _feedRepo.getFeedsByIds(missing, accountId: accountId);
+      final fetched =
+          await _feedRepo.getFeedsByIds(missing, accountId: accountId);
       cache.addAll(fetched);
     }
     for (final feedId in feedIds) {

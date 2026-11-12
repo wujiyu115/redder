@@ -70,7 +70,6 @@ class ArticleListController
     _filterCacheId = null;
   }
 
-
   /// Articles scrolled past the viewport, waiting to be persisted.
   final ScrollReadBuffer _scrollReadBuffer = ScrollReadBuffer();
   Timer? _scrollReadTimer;
@@ -94,8 +93,27 @@ class ArticleListController
     _loadInitial();
   }
 
+  /// Active account resolved once at load time.
+  ///
+  /// Reading `accountSwitchProvider` directly is unsafe: it is async-initialised
+  /// and returns null until its first DB read lands, so the read that *creates*
+  /// the notifier always yields null. Timeline queries then ran unscoped (every
+  /// account's rows) while later pages were scoped.
+  int? _accountId;
+
   /// Gets the current active account ID.
-  int? get _activeAccountId => _ref.read(accountSwitchProvider);
+  int? get _activeAccountId => _accountId ?? _ref.read(accountSwitchProvider);
+
+  /// Account scope for a `tag_<id>` timeline.
+  ///
+  /// Built-in tags are app-global (null scope, matching their badge); custom
+  /// tags are scoped to the active account. Legacy rows written before the
+  /// association carried an account still resolve, because the tag queries
+  /// scope by the *article's* account rather than the association's.
+  Future<int?> _tagScope(int tagId, int? accountId) async {
+    final tag = await _tagRepo.getTagById(tagId);
+    return (tag?.isBuiltIn ?? false) ? null : accountId;
+  }
 
   /// Marks articles the user scrolled past as read.
   ///
@@ -122,9 +140,7 @@ class ArticleListController
       ArticleListState(
         items: [
           for (final item in current.items)
-            freshIds.contains(item.id)
-                ? item.copyWith(isRead: true)
-                : item,
+            freshIds.contains(item.id) ? item.copyWith(isRead: true) : item,
         ],
         feedTitles: current.feedTitles,
         feedIcons: current.feedIcons,
@@ -176,6 +192,7 @@ class ArticleListController
       // initial load on the resolved account id so _loadItems sees a real
       // account instead of null.
       await _ref.read(activeAccountIdProvider.future);
+      _accountId = await _ref.read(accountSwitchProvider.notifier).resolve();
       _currentOffset = 0;
       _resetFilterCache();
       final items = await _loadItems(offset: 0, limit: _pageSize);
@@ -243,7 +260,8 @@ class ArticleListController
   /// used to import articles that had no remote id mapping (their read/star
   /// state could then never be pushed back).
   Future<void> refresh() async {
-    _log.info('refresh: timelineId=$timelineId, activeAccountId=$_activeAccountId');
+    _log.info(
+        'refresh: timelineId=$timelineId, activeAccountId=$_activeAccountId');
 
     var syncedRemotely = false;
     if (_activeAccountId != null) {
@@ -252,7 +270,8 @@ class ArticleListController
         try {
           await _syncBridge.triggerIncrementalSync();
         } catch (e) {
-          _log.error('refresh: remote sync failed, keeping local data', error: e);
+          _log.error('refresh: remote sync failed, keeping local data',
+              error: e);
         }
       }
     }
@@ -278,14 +297,17 @@ class ArticleListController
       } else if (timelineId.startsWith('feed_')) {
         final feedId = int.tryParse(timelineId.substring(5));
         if (feedId != null) {
-          await _syncBridge.markFeedAsReadWithSync(feedId, accountId: accountId);
+          await _syncBridge.markFeedAsReadWithSync(feedId,
+              accountId: accountId);
         }
       } else if (timelineId.startsWith('folder_')) {
         final folderId = int.tryParse(timelineId.substring(7));
         if (folderId != null) {
-          final feeds = await _feedRepo.getFeedsByFolder(folderId, accountId: accountId);
+          final feeds =
+              await _feedRepo.getFeedsByFolder(folderId, accountId: accountId);
           for (final feed in feeds) {
-            await _syncBridge.markFeedAsReadWithSync(feed.id, accountId: accountId);
+            await _syncBridge.markFeedAsReadWithSync(feed.id,
+                accountId: accountId);
           }
         }
       } else if (timelineId == 'articles' ||
@@ -302,7 +324,10 @@ class ArticleListController
       } else if (timelineId.startsWith('tag_')) {
         final tagId = int.tryParse(timelineId.substring(4));
         if (tagId != null) {
-          final itemIds = await _tagRepo.getItemIdsByTag(tagId, accountId: accountId);
+          final itemIds = await _tagRepo.getItemIdsByTag(
+            tagId,
+            accountId: await _tagScope(tagId, accountId),
+          );
           if (itemIds.isNotEmpty) {
             await _syncBridge.markAsReadWithSync(itemIds, accountId: accountId);
           }
@@ -330,7 +355,8 @@ class ArticleListController
                 .map((i) => i.id)
                 .toList();
             if (matchedIds.isNotEmpty) {
-              await _syncBridge.markAsReadWithSync(matchedIds, accountId: accountId);
+              await _syncBridge.markAsReadWithSync(matchedIds,
+                  accountId: accountId);
             }
           }
         }
@@ -425,7 +451,8 @@ class ArticleListController
     if (timelineId.startsWith('folder_')) {
       final folderId = int.tryParse(timelineId.substring(7));
       if (folderId != null) {
-        final feeds = await _feedRepo.getFeedsByFolder(folderId, accountId: accountId);
+        final feeds =
+            await _feedRepo.getFeedsByFolder(folderId, accountId: accountId);
         final feedIds = feeds.map((f) => f.id).toList();
         return _articleRepo.getArticlesByFeeds(
           feedIds,
@@ -441,6 +468,11 @@ class ArticleListController
     if (timelineId.startsWith('tag_')) {
       final tagId = int.tryParse(timelineId.substring(4));
       if (tagId != null) {
+        // Built-in tags (Later / Bookmarks / Favorites) are app-global: their
+        // rows are stored unscoped and their badge counts every account. The
+        // list must use the same scope, otherwise the badge shows a number
+        // while the timeline comes back empty. Custom tags stay account-scoped.
+        //
         // Paginated by SQLite: previously every page re-read *all* tagged rows
         // (with their article HTML) and sliced in Dart.
         return _articleRepo.getArticlesByTag(
@@ -448,7 +480,7 @@ class ArticleListController
           limit: limit,
           offset: offset,
           oldestFirst: oldestFirst,
-          accountId: accountId,
+          accountId: await _tagScope(tagId, accountId),
         );
       }
     }
@@ -457,7 +489,11 @@ class ArticleListController
       return _loadFilterItems(offset: offset, limit: limit);
     }
 
-    return _articleRepo.getArticles(limit: limit, offset: offset, oldestFirst: oldestFirst, accountId: accountId);
+    return _articleRepo.getArticles(
+        limit: limit,
+        offset: offset,
+        oldestFirst: oldestFirst,
+        accountId: accountId);
   }
 
   /// Pages through a `filter_*` timeline, scanning raw rows at most once.
@@ -526,11 +562,12 @@ class ArticleListController
     // Per-account session cache so pagination doesn't re-fetch feeds already
     // seen. Keyed by accountId because feeds are account-scoped — a
     // cross-account cache would serve stale metadata after a switch.
-    final cache = _feedMetaCacheByAccount
-        .putIfAbsent(accountId ?? 0, () => <int, Feed>{});
+    final cache = _feedMetaCacheByAccount.putIfAbsent(
+        accountId ?? 0, () => <int, Feed>{});
     final missing = feedIds.where((id) => !cache.containsKey(id)).toSet();
     if (missing.isNotEmpty) {
-      final fetched = await _feedRepo.getFeedsByIds(missing, accountId: accountId);
+      final fetched =
+          await _feedRepo.getFeedsByIds(missing, accountId: accountId);
       cache.addAll(fetched);
     }
     for (final feedId in feedIds) {

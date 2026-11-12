@@ -190,9 +190,10 @@ class ArticleLocalDataSource {
     ])
       ..where(_db.taggedItems.tagId.equals(tagId));
     if (accountId != null) {
-      // Same scoping as TagRepository.getItemIdsByTag: the association row (not
-      // the item row) carries the account.
-      query.where(_db.taggedItems.accountId.equals(accountId));
+      // Same scoping as TagRepository.getItemIdsByTag: by the *article's*
+      // account, so associations written without an account (every toggleTag
+      // before it inherited one) still show up under their owner.
+      query.where(_db.feedItems.accountId.equals(accountId));
     }
     query.orderBy([
       oldestFirst

@@ -120,14 +120,14 @@ class TagRepository {
     final sortOrder = allTags.isEmpty ? 0 : allTags.last.sortOrder + 1;
 
     final id = await _db.into(_db.tags).insert(
-      TagsCompanion.insert(
-        name: name,
-        iconName: Value(iconName),
-        isBuiltIn: const Value(false),
-        sortOrder: Value(sortOrder),
-        createdAt: DateTime.now(),
-      ).copyWith(accountId: Value(accountId)),
-    );
+          TagsCompanion.insert(
+            name: name,
+            iconName: Value(iconName),
+            isBuiltIn: const Value(false),
+            sortOrder: Value(sortOrder),
+            createdAt: DateTime.now(),
+          ).copyWith(accountId: Value(accountId)),
+        );
 
     return (_db.select(_db.tags)..where((t) => t.id.equals(id))).getSingle();
   }
@@ -154,8 +154,7 @@ class TagRepository {
 
     await _db.transaction(() async {
       // Delete all tagged item associations
-      await (_db.delete(_db.taggedItems)
-            ..where((t) => t.tagId.equals(tagId)))
+      await (_db.delete(_db.taggedItems)..where((t) => t.tagId.equals(tagId)))
           .go();
 
       // Delete the tag
@@ -168,6 +167,10 @@ class TagRepository {
   // ─── Tag-Item Associations ────────────────────────────────
 
   /// Tags an item with a specific tag, optionally associated with [accountId].
+  ///
+  /// When [accountId] is omitted the association inherits the account of the
+  /// article itself. Leaving it null (which every `toggleTag` caller did) used
+  /// to write associations that no account-scoped query could ever match.
   Future<void> tagItem(int tagId, int itemId, {int? accountId}) async {
     // Check if already tagged
     final existing = await (_db.select(_db.taggedItems)
@@ -176,14 +179,21 @@ class TagRepository {
 
     if (existing != null) return; // Already tagged
 
+    final resolvedAccountId = accountId ??
+        (await (_db.selectOnly(_db.feedItems)
+                  ..addColumns([_db.feedItems.accountId])
+                  ..where(_db.feedItems.id.equals(itemId)))
+                .getSingleOrNull())
+            ?.read(_db.feedItems.accountId);
+
     await _db.transaction(() async {
       await _db.into(_db.taggedItems).insert(
-        TaggedItemsCompanion.insert(
-          tagId: tagId,
-          itemId: itemId,
-          taggedAt: DateTime.now(),
-        ).copyWith(accountId: Value(accountId)),
-      );
+            TaggedItemsCompanion.insert(
+              tagId: tagId,
+              itemId: itemId,
+              taggedAt: DateTime.now(),
+            ).copyWith(accountId: Value(resolvedAccountId)),
+          );
 
       // Update tag item count
       final tag = await getTagById(tagId);
@@ -217,6 +227,7 @@ class TagRepository {
       }
     });
   }
+
   /// Toggles a tag on an item (add if not tagged, remove if tagged).
   Future<bool> toggleTag(int tagId, int itemId) async {
     final isTagged = await isItemTagged(tagId, itemId);
@@ -238,14 +249,23 @@ class TagRepository {
   }
 
   /// Gets all item IDs with a specific tag, optionally filtered by [accountId].
+  ///
+  /// Scoping goes through the article's account, not the association's: rows
+  /// written before the association carried an account (all of them, until
+  /// [tagItem] learned to inherit it) stay reachable.
   Future<List<int>> getItemIdsByTag(int tagId, {int? accountId}) async {
-    final query = _db.select(_db.taggedItems)
-      ..where((t) => t.tagId.equals(tagId));
+    final query = _db.select(_db.taggedItems).join([
+      innerJoin(
+        _db.feedItems,
+        _db.feedItems.id.equalsExp(_db.taggedItems.itemId),
+      ),
+    ])
+      ..where(_db.taggedItems.tagId.equals(tagId));
     if (accountId != null) {
-      query.where((t) => t.accountId.equals(accountId));
+      query.where(_db.feedItems.accountId.equals(accountId));
     }
-    final items = await query.get();
-    return items.map((ti) => ti.itemId).toList();
+    final rows = await query.get();
+    return rows.map((row) => row.readTable(_db.taggedItems).itemId).toList();
   }
 
   /// Gets all tag IDs for a specific item, optionally filtered by [accountId].
@@ -287,11 +307,16 @@ class TagRepository {
 
   Future<int> getTagItemCount(int tagId, {int? accountId}) async {
     final countExp = _db.taggedItems.id.count();
-    final query = _db.selectOnly(_db.taggedItems)
+    final query = _db.select(_db.taggedItems).join([
+      innerJoin(
+        _db.feedItems,
+        _db.feedItems.id.equalsExp(_db.taggedItems.itemId),
+      ),
+    ])
       ..addColumns([countExp])
       ..where(_db.taggedItems.tagId.equals(tagId));
     if (accountId != null) {
-      query.where(_db.taggedItems.accountId.equals(accountId));
+      query.where(_db.feedItems.accountId.equals(accountId));
     }
     final result = await query.getSingle();
     return result.read(countExp)!;
@@ -315,8 +340,7 @@ class TagRepository {
         }
       }
 
-      await (_db.delete(_db.taggedItems)
-            ..where((t) => t.itemId.equals(itemId)))
+      await (_db.delete(_db.taggedItems)..where((t) => t.itemId.equals(itemId)))
           .go();
     });
   }
@@ -340,11 +364,14 @@ class TagRepository {
   // tag resolves under any active account.
 
   /// Gets the "Later" built-in tag (app-global; [accountId] ignored).
-  Future<Tag?> getLaterTag({int? accountId}) => getTagByName(TagNames.laterName);
+  Future<Tag?> getLaterTag({int? accountId}) =>
+      getTagByName(TagNames.laterName);
 
   /// Gets the "Bookmarks" built-in tag (app-global; [accountId] ignored).
-  Future<Tag?> getBookmarksTag({int? accountId}) => getTagByName(TagNames.bookmarksName);
+  Future<Tag?> getBookmarksTag({int? accountId}) =>
+      getTagByName(TagNames.bookmarksName);
 
   /// Gets the "Favorites" built-in tag (app-global; [accountId] ignored).
-  Future<Tag?> getFavoritesTag({int? accountId}) => getTagByName(TagNames.favoritesName);
+  Future<Tag?> getFavoritesTag({int? accountId}) =>
+      getTagByName(TagNames.favoritesName);
 }

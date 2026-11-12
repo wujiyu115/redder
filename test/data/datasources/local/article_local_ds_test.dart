@@ -1895,6 +1895,50 @@ void main() {
       ));
     });
 
+    test('scopes by the article account, not the association', () async {
+      // Association rows written before the account was inherited are stored
+      // with accountId = null. Scoping by the association made such timelines
+      // come back empty while the sidebar badge counted their rows.
+      final accountItem = await dataSource.upsert(
+        FeedItemsCompanion.insert(
+          feedId: 1,
+          title: 'Account article',
+          url: 'https://example.com/account-tagged',
+          publishedAt: DateTime(2024, 1, 20),
+          fetchedAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024, 1, 1),
+        ),
+        accountId: 42,
+      );
+      final foreignItem = await dataSource.upsert(
+        FeedItemsCompanion.insert(
+          feedId: 1,
+          title: 'Other account article',
+          url: 'https://example.com/other-tagged',
+          publishedAt: DateTime(2024, 1, 21),
+          fetchedAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024, 1, 1),
+        ),
+        accountId: 43,
+      );
+      for (final itemId in [accountItem, foreignItem]) {
+        await testDb.into(testDb.taggedItems).insert(
+              TaggedItemsCompanion.insert(
+                tagId: tagId,
+                itemId: itemId,
+                taggedAt: DateTime(2024, 1, 1),
+              ),
+            );
+      }
+
+      final scoped =
+          await dataSource.getByTagId(tagId, accountId: 42, limit: 10);
+      expect(scoped.map((i) => i.id), [accountItem]);
+      final unscoped = await dataSource.getByTagId(tagId, limit: 10);
+      expect(unscoped.map((i) => i.id), contains(accountItem));
+      expect(unscoped.map((i) => i.id), contains(foreignItem));
+    });
+
     test('returns only tagged items, newest first, paginated', () async {
       final firstPage = await dataSource.getByTagId(tagId, limit: 2, offset: 0);
       expect(firstPage.map((i) => i.title), ['Tagged 4', 'Tagged 3']);

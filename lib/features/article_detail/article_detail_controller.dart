@@ -259,7 +259,9 @@ class ArticleDetailController
   /// next article comes from the same timeline the user is browsing,
   /// not the whole account.
   Future<int?> loadNextArticle() async {
-    final accountId = _ref.read(accountSwitchProvider);
+    // Resolve through the notifier: a plain read returns null until its async
+    // initialisation lands, which made the "next article" jump across accounts.
+    final accountId = await _ref.read(accountSwitchProvider.notifier).resolve();
     return _articleRepo.getNextArticleId(
       articleId,
       timelineId: timelineId,
